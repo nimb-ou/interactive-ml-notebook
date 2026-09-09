@@ -1,0 +1,20 @@
+{
+  "name": "interactive-ml-notebook",
+  "version": "1.0.0",
+  "description": "The Interactive AI/ML Notebook — learn machine learning from the mathematics up",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node test/smoke.js",
+    "build": "python3 build.py",
+    "build:pages": "python3 build.py --pages"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jsdom": "^27.0.0"
+  }
+}
