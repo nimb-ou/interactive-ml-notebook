@@ -8,38 +8,138 @@
   ML.section({
     id: 'what-is-ml', track: 'start', num: '0.1',
     title: 'What machine learning actually is',
-    lede: 'A model is a function with adjustable numbers inside it, a loss that scores how wrong the function is, and a procedure that pushes the numbers downhill. Everything else on this site is a variation on those three objects.',
+    lede: 'Almost every machine learning system ever built — from a two-parameter straight line to a model with hundreds of billions of parameters — is assembled from the same three pieces: a model that makes guesses, a loss that scores how wrong those guesses were, and an optimiser that adjusts the model to improve the score. This section builds all three from nothing, and everything that follows on this site is a variation on them.',
     html: `
-<p>Ordinary programming is: you know the rule, you write the rule, the computer applies it. Machine learning is for the case where <b>you can recognise the answer but cannot write the rule</b> — is this transaction fraudulent, what is the next word, which applicant repays. You supply examples; the machine searches a space of candidate rules for one that reproduces your examples and, crucially, keeps working on examples it has never seen.</p>
+<p>Let us begin with a problem you already know how to think about, and then walk to the exact point where ordinary programming runs out of road.</p>
 
-<p>Three objects, and you will meet them in every single section that follows:</p>
+<p>Suppose you have to write a program that decides whether an email is spam. You sit down and start writing rules. Messages containing the phrase "free money" are probably spam, so that becomes your first rule. Then you notice that legitimate emails from your bank occasionally mention money, so you add an exception. Then the spammers start writing "fr€€ m0ney", so you add another rule to catch that. Then they find a third spelling. Every rule you add fixes one case and quietly breaks another, the program swells to thousands of lines, and it is never quite right.</p>
 
-${H.table(['Object', 'Symbol', 'What it is'], [
-      ['<b>Model</b>', '$f_\\theta(x)$', 'A function from input $x$ to prediction, with parameters $\\theta$ you are free to choose. A line has two. A frontier LLM has hundreds of billions.'],
-      ['<b>Loss</b>', '$\\ell(f_\\theta(x), y)$', 'A number saying how bad one prediction was. Averaged over data it becomes the objective you minimise. It is not chosen by taste — §1.5 shows it falls out of the noise model you assume.'],
-      ['<b>Optimiser</b>', '$\\theta \\leftarrow \\theta - \\eta\\nabla_\\theta L$', 'The procedure that changes $\\theta$ to reduce the loss. Gradient descent and its descendants; §1.9 and §3.4.']
+<p>Now notice something odd about the situation you are in. <b>You can look at any individual email and tell almost instantly whether it is spam.</b> You are not confused about the answer. What you cannot do is write down the rule you are using to decide, because you are not really following a rule at all. You are drawing on something absorbed from having seen thousands of examples.</p>
+
+<p>That gap between being able to recognise an answer and being able to state the rule is exactly where machine learning lives.</p>
+
+${H.key('Machine learning is for problems where you can recognise the correct answer but cannot write down the rule that produces it.')}
+
+<p>The consequence is a genuine reversal of who supplies what. It is worth laying the two approaches side by side, because the difference changes not only how you build the system but how you debug it when it goes wrong:</p>
+
+${H.table(['', 'Ordinary programming', 'Machine learning'], [
+      ['<b>You supply</b>', 'the rule', 'examples of correct answers'],
+      ['<b>The computer supplies</b>', 'the answers, by applying your rule', 'the rule, by searching for one that reproduces your examples'],
+      ['<b>You debug by</b>', 'reading the code', 'examining the data and the errors it makes'],
+      ['<b>It fails when</b>', 'you wrote the rule wrongly', 'your examples did not represent what the system meets later']
     ])}
 
-<h2><span class="sn">0.1.1</span> The only distinction that matters at the start</h2>
-<p><b>Supervised learning</b> has labelled pairs $(x, y)$ and learns $x \\mapsto y$: spam or not, price, next token. <b>Unsupervised learning</b> has only $x$ and looks for structure: clusters, low-dimensional directions, densities, anomalies. <b>Reinforcement learning</b> has neither — it has an environment that returns rewards, and learns a policy that maximises reward over time (§6.1).</p>
-<p>Almost all commercial value today is supervised, including the part that does not look it: next-token prediction is supervised learning where the label is <i>the next token in the text you already had</i>. That single trick is why the internet is a training set.</p>
+<p>The phrase "searching for a rule" is carrying a great deal of weight in that table, so let us make it concrete straight away. The computer does not conjure rules out of nothing. You hand it an entire <i>family</i> of possible rules — every straight line, say, or every decision tree of depth five, or every neural network of a particular shape — and its job is to find the member of that family which best reproduces your examples. Choosing the family is your decision as the engineer. Finding the best member of it is the machine's work.</p>
 
-${H.key('The goal is never to fit the data you have. It is to fit the data you do not have — and the whole of Part 1 exists to explain why that is even possible.')}
+${H.analogy(`<p>Think of tuning an old analogue radio. The family of possible rules is every position the dial can occupy. Your examples are the station you are trying to hear. You did not build the radio and you did not invent the frequency; you simply turn the dial until the static clears and music comes through. Machine learning is that same act, with millions of dials instead of one, and with a precise mathematical definition of what "the static cleared" means.</p>`)}
 
-<h2><span class="sn">0.1.2</span> See it happen</h2>
-<p>Below is the entire loop, running for real. Drag any point; the line refits by least squares on every frame. Add points in the empty space and watch the fit move. Then turn on <i>train/test split</i> and notice the thing that matters: the line is chosen using the blue points only, and it is judged on the red ones.</p>
+<h2><span class="sn">0.1.1</span> The three objects, taken one at a time</h2>
 
-${H.lab('fit', 'The whole loop, in one picture', 'Drag points. Shift-click empty space to add one, and click a point to delete it. The line is the exact least-squares solution recomputed each frame — no animation trickery.')}
+<p>Every system in this course is assembled from exactly three parts. That is true of the straight line you will be dragging around in a few minutes and equally true of the models behind the assistants you use daily. It is worth meeting the three slowly now, because they recur in every section that follows, and before long you will find yourself identifying them in a research paper before you have understood anything else about it.</p>
 
-<h2><span class="sn">0.1.3</span> Why "learning" is a fair word</h2>
-<p>Nothing in that demo was told what a line is <i>for</i>. It was given a family of candidate rules (all lines), a way to score a rule (squared error), and a rule for improving the score (the normal equations, §2.4). What emerged was a rule nobody typed. Swap the family for a hundred-layer network and the score for cross-entropy and you have modern deep learning; the loop above does not change.</p>
+<h3>1. The model is a function with adjustable numbers inside it</h3>
+
+<p>A <b>model</b> is simply a function. An input goes in, a prediction comes out. What makes it a <i>learning</i> model rather than an ordinary function is that some of the numbers inside it are not fixed in advance. Those adjustable numbers are called <b>parameters</b>, and by long convention we gather them all into a single symbol, $\\theta$ (the Greek letter theta). The model is then written $f_\\theta(x)$, which you can read aloud as "f, tuned by theta, applied to x".</p>
+
+<p>Here is the smallest example that is still genuinely a model. A straight line:</p>
+
+$$f_\\theta(x) = wx + b, \\qquad \\theta = (w, b)$$
+
+<p>It has two parameters, the slope $w$ and the intercept $b$. Choose different values for those two numbers and you get a different line, which makes a different prediction for the very same input. In this case the family of candidate rules is "all straight lines", and selecting one member of the family amounts to choosing two numbers.</p>
+
+<p>Now scale that idea up, and notice that conceptually nothing changes. A large language model is also a function with adjustable numbers inside it. It simply has hundreds of billions of them rather than two, and its input is a sequence of text rather than a single value. <mark>The distance from two parameters to two hundred billion is a difference of scale, not of kind.</mark></p>
+
+<h3>2. The loss says how wrong a prediction was</h3>
+
+<p>If the computer is going to search for a good rule, it needs a definition of "good" precise enough to be computed. That definition is the <b>loss function</b>, written $\\ell(f_\\theta(x), y)$. It takes the model's prediction alongside the correct answer and returns a single number describing how bad that prediction was. Small is good, and zero means perfect.</p>
+
+<p>When the thing being predicted is a number, the usual choice is squared error, $(\\hat{y} - y)^2$, where $\\hat{y}$ is shorthand for whatever the model predicted. If you predict 7 and the true answer was 10, the loss is $(7-10)^2 = 9$. Predict 9 instead and the loss falls to 1. The squaring accomplishes two separate things worth noticing. It makes the direction of the error irrelevant, so missing by 3 too high and 3 too low count equally. And it punishes large errors out of proportion to small ones, so a miss of 10 is a hundred times worse than a miss of 1 rather than merely ten times worse.</p>
+
+<p>The loss on a single example is not yet the thing we minimise. We average it across every example we have, and that average is the objective:</p>
+
+$$L(\\theta) = \\frac{1}{n}\\sum_{i=1}^{n} \\ell\\big(f_\\theta(x_i),\\, y_i\\big)$$
+
+<p>It is worth reading that formula slowly, because its shape recurs throughout the course. The sum runs over your $n$ examples. For each one you compare the model's prediction against the truth and score it. You average those scores. The result, $L(\\theta)$, is a single number that depends on the parameters: change $\\theta$ and the number changes. Training is the act of hunting for the $\\theta$ that makes it small.</p>
+
+${H.note('Notice that the loss is chosen rather than discovered. Squared error is not the only reasonable way to score a numerical prediction, and the choice carries real consequences — it is precisely what makes a model sensitive to outliers, for instance. §1.5 shows that the standard losses are not arbitrary conveniences at all: each one falls out of a specific assumption about how the noise in your data behaves.')}
+
+<h3>3. The optimiser is the procedure that improves the parameters</h3>
+
+<p>We now have a family of candidate rules and a way of scoring any member of it. What remains is a method for actually locating a good member. For anything beyond the smallest problems, simply checking every candidate is hopeless, because the space of possible parameter settings is infinite.</p>
+
+<p>The idea that rescues us is this: for whatever parameters we currently hold, we can usually work out <i>which direction to nudge them so that the loss goes down</i>. That direction is called the <b>gradient</b>, written $\\nabla_\\theta L$. The optimiser takes a small step in the opposite direction of the gradient, then recomputes and repeats:</p>
+
+$$\\theta \\leftarrow \\theta - \\eta\\,\\nabla_\\theta L$$
+
+<p>The arrow means "replace what is on the left with what is on the right". The symbol $\\eta$ (eta) is the <b>learning rate</b>, which controls how large a step to take. Steps that are too small make training take forever. Steps that are too large overshoot the bottom, so the parameters bounce around the valley or, in the worst case, fly off entirely.</p>
+
+${H.analogy(`<p>The standard picture is walking down a hill in thick fog. You cannot see the valley floor, so you cannot simply head straight for it. But you can feel which way the ground slopes beneath your feet, so you take a step in the downhill direction, feel again, and repeat. The gradient is the slope you feel underfoot. The learning rate is the length of your stride. It is a decidedly unglamorous procedure, and it is how very nearly every model in this course is trained.</p>`)}
+
+<p>Those are the three objects. Here they are collected together, which is the form worth committing to memory:</p>
+
+${H.table(['Object', 'Symbol', 'What it does', 'Developed in'], [
+      ['<b>Model</b>', '$f_\\theta(x)$', 'Maps an input to a prediction using adjustable parameters $\\theta$', 'Parts 2, 3 and 4'],
+      ['<b>Loss</b>', '$\\ell(f_\\theta(x), y)$', 'Scores how wrong one prediction was; averaged over the data to give the objective $L(\\theta)$', '§1.5 and §2.1'],
+      ['<b>Optimiser</b>', '$\\theta \\leftarrow \\theta - \\eta\\nabla_\\theta L$', 'Repeatedly nudges the parameters in whichever direction lowers the loss', '§1.9 and §3.4']
+    ])}
+
+<h2><span class="sn">0.1.2</span> The three kinds of learning problem</h2>
+
+<p>Machine learning problems are conventionally sorted into three families. The thing that separates them is not the algorithms involved but something more basic: <i>what information you are given in the first place</i>.</p>
+
+<p><b>Supervised learning</b> is the case where you hold matched pairs — an input $x$ together with the correct answer $y$ that belongs with it. A thousand emails, each already marked spam or not. A hundred thousand houses, each with the price it sold for. The task is to learn the mapping from $x$ to $y$ well enough to apply it to inputs nobody has seen yet. This is the setting for most of this course, and for very nearly all of the machine learning that currently earns money.</p>
+
+<p><b>Unsupervised learning</b> is the case where you have inputs but no answers attached to them. You hold a million customer records and nobody has labelled anything. The task therefore cannot be "predict $y$", because there is no $y$. Instead the task is to find structure: which records naturally group together (clustering, §2.10), which directions in the data carry most of the variation (PCA, §2.11), which records look unlike all the rest (anomaly detection).</p>
+
+<p><b>Reinforcement learning</b> is the case where you have neither labels nor even a fixed dataset. What you have instead is an environment you can act inside, which occasionally reports how well you are doing by way of a reward. A program learning to play a game is never told the correct move for a given position; it is told the final score at the end. The task is to learn a <b>policy</b>, meaning a rule for choosing actions, that collects the most reward over time (§6.1).</p>
+
+${H.intuition(`<p>The most consequential thing to understand about this taxonomy is that the largest models in the world are trained using the <i>first</i> category, wearing a disguise.</p>
+<p>Training a language model looks unsupervised at first glance. You point it at an enormous quantity of text and nobody has labelled any of it. But look at what the objective actually is: predict the next word, given the words that came before. The next word is already sitting right there in the text. The label comes free. Every sentence ever written is therefore a fully labelled training example at zero annotation cost, which is exactly why this objective scales to trillions of words when paying humans to label things would have run out of money in the millions.</p>
+<p>This arrangement has a name: <b>self-supervised</b> learning, meaning supervised learning whose labels are extracted from the structure of the data itself rather than supplied by a person.</p>`)}
+
+<h2><span class="sn">0.1.3</span> The goal is not to fit the data you have</h2>
+
+<p>Here is the point at which most people's intuition initially goes astray, so it is worth being emphatic about it.</p>
+
+<p>We have just said that training means finding parameters that make the average loss small. It would be entirely natural to conclude that smaller is always better, and that a model driving its loss to zero has therefore succeeded completely. That conclusion is wrong, and understanding precisely why is a large part of what the first half of this course exists to explain.</p>
+
+<p>The reason is that you do not actually care about the examples you already hold. You know the answers to those; they are written down. What you want is a model that performs on examples you have <i>not</i> seen — tomorrow's emails, next quarter's applicants, the sentence a user is about to type. The loss you are able to measure is the average over your training data, which is called the <b>empirical risk</b>. The quantity you genuinely want to be small is the average over everything the model will ever encounter, which is called the <b>expected risk</b>. These are two different numbers, and only the first one is available to you.</p>
+
+<p>Worse, a model can drive the first to zero in a way that does nothing whatsoever for the second: by memorising. A rule which says "this exact email is spam, and this exact one is not, and here are the remaining 998 individually" achieves a perfect training loss and is completely worthless in practice, because it has learned the examples instead of learning the pattern.</p>
+
+${H.key('The goal is never to fit the data you have. It is to fit the data you do not have.')}
+
+<p>That this is achievable at all is neither obvious nor guaranteed. It works when your training examples genuinely represent what arrives later, and when the family of rules you searched was not so flexible that it could fit random noise as readily as real signal. Making that statement precise is the work of §1.4 on concentration. Controlling it in practice is the work of §2.2 on bias and variance, §2.3 on regularization, and §2.14 on validation.</p>
+
+<h2><span class="sn">0.1.4</span> Watching all three objects at once</h2>
+
+<p>Everything above stays abstract until you see it move, so here is the entire loop running for real, using the simplest model there is.</p>
+
+<p><b>What you are looking at.</b> Each dot is a single training example. Its horizontal position is the input $x$ and its vertical position is the correct answer $y$. The straight line is the model, $f_\\theta(x) = wx + b$. The dashed vertical segments are the <b>residuals</b>: the gap, for each point, between what the model predicted and what was actually true. The loss is the average of the squares of those dashed lengths, which is precisely why it is called squared error. The line drawn is the exact one that makes that average as small as it can possibly be.</p>
+
+<p><b>What to do with it.</b> Drag any point and watch the line chase after it. You are changing the data, and the model is re-solving for its best parameters on every single frame. Notice while you do this that dragging a point near the middle of the cloud barely disturbs the line, whereas dragging one out at the far edge swings it noticeably. That is your first encounter with the fact that data points do not carry equal influence.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Switch on the <i>train / test split</i> toggle. Some points turn red. The line is now fitted using the blue points alone but scored against both groups, and two separate numbers appear in the readout: train MSE and test MSE. Now press <i>Add an outlier</i> a few times, or drag a point far away from its neighbours, and watch those two numbers come apart from each other. The gap between how a model scores on data it learned from and how it scores on data it did not is the single most important diagnostic in applied machine learning, and you have just manufactured it on purpose.</p>
+
+${H.lab('fit', 'The whole loop, in one picture', 'Click empty space to add a point, drag any point to move it, and shift-click a point to delete it. The line is the exact least-squares solution, recomputed on every frame — there is no animation trickery here.')}
+
+<h2><span class="sn">0.1.5</span> Why "learning" is a fair word for this</h2>
+
+<p>It is quite reasonable to feel sceptical about the word "learning" here. Nothing in that demonstration understood anything at all. So it is worth being clear about what was achieved and what was not.</p>
+
+<p>Nobody told the program what a line is <i>for</i>, which points were important, or what the relationship between $x$ and $y$ ought to look like. It received three things and nothing more: a family of candidate rules (all straight lines), a way to score any rule (squared error), and a procedure for finding a good one. What emerged was a rule that no human being wrote down. The slope and intercept were derived from the data, and they change whenever the data changes.</p>
+
+<p>That is a modest but perfectly genuine form of learning. The important part, though, is that <b>the loop itself does not change as the models grow.</b> Swap the family of straight lines for a hundred-layer neural network. Swap squared error for cross-entropy. Swap the direct solve for millions of gradient steps spread across thousands of GPUs. You now have modern deep learning, and its structure is identical to the thing you were just dragging around: a parameterised family, a way of scoring it, and a procedure that improves the score.</p>
+
+${H.more('a caveat worth carrying forward', `<p>Saying "the loop does not change" is true of the <i>structure</i> and misleading about the <i>difficulty</i>. In the line-fitting demonstration above, the best parameters can be computed in closed form. There is a formula, derived in §2.4, which simply hands you the answer with no searching whatsoever. That is a rare luxury. For almost every interesting model no such formula exists, the loss surface has many valleys rather than a single one, and the procedure for finding a good setting becomes a genuinely delicate piece of engineering. Parts 3 and 4 are largely concerned with that difficulty. The claim that the three objects are always the same still holds — it is simply that the third one becomes hard.</p>`)}
 
 ${H.probe([
-      ['What is machine learning in one sentence?', 'Searching a parameterised family of functions for the one that minimises expected loss on data drawn from the same distribution you will be scored on.'],
-      ['Why can a model be good on training data and useless in production?', 'It minimised <i>empirical</i> risk, not expected risk; the gap between them is what concentration (§1.4), validation (§2.14) and regularization (§2.3) are all about.']
-    ], 'Saying "the model learns patterns". Every interviewer hears "I have not thought about the objective".')}
+      ['What is machine learning, in one sentence?', 'Searching a parameterised family of functions for the member that minimises expected loss on data drawn from the distribution you will be scored against.'],
+      ['Why can a model be excellent on training data and useless in production?', 'Because it minimised empirical risk, the average loss over the examples it was shown, whereas what matters is expected risk, the average over everything it will actually meet. A sufficiently flexible family can drive the first to zero by memorising noise, which does nothing at all for the second.'],
+      ['Someone hands you a model with a perfect training score. What do you ask next?', 'What the held-out score is, and how the split was constructed. A perfect training score carries essentially no information on its own about whether the model works.']
+    ], 'Saying "the model learns patterns from the data". Every interviewer hears "I have not thought about what is being optimised". Name the family, the objective and the procedure instead.')}
 
-<h2><span class="sn">0.1.4</span> The map of the rest</h2>
+<h2><span class="sn">0.1.6</span> The map of the rest</h2>
 ${H.table(['If you want to…', 'Go to'], [
       ['Understand why any of this generalises', '<a href="#/concentration">§1.4 concentration</a>'],
       ['Know where losses come from', '<a href="#/mle-map">§1.5 MLE and MAP</a>'],
@@ -114,21 +214,31 @@ ${H.table(['If you want to…', 'Go to'], [
     },
     quiz: [
       {
-        q: 'A model scores 0.99 on the data it was fitted to and 0.61 on new data. Which of the three objects is the problem?',
-        options: ['The optimiser failed to converge', 'The model family is too flexible for the amount of data', 'The loss was computed incorrectly', 'The data was not shuffled'],
+        q: 'A model scores 0.99 on the data it was fitted to and 0.61 on data it has never seen. Which of the three objects is most likely the problem?',
+        options: ['The optimiser failed to converge', 'The model family is too flexible for the amount of data available', 'The loss was computed incorrectly', 'The data was not shuffled'],
         answer: 1,
-        why: 'A large train–test gap is the signature of variance: the family could fit the noise, and it did. More data, a simpler family, or regularization — §2.2 and §2.3.'
+        why: 'The pattern to recognise here is the <i>gap</i> between the two numbers, rather than either number taken on its own. Start by noticing what the 0.99 tells you: the optimiser worked beautifully, because it found parameters that fit the training examples almost exactly. So the very number that looks alarming actually rules out option A. What the gap tells you instead is that the family of rules you searched was flexible enough to fit the random noise in your particular sample, and given the chance, it did exactly that. Memorising the training set is always available to a sufficiently flexible model, and it always produces this signature. The fix is to reduce that flexibility, either by choosing a simpler family or by adding regularization (§2.3), or to supply more data so that the noise averages out and only real structure survives. This gap has a name — variance — and §2.2 is devoted entirely to it.'
       },
       {
-        q: 'Next-token prediction on internet text is best described as…',
-        options: ['unsupervised learning', 'supervised learning where the label is free', 'reinforcement learning', 'semi-supervised learning'],
+        q: 'Next-token prediction on a large corpus of text is best described as…',
+        options: ['unsupervised learning, because nobody labelled the corpus', 'supervised learning where the label comes free with the data', 'reinforcement learning, because the model is rewarded for producing good text', 'semi-supervised learning'],
         answer: 1,
-        why: 'The label is the next token, which is already in the corpus. That is why the objective scales: no annotation cost. (It is often called "self-supervised" for exactly this reason.)'
+        why: 'It has precisely the structure of supervised learning. There is an input, namely the text so far, and there is a correct answer, namely the word that actually came next, and the loss compares the prediction against that answer. What makes it <i>feel</i> unsupervised is that no human sat down and wrote the labels, but the labels were already present in the text all along; they simply had to be revealed by hiding the next word and asking the model to guess it. That is the entire trick, and it explains why the approach scales so far: annotation cost, which is normally the binding constraint on supervised learning, drops to zero. The accepted name for this arrangement is self-supervised learning. Option C is a genuinely understandable confusion, because reinforcement learning does appear in the training of modern chat models — but it arrives later, as a separate fine-tuning stage (§4.10), and it is not the pretraining objective.'
+      },
+      {
+        q: 'You replace squared error with a loss that returns 1 for any wrong prediction and 0 for a correct one. Gradient descent now makes no progress at all. Why?',
+        options: ['The loss is not a valid measure of error', 'The loss is flat almost everywhere, so its gradient carries no information about which way to move', 'The learning rate is too small', 'The model family is too simple'],
+        answer: 1,
+        why: 'This question is really about what the optimiser needs <i>from</i> the loss, which is easy to overlook when first meeting the three objects. Gradient descent works by asking a very specific question: if I nudge this parameter a little, does the loss improve? A 0/1 loss answers "nothing changed" for almost every small nudge, because the prediction is still wrong and so the loss is still exactly 1 — right up until the prediction abruptly flips and the loss jumps to 0. A function that is flat almost everywhere and jumps in between has a gradient of zero almost everywhere, and a gradient of zero means there is no direction to step in. The optimiser is not stuck because it is badly configured; it is stuck because it has been handed no information. This is exactly why the losses you meet in practice are smooth stand-ins for the thing you actually care about, with cross-entropy standing in for accuracy. The gap between the loss you optimise and the metric you report is important enough that §2.1 is built around it.'
       }
     ],
     cards: [
-      { q: 'The three objects of every ML system', a: 'A parameterised model $f_\\theta$, a loss $\\ell$, and an optimiser that reduces the loss.' },
-      { q: 'The goal of learning, stated precisely', a: 'Minimise <i>expected</i> loss on unseen data drawn from the same distribution — not empirical loss on the training set.' }
+      { q: 'What machine learning is for', a: 'Problems where you can recognise the correct answer but cannot write down the rule that produces it.' },
+      { q: 'The three objects of every ML system', a: 'A parameterised model $f_\\theta$, a loss $\\ell$ that scores its predictions, and an optimiser that adjusts $\\theta$ to reduce the loss.' },
+      { q: 'The goal of learning, stated precisely', a: 'Minimise <i>expected</i> loss on unseen data drawn from the same distribution — not empirical loss on the training set.' },
+      { q: 'Empirical risk vs expected risk', a: 'Empirical risk is the average loss on the data you hold; expected risk is the average over everything the model will meet. Training minimises the first, but you care about the second.' },
+      { q: 'Why is next-token prediction called self-supervised?', a: 'It is supervised learning whose labels are extracted from the structure of the data itself — the next word is already in the text — so annotation cost is zero.' },
+      { q: 'What the learning rate $\\eta$ controls', a: 'The size of each optimiser step. Too small and training crawls; too large and the parameters overshoot the minimum and may diverge.' }
     ]
   });
 
