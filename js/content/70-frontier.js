@@ -687,7 +687,7 @@ ${H.probe([
     title: 'What was left out, and how to keep reading',
     lede: 'The source notebook listed its own omissions. Most are restored in this part; here is what remains, and how to tell durable knowledge from news.',
     html: `
-<h2><span class="sn">6.5.1</span> The original exclusions, and their status here</h2>
+<h2><span class="sn">6.9.1</span> The original exclusions, and their status here</h2>
 ${H.table(['Excluded from the notebook', 'Status on this site'], [
       ['Measure-theoretic probability, convergence proofs, PAC/VC derivations', 'Still excluded. You need <i>why generalization works</i> (§1.4), not the proofs. Read Shalev-Shwartz & Ben-David if you want them.'],
       ['Full ARIMA/Box–Jenkins and recommender systems', '<b>Restored in outline</b> (§6.4), at the depth a practitioner actually uses.'],
@@ -697,7 +697,7 @@ ${H.table(['Excluded from the notebook', 'Status on this site'], [
       ['Speculative 2026 model version numbers', 'Still excluded from factual claims. Mechanisms stay true for years; rankings are stale within weeks.']
     ])}
 
-<h2><span class="sn">6.5.2</span> What is genuinely contested</h2>
+<h2><span class="sn">6.9.2</span> What is genuinely contested</h2>
 <p>Three claims on this site should be flagged <i>every single time</i> you use them, because they are conventions or contested fits rather than derived facts:</p>
 ${H.checklist([
       '<b>The exact Chinchilla coefficients</b> (§4.10) — the ~20:1 ratio is robust and replicated; the fitted exponents are disputed, and Epoch AI’s replication differs from the original.',
@@ -706,7 +706,7 @@ ${H.checklist([
     ])}
 ${H.note('Flagging is not hedging. It is the thing that makes the rest of your answers credible — an interviewer who hears you distinguish a derived result from a convention will trust the derived ones more.')}
 
-<h2><span class="sn">6.5.3</span> How to keep reading without drowning</h2>
+<h2><span class="sn">6.9.3</span> How to keep reading without drowning</h2>
 ${H.table(['Layer', 'Half-life', 'How to treat it'], [
       ['Mathematics (Parts 0–1)', 'Decades', 'Learn once, properly. Nothing here will be obsolete.'],
       ['Classical ML (Part 2)', 'A decade', 'Stable. The tooling changes; the objectives, metrics and validation discipline do not.'],
@@ -716,7 +716,7 @@ ${H.table(['Layer', 'Half-life', 'How to treat it'], [
     ])}
 ${H.key('Talk about mechanisms rather than leaderboard positions. Mechanisms stay true for years; rankings are stale within weeks.')}
 
-<h2><span class="sn">6.5.4</span> Where to go next</h2>
+<h2><span class="sn">6.9.4</span> Where to go next</h2>
 <ul>
 <li><b>To go deeper on the mathematics:</b> Bishop, <i>Pattern Recognition and Machine Learning</i>; Murphy, <i>Probabilistic Machine Learning</i>; Boyd & Vandenberghe on convex optimisation.</li>
 <li><b>To go deeper on modern systems:</b> the primary papers in <a href="#/sources">Sources</a> — every derivation on this site is traceable to one, and reading the original is almost always faster than reading about it.</li>
