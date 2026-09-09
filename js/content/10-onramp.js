@@ -627,39 +627,227 @@ ${H.probe([
   ML.section({
     id: 'calculus-basics', track: 'start', num: '0.3',
     title: 'Derivatives, gradients, and the chain rule',
-    lede: 'Training is one idea repeated: measure which way the loss goes up, step the other way. The derivative is that measurement, the gradient is its multi-dimensional version, and the chain rule is what makes it computable through a hundred layers.',
+    lede: 'Training is one idea repeated many times: work out which way the loss goes up, then step the other way. The derivative is how you work it out, the gradient is the same measurement taken along every parameter at once, and the chain rule is what makes it computable through a hundred layers of a network. This section builds all three from the slope of a straight line and assumes nothing else.',
     html: `
-<h2><span class="sn">0.3.1</span> A derivative is a slope you can act on</h2>
-<p>$f'(x)$ is the limit of rise over run as the run shrinks: how much $f$ changes per unit change in $x$, right here. Two readings matter. <b>Locally</b>, $f(x + \\epsilon) \\approx f(x) + \\epsilon f'(x)$ — the derivative is the best linear prediction of what a small step will do. <b>Globally</b>, $f' = 0$ marks the flat points: minima, maxima, saddles.</p>
-<p>Optimisation lives entirely in the first reading. If $f'(x) > 0$, moving right increases $f$; to decrease it, move left. Hence <b>gradient descent</b>: $x \\leftarrow x - \\eta f'(x)$, where $\\eta$ is a step size you choose and immediately regret.</p>
+<p>Suppose you have a model with one adjustable number in it — call it $w$ — and, thanks to §0.1, a loss $L(w)$ that reports how badly the model is doing for any value of $w$ you care to try. Your task is to find the $w$ that makes $L$ as small as possible. How would you actually go about it?</p>
 
-${H.lab('deriv', 'Slope, tangent, and one gradient step', 'Drag the point along the curve. The dashed line is the tangent — the linear model the derivative gives you. Press <i>step</i> to take one gradient step and watch it land.')}
+<p>The first plan anyone proposes is to try things. Compute $L(0)$, then $L(1)$, then $L(2)$, sweep across a sensible range, and keep whichever value came out best. For a single parameter that is a perfectly reasonable plan, and people really do it.</p>
 
-<h2><span class="sn">0.3.2</span> Rules you will use daily</h2>
-${H.table(['Rule', 'Statement', 'The ML instance'], [
-      ['Power', '$\\frac{d}{dx}x^n = nx^{n-1}$', 'Squared error differentiates to $2(\\hat y - y)$'],
-      ['Exponential / log', '$\\frac{d}{dx}e^x = e^x$, $\\frac{d}{dx}\\ln x = 1/x$', 'Every log-likelihood'],
-      ['Product', '$(uv)\' = u\'v + uv\'$', 'Attention scores, gated units'],
-      ['Chain', '$\\frac{d}{dx}f(g(x)) = f\'(g(x))g\'(x)$', '<b>Backpropagation, entirely</b>'],
-      ['Sigmoid', '$\\sigma\' = \\sigma(1-\\sigma)$', 'The two-line logistic gradient (§2.4)']
+<p>Now watch it collapse. Suppose you allow ten candidate values per parameter. One parameter needs ten evaluations of the loss. Two parameters need every pairing of the two lists, so a hundred. Ten parameters need $10^{10}$, which is ten billion evaluations; at a millisecond each that is about four months of computing. Twenty parameters need $10^{20}$ evaluations, which at the same rate is roughly three billion years. And a small neural network has more like a million parameters.</p>
+
+<p>The plan does not fail because computers are slow. It fails because of what it asks. Evaluating $L$ at a point answers only one question — <i>how bad is it here?</i> — and that answer tells you nothing whatsoever about anywhere else, so you are obliged to visit everywhere. What you want instead is a question whose answer <i>points</i>: stand at your current $w$ and ask which way the loss goes down. One such answer replaces the entire sweep, because it tells you where to go next.</p>
+
+<p>That question has an answer, it is computable, and it is called the derivative.</p>
+
+<h2><span class="sn">0.3.1</span> From the slope of a line to the slope of a curve</h2>
+
+<p>Start with something you already know. A straight line has a slope, and you find it by taking any two points on the line and dividing the rise by the run. If the line passes through $(1, 4)$ and $(3, 10)$, the rise is $10 - 4 = 6$, the run is $3 - 1 = 2$, and the slope is $6/2 = 3$. Move one unit to the right anywhere on that line and you go up by exactly 3. The slope is a single number that describes the whole line, because a line does not change its mind.</p>
+
+<p>A curve does change its mind. Take $f(x) = x^2$. Between $x = 0$ and $x = 1$ it rises by 1. Between $x = 3$ and $x = 4$ it rises by $16 - 9 = 7$. There is no single slope, so the honest question becomes: what is the slope <i>at one particular place</i>, say at $x = 3$?</p>
+
+<p>Here is the trick that answers it, and it is genuinely the whole of differential calculus. Pick a small step $h$, take the rise over the run between $x$ and $x + h$, and then make $h$ smaller and see whether the answer settles down. For $f(x) = x^2$ at $x = 3$:</p>
+
+${H.table(['step $h$', 'rise: $f(3+h) - f(3)$', 'rise ÷ run'], [
+      ['$1$', '$16 - 9 = 7$', '$7$'],
+      ['$0.1$', '$9.61 - 9 = 0.61$', '$6.1$'],
+      ['$0.01$', '$9.0601 - 9 = 0.0601$', '$6.01$'],
+      ['$0.001$', '$9.006001 - 9 = 0.006001$', '$6.001$']
     ])}
 
-<h2><span class="sn">0.3.3</span> Gradients: many knobs at once</h2>
-<p>With several parameters, the partial derivative $\\partial f/\\partial \\theta_j$ asks: if I nudge <i>this</i> knob and freeze the others, how does $f$ move? Stack them and you have the gradient</p>
-$$\\nabla f(\\theta) = \\left(\\frac{\\partial f}{\\partial\\theta_1}, \\ldots, \\frac{\\partial f}{\\partial\\theta_p}\\right)$$
-<p>which points in the direction of <b>steepest increase</b>, so $-\\nabla f$ is the direction of steepest decrease. The second derivative generalises to the <b>Hessian</b> $H$, the matrix of curvatures; it tells you how much the gradient itself changes as you move, which is what §1.9 needs to explain why some problems train easily and others crawl.</p>
+<p>The numbers are marching towards 6 and are not going anywhere else. That settled value is the <b>derivative</b> of $f$ at $x = 3$, and we write it $f'(3) = 6$, read aloud as "f prime of three". You will also see it written $\\frac{df}{dx}$, read "d f by d x", which is a deliberate reminder that it began life as a rise divided by a run. The formal statement of the shrinking process is</p>
 
-<h2><span class="sn">0.3.4</span> The chain rule is the entire mechanism</h2>
-<p>A network is a composition: $L(f_3(f_2(f_1(x))))$. The chain rule says the derivative of a composition is the <i>product</i> of the local derivatives. Backpropagation is nothing more than evaluating that product from the outside in, caching each intermediate so no factor is computed twice.</p>
+$$f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$$
 
-${H.lab('chain', 'A computation graph, with numbers flowing both ways', 'Change the inputs and watch the forward values (blue, left to right) and the gradients (red, right to left). Every red number is a product of the local derivatives on the path back to it — that is all backprop is.')}
+<p>where $\\lim_{h \\to 0}$ is read "the limit as h goes to zero" and means precisely what the table shows: the value the fraction approaches as $h$ is made small, not the value at $h = 0$ itself, which would be $0/0$ and meaningless. If that distinction feels like a dodge, notice that the table never divides by zero anywhere — it only ever divides by $1$, $0.1$, $0.01$ and so on, and simply observes where the results are heading.</p>
 
-${H.key('Every gradient in a network is a product of local derivatives along a path. Multiply enough factors below one and it vanishes; that single sentence explains ReLU, residual connections and normalisation.')}
+${H.analogy(`<p>Your car has an odometer and a speedometer. The odometer reads a function: total distance travelled as of now. The speedometer reads that function's derivative: how fast the distance is currently growing, in miles per hour, at this instant.</p>
+<p>Two things about the speedometer are exactly true of derivatives. First, the reading is meaningful even though "distance travelled in an instant" is zero — the speedometer reports a <i>rate</i>, not a distance, and a rate survives the shrinking of the interval when a distance does not. Second, the reading is local: 70 mph tells you what happens over the next few seconds and says nothing at all about whether there is a junction two miles ahead. Derivatives are speedometers, and every optimiser in this course is driving on a speedometer alone.</p>`)}
+
+<p>Doing that table by hand for every function would be intolerable, so instead we do the limit once, symbolically, and get a rule that works everywhere.</p>
+
+${H.deriv('the derivative of $f(x) = x^2$, from the definition', [
+      ['$\\dfrac{f(x+h) - f(x)}{h} = \\dfrac{(x+h)^2 - x^2}{h}$', 'Substitute the definition of $f$ into the difference quotient. Nothing has happened yet except writing $f$ out.'],
+      ['$= \\dfrac{x^2 + 2xh + h^2 - x^2}{h}$', 'Expand $(x+h)^2$ using ordinary algebra: $(x+h)^2 = x^2 + 2xh + h^2$.'],
+      ['$= \\dfrac{2xh + h^2}{h}$', 'The $x^2$ and the $-x^2$ cancel. This is the step that makes the whole thing work: the parts that do not depend on $h$ have gone, leaving every surviving term with a factor of $h$ in it.'],
+      ['$= 2x + h$', 'Divide top and bottom by $h$. This is legitimate because $h$ is small but never actually zero — we are studying where the fraction heads, not evaluating it at zero.'],
+      ['$f\'(x) = 2x$', 'Now let $h$ shrink. The expression $2x + h$ visibly approaches $2x$, so that is the limit. At $x = 3$ this gives 6, exactly the number the table was marching towards.']
+    ], 'The same argument run on $x^n$ gives $nx^{n-1}$, which is the power rule in the table below. Notice that the derivative is itself a function of $x$ rather than a single number: $f\'$ tells you the slope at every point, and you get the slope at a particular place by evaluating it there.')}
+
+<h3>The two readings that matter</h3>
+
+<p><b>Reading one: the derivative predicts what a small step will do.</b> Rearranging the definition and dropping the limit gives</p>
+
+$$f(x + \\epsilon) \\approx f(x) + \\epsilon\\, f'(x)$$
+
+<p>where $\\epsilon$ is the Greek letter epsilon and denotes a small step. In words: to guess the function's value a little way along, take where you are and add the step multiplied by the slope. Try it. At $x = 3$ with $f(x) = x^2$ and $f'(3) = 6$, stepping $\\epsilon = 0.1$ predicts $9 + 0.1 \\times 6 = 9.6$. The true value is $3.1^2 = 9.61$, so the prediction is wrong by 0.01. Halve the step to $0.05$ and the prediction is $9.3$ against a true $9.3025$, wrong by $0.0025$. Halving the step quartered the error, which is the signature of an approximation that is right to first order: the leftover shrinks like $\\epsilon^2$, and $\\epsilon^2$ becomes negligible against $\\epsilon$ long before $\\epsilon$ itself becomes negligible.</p>
+
+<p>This reading is the one optimisation lives on. It says the derivative is the best straight-line stand-in for the curve near where you are standing, and a straight line is something you can reason about immediately.</p>
+
+<p><b>Reading two: where the derivative is zero, the function is flat.</b> A zero slope means the tangent line is horizontal, which happens at the bottom of a valley, at the top of a hill, and at a saddle where the surface turns up in one direction and down in another. Every candidate for "the minimum" satisfies $f'(x) = 0$, which is why so much of optimisation amounts to hunting for the places where a derivative vanishes.</p>
+
+<h2><span class="sn">0.3.2</span> The rules, and one gradient step by hand</h2>
+
+<p>You will almost never compute a limit again. In practice you memorise a handful of rules, and everything else is assembled from them. Each of these has a place in this course where it earns its keep.</p>
+
+${H.table(['Rule', 'Statement', 'Where you meet it here'], [
+      ['Power', '$\\frac{d}{dx}x^n = nx^{n-1}$', 'Squared error $(\\hat y - y)^2$ differentiates to $2(\\hat y - y)$ — the residual itself'],
+      ['Constant multiple', '$\\frac{d}{dx}\\,c\\,f(x) = c\\,f\'(x)$', 'Why the $\\tfrac{1}{2}$ in $\\tfrac{1}{2}(\\hat y - y)^2$ is free: it cancels the 2'],
+      ['Sum', '$(f+g)\' = f\' + g\'$', 'The loss is a sum over examples, so its gradient is the sum of per-example gradients'],
+      ['Exponential / log', '$\\frac{d}{dx}e^x = e^x$, $\\frac{d}{dx}\\ln x = 1/x$', 'Every log-likelihood, and therefore every cross-entropy loss (§1.5)'],
+      ['Product', '$(uv)\' = u\'v + uv\'$', 'Gated units, attention scores, anything where two learned quantities multiply'],
+      ['Chain', '$\\frac{d}{dx}f(g(x)) = f\'(g(x))\\,g\'(x)$', '<b>Backpropagation, in its entirety</b> — §0.3.5 below and §3.2'],
+      ['Sigmoid', '$\\sigma\' = \\sigma(1-\\sigma)$', 'The two-line logistic gradient (§2.4), and the cause of vanishing gradients']
+    ])}
+
+<p>Now put the first reading to work. If $f'(x)$ is positive then stepping to the right increases $f$, so to <i>decrease</i> $f$ you step left. If $f'(x)$ is negative then stepping right decreases $f$. In both cases the safe move is to step in the direction opposite to the sign of the derivative, and the natural way to write that in one expression is</p>
+
+$$x \\leftarrow x - \\eta\\, f'(x)$$
+
+<p>which is <b>gradient descent</b>, already met in §0.1 and now earned. The arrow means "replace the left with the right", and $\\eta$ (eta) is the learning rate. Notice that the update automatically takes big steps where the slope is steep and small ones where it flattens out, which is exactly the behaviour you would want and nobody had to program in.</p>
+
+${H.worked('four steps of gradient descent, by hand', `<p>Take $f(x) = x^2$, so $f'(x) = 2x$, and start at $x = 3$ with $\\eta = 0.1$.</p>
+<p>The update is $x \\leftarrow x - 0.1 \\times 2x = 0.8x$, so each step multiplies $x$ by $0.8$:</p>
+<p>$3 \\to 2.4 \\to 1.92 \\to 1.536 \\to 1.2288$, and the loss falls $9 \\to 5.76 \\to 3.69 \\to 2.36 \\to 1.51$.</p>
+<p>It is heading to zero, which is indeed the minimum, and it never quite arrives — each step covers 20 per cent of the remaining distance. That "approaches but does not reach" behaviour is completely normal and is why training runs stop on a budget rather than on arrival.</p>`)}
+
+${H.pitfall(`<p>Now repeat the same calculation with $\\eta = 1.1$ instead. The update becomes $x \\leftarrow x - 1.1 \\times 2x = -1.2x$, so from $x = 3$ you get</p>
+<p>$3 \\to -3.6 \\to 4.32 \\to -5.184 \\to 6.2208$, with the loss climbing $9 \\to 12.96 \\to 18.66 \\to 26.9 \\to 38.7$.</p>
+<p>Every step is in the correct direction and every step makes things worse, because each one overshoots the bottom and lands further up the far side than it started. This is divergence, and it is the most common way a training run fails outright: the loss becomes NaN within a few dozen steps and everyone blames the model.</p>
+<p>For this function you can state the boundary exactly. The update multiplies $x$ by $(1 - 2\\eta)$, which shrinks $x$ only when $|1 - 2\\eta| < 1$, that is when $\\eta$ lies strictly between 0 and 1. The 2 in that condition is the curvature of $f$, and the general statement is that the largest stable step is $2$ divided by the curvature. Steeper bowls demand smaller steps. Keep that sentence; §0.3.4 turns it into the single most important fact about how hard a model is to train.</p>`)}
+
+<h3>Watching it happen</h3>
+
+<p><b>What you are looking at.</b> The blue curve is the function $f$ you are minimising, plotted against $x$ along the horizontal axis. The red dot is your current position $x$, and the red dashed line through it is the <b>tangent</b> — the straight-line approximation $f(x) + \\epsilon f'(x)$ from reading one, drawn out across the whole panel so you can see how far it stays close to the curve. The green arrow runs from where you are to where one gradient step would put you, and the green dot marks that landing point. The readout gives $x$, $f(x)$, the slope $f'(x)$, and the next $x$ the update rule would produce.</p>
+
+<p><b>What to do with it.</b> Click or drag anywhere inside the panel; only the horizontal position is used, so the point snaps onto the curve at whatever $x$ you clicked. Move it around on the $x^2/2$ curve and watch the dashed tangent tilt: steep and negative on the left, flat at the bottom, steep and positive on the right. Then press <i>Take one step</i> repeatedly and watch the green landing point creep towards the bottom in ever-smaller hops — the same shrinking-step behaviour the worked example above computed by hand. Now raise the step size $\\eta$ past 1 and step again: the point overshoots and lands on the <i>far</i> side of the valley, then flips back, closing in from alternating directions. For this particular curve the curvature is 1, so by the rule above it tolerates anything below $\\eta = 2$ and the slider cannot break it. Switch to $x^2/6 + \\sin 2x$, whose curvature reaches about 4.3, and press <i>Run 30 steps</i> at a large $\\eta$: now the point genuinely refuses to settle.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Switch the function to $x^4/8 - x^2$, which has two separate valleys with a bump between them. Put the point on the left of the bump and run it: it settles into the left valley. Reset, put it on the right, and run it again: it settles into the right one. The optimiser did not choose the better valley, and it did not even know the other one existed, because a derivative is a purely local measurement — the speedometer from the analogy above cannot see a junction two miles ahead. Where you start decides where you finish. That single observation is why deep learning cares about initialisation (§3.4), why people run the same training job with several random seeds, and why "the loss stopped improving" is not the same claim as "this is the best the model can do".</p>
+
+${H.lab('deriv', 'Slope, tangent, and one gradient step', 'Click or drag anywhere in the panel to move the point — only the horizontal position matters. The red dashed line is the tangent, which is the straight-line model the derivative gives you. The green arrow is one gradient step at the current $\\eta$.')}
+
+<h2><span class="sn">0.3.3</span> Many knobs at once: partial derivatives and the gradient</h2>
+
+<p>Real models have more than one parameter, so the picture has to grow. The awkwardness is that "the slope" is no longer a single question. If you are standing on a hillside, the ground slopes differently depending on which way you face, so asking how steep it is has no answer until you say in which direction.</p>
+
+<p>The resolution is to ask a series of very restricted questions and then assemble the answers. Pick one parameter, freeze every other parameter at its current value, and ask for the ordinary one-variable derivative in that single direction. That is a <b>partial derivative</b>, written $\\partial f/\\partial w$. The symbol $\\partial$ is a stylised letter d and is read "partial", so the whole expression is read "partial f by partial w". It signals nothing more than "there are other variables here and I am holding them still".</p>
+
+${H.worked('both partial derivatives of a tiny loss, with numbers', `<p>Take a model with one feature whose value happens to be $x = 2$, a weight $w$ and a bias $b$, so the prediction is $2w + b$. The true label is $y = 5$, and the loss is the squared error</p>
+<p>$L(w, b) = (2w + b - 5)^2.$</p>
+<p>Evaluate everything at $w = 1$, $b = 0$. The prediction is $2(1) + 0 = 2$, the error is $2 - 5 = -3$, and the loss is $(-3)^2 = 9$.</p>
+<p>For $\\partial L/\\partial w$, freeze $b$ and differentiate. The outside is a square, contributing $2 \\times (2w + b - 5)$ by the power rule, and the inside contributes the rate at which $2w + b - 5$ changes as $w$ changes, which is 2. Multiplying, $\\partial L/\\partial w = 2(-3)(2) = -12$.</p>
+<p>For $\\partial L/\\partial b$, freeze $w$. The outside contributes the same $2(-3)$, and the inside changes at rate 1 as $b$ changes, so $\\partial L/\\partial b = 2(-3)(1) = -6$.</p>
+<p>Both are negative, meaning increasing either parameter reduces the loss, which is right — the model is predicting 2 when the answer is 5, so it needs to predict higher. And $\\partial L/\\partial w$ is exactly twice $\\partial L/\\partial b$, because $w$ is multiplied by the feature value 2 before it reaches the prediction, so a nudge to $w$ has twice the leverage of the same nudge to $b$.</p>`)}
+
+<p>Collect one partial derivative per parameter into a list and you have the <b>gradient</b>:</p>
+
+$$\\nabla f(\\theta) = \\left(\\frac{\\partial f}{\\partial\\theta_1},\\; \\frac{\\partial f}{\\partial\\theta_2},\\; \\ldots,\\; \\frac{\\partial f}{\\partial\\theta_p}\\right)$$
+
+<p>The symbol $\\nabla$ is called <b>nabla</b> or "del", and $\\nabla f$ is read "the gradient of f". It is a list of numbers, one per parameter, and by §0.2 a list of numbers is a vector — so the gradient is an arrow, and it lives in the space of parameters rather than the space of data. In the worked example above the gradient is $\\nabla L = (-12, -6)$, an arrow in the $(w, b)$ plane.</p>
+
+<p>Continue that example one step. Gradient descent updates every parameter at once by $\\theta \\leftarrow \\theta - \\eta \\nabla L$. With $\\eta = 0.05$ that is $w \\leftarrow 1 - 0.05(-12) = 1.6$ and $b \\leftarrow 0 - 0.05(-6) = 0.3$. The new prediction is $2(1.6) + 0.3 = 3.5$, the new error is $-1.5$, and the new loss is $2.25$ where it was 9. One step, and three quarters of the loss is gone.</p>
+
+<h3>Why the gradient is the steepest direction</h3>
+
+<p>The gradient is usually introduced with the claim that it "points in the direction of steepest increase", which sounds like a fact you have to take on trust. It is not; it follows in two lines from the dot product of §0.2.</p>
+
+${H.deriv('why $\\nabla f$ is the direction of fastest increase', [
+      ['$f(\\theta + \\epsilon u) \\approx f(\\theta) + \\epsilon\\,(\\nabla f \\cdot u)$', 'The multi-variable version of reading one. Step a small distance $\\epsilon$ in the direction of a unit vector $u$; the change in $f$ is the step size times the dot product of the gradient with the direction you chose. This is exactly the one-variable statement $f(x+\\epsilon) \\approx f(x) + \\epsilon f\'(x)$ with the single slope replaced by a whole list of them.'],
+      ['change in $f$ $\\approx \\epsilon\\,\\|\\nabla f\\|\\,\\|u\\|\\cos\\theta$', 'Rewrite the dot product geometrically, using the identity derived in §0.2: a dot product is length times length times the cosine of the angle between the two arrows. Here $\\theta$ is the angle between the gradient and your chosen direction.'],
+      ['$= \\epsilon\\,\\|\\nabla f\\|\\cos\\theta$', 'The direction $u$ is a unit vector, so $\\|u\\| = 1$ and that factor disappears. We are comparing directions on equal terms, which is precisely why $u$ was required to have length 1.'],
+      ['maximised when $\\cos\\theta = 1$, i.e. $u$ parallel to $\\nabla f$', 'Everything else in the expression is fixed once you are standing at $\\theta$, so the only thing you control is the cosine. Cosine is largest at $\\theta = 0$, meaning you should walk in exactly the gradient\'s own direction; it is smallest at $180°$, meaning the fastest <i>decrease</i> is straight against it.']
+    ], 'So $-\\nabla f$ is the steepest descent direction, and the minus sign in every update rule on this site is the consequence. Notice the bonus in line 3: any direction at right angles to the gradient has $\\cos\\theta = 0$, so moving along it changes $f$ by nothing to first order. Those are the contour lines of the loss surface, and it is why gradients always cross contours perpendicularly.')}
+
+<h2><span class="sn">0.3.4</span> Curvature, and why some models train easily</h2>
+
+<p>The derivative of the derivative is the <b>second derivative</b>, written $f''(x)$, and it measures curvature: how fast the slope itself is changing. For $f(x) = x^2$ we have $f' = 2x$ and $f'' = 2$, a constant — the slope increases at a steady rate, which is what makes a parabola a parabola.</p>
+
+<p>With many parameters, every partial derivative can be differentiated with respect to every parameter, so the second derivative becomes a whole grid of numbers. That grid is the <b>Hessian</b>, written $H$, an $[p \\times p]$ matrix whose entry in row $i$ and column $j$ is $\\partial^2 f / \\partial\\theta_i \\partial\\theta_j$. You will rarely build one — for a model with a million parameters it would have $10^{12}$ entries — but you need what it means, because it explains the single biggest difference between a model that trains in an hour and one that crawls.</p>
+
+<p>Recall the boundary from the pitfall above: the largest stable learning rate is 2 divided by the curvature. With many parameters there is a curvature in every direction, and the largest one sets the speed limit for the whole run, because a step that is stable along the gentle directions but unstable along the steep one will still blow up. So you are forced to choose $\\eta$ small enough for the steepest direction, and then every gentle direction is crawled along at that same tiny rate.</p>
+
+${H.worked('the cost of an elongated bowl, in steps', `<p>Take $f(w_1, w_2) = \\tfrac{1}{2}(w_1^2 + 100\\,w_2^2)$. The curvature is 1 along $w_1$ and 100 along $w_2$ — the same bowl you would get from two features measured on scales that differ by a factor of ten.</p>
+<p>The steep direction forces $\\eta < 2/100 = 0.02$, so take $\\eta = 0.019$. Along $w_2$ the update multiplies by $1 - 0.019 \\times 100 = -0.9$, which is fine. Along $w_1$ it multiplies by $1 - 0.019 = 0.981$.</p>
+<p>To shrink $w_1$ by a factor of 100 you therefore need $n$ steps with $0.981^n = 0.01$, which gives $n = \\ln(0.01)/\\ln(0.981) \\approx 240$ steps. Had both curvatures been 1, a single well-chosen step would have done it.</p>
+<p>Two hundred and forty times slower, and the model, the data and the loss are all unchanged. The only thing wrong is the <i>ratio</i> of the curvatures.</p>`)}
+
+<p>That ratio — largest curvature divided by smallest — is the <b>condition number</b> of the Hessian, the same quantity §0.2 met as the ratio of singular values of a matrix. A condition number near 1 is a round bowl and trains beautifully. A large condition number is a long thin valley, and gradient descent zig-zags across it making painfully slow progress along its length.</p>
+
+${H.intuition(`<p>This is the second time features on mismatched scales have caused trouble, and it is worth connecting the two.</p>
+<p>In §0.2 the complaint was about distance: a feature measured in years and a feature measured as a ratio contribute wildly unequal amounts to $\\|a - b\\|$, so nearest-neighbour methods effectively ignore the small-numbered column. Here the complaint is about optimisation: a feature with large values produces large gradients along its weight, so the loss surface is steep in that direction and shallow in the others, the condition number blows up, and training crawls.</p>
+<p>Both complaints have the same cause and the same one-line fix — standardise every column to mean 0 and standard deviation 1 before you do anything else. That is why <i>scale your features</i> appears in every practical checklist without much explanation attached. The explanation is this paragraph, and §0.5 is about doing it without leaking information between folds.</p>`)}
+
+${H.more('what the second derivative buys you if you can afford it', `<p>If you know the curvature, you no longer have to guess a step size — you can compute the step that jumps straight to the bottom of the local parabola. In one dimension that is <b>Newton's method</b>, $x \\leftarrow x - f'(x)/f''(x)$, and on a genuine parabola it lands on the exact minimum in a single step from anywhere.</p>
+<p>The multi-parameter version replaces the division by multiplication with the inverse Hessian, $\\theta \\leftarrow \\theta - H^{-1}\\nabla f$, and inherits both the speed and the price. Building $H$ costs $O(p^2)$ memory and inverting it costs $O(p^3)$ time, which for a million parameters is out of the question by many orders of magnitude. It is also only trustworthy when the surface really is bowl-shaped nearby, which for a deep network it frequently is not.</p>
+<p>The practical middle ground is to approximate curvature cheaply, one parameter at a time, from the gradients you are already computing — which is exactly what Adam and its relatives do when they divide each parameter's step by a running estimate of the size of its own recent gradients (§3.5). Seen this way, adaptive optimisers are not a bag of tricks; they are an attempt to buy some of Newton's benefit at first-order prices. §1.12 develops the full picture.</p>`)}
+
+<h2><span class="sn">0.3.5</span> The chain rule, which is the entire mechanism of backpropagation</h2>
+
+<p>Everything so far assumed you could differentiate the function in front of you. A network is not a function in front of you; it is a function inside a function inside a function, twenty or a hundred deep. The chain rule is what lets you differentiate such a thing without ever writing it out.</p>
+
+${H.analogy(`<p>You are converting money. One pound buys 1.25 dollars, and one dollar buys 150 yen. How many yen does a pound buy? You multiply: $1.25 \\times 150 = 187.5$.</p>
+<p>Every one of those numbers is a rate — output per unit of input — and the rule for chaining rates is that they multiply. That is the chain rule in full, and the only reason the calculus version looks harder is that the rates change depending on where you are standing, so each one has to be evaluated at the right place.</p>`)}
+
+<p>Written out, for a composition $f(g(x))$ — read "f of g of x", meaning apply $g$ first and then feed the result to $f$ — the rule is</p>
+
+$$\\frac{d}{dx} f(g(x)) = f'(g(x)) \\cdot g'(x)$$
+
+<p>and in words: differentiate the outer function, evaluate that derivative at the value the inner function actually produced, and multiply by the derivative of the inner function. The phrase "evaluate at the value the inner function produced" is the part people drop, and it is the part the analogy makes obvious — the dollar-to-yen rate has to be the rate that applies at the number of dollars you actually have.</p>
+
+${H.worked('the chain rule against a direct calculation', `<p>Let $g(x) = 2x + 1$ and $f(u) = u^2$, so the composition is $f(g(x)) = (2x+1)^2$. Differentiate at $x = 3$.</p>
+<p><b>By the chain rule.</b> The inner function gives $g(3) = 7$. The outer derivative is $f'(u) = 2u$, evaluated at $u = 7$, giving 14. The inner derivative is $g'(x) = 2$. Multiply: $14 \\times 2 = 28$.</p>
+<p><b>Directly.</b> Expand first: $(2x+1)^2 = 4x^2 + 4x + 1$, whose derivative is $8x + 4$. At $x = 3$ that is $24 + 4 = 28$. The same.</p>
+<p><b>Numerically, as a check.</b> $(2 \\times 3.001 + 1)^2 = 7.002^2 = 49.028004$, and $(49.028004 - 49)/0.001 = 28.004$. Marching towards 28, exactly as the table in §0.3.1 marched towards 6.</p>`)}
+
+<p>Now the point of all this. A neural network computes something of the shape</p>
+
+$$L = \\ell\\big(f_3(f_2(f_1(x)))\\big)$$
+
+<p>where each $f$ is a layer and $\\ell$ is the loss. Applying the chain rule to that composition gives the derivative as a <i>product</i> of the local derivatives of each stage. <b>Backpropagation is nothing more than evaluating that product, starting from the loss end and working backwards, storing each partial result so that no factor is ever computed twice.</b> There is no additional idea in it. §3.2 is this paragraph, done carefully, with matrices in place of single numbers.</p>
+
+${H.deriv('the gradient of a one-unit network, which is exactly what the lab below computes', [
+      ['$z = wx + b$', 'The linear part: multiply the input by the weight and add the bias.'],
+      ['$a = \\mathrm{ReLU}(z) = \\max(0, z)$', 'The non-linearity. ReLU passes positive numbers through unchanged and flattens everything negative to zero.'],
+      ['$L = \\tfrac{1}{2}(a - y)^2$', 'The loss. The $\\tfrac{1}{2}$ is there purely so that the 2 from the power rule cancels and the answer comes out clean.'],
+      ['$\\dfrac{\\partial L}{\\partial a} = a - y$', 'Differentiate the loss with respect to its own input. Power rule on the square gives $2 \\times \\tfrac{1}{2}(a-y) = (a-y)$, and the inner derivative of $(a - y)$ with respect to $a$ is 1. The prediction error <i>is</i> the first gradient.'],
+      ['$\\dfrac{\\partial a}{\\partial z} = 1$ if $z > 0$, else $0$', 'The local derivative of ReLU. On the active side the function is the line $a = z$, whose slope is 1; on the flat side it is the constant 0, whose slope is 0. (At exactly $z = 0$ there is no derivative; every framework simply picks a value, usually 0, and no harm comes of it.)'],
+      ['$\\dfrac{\\partial L}{\\partial z} = (a-y)\\cdot\\mathbf{1}[z>0]$', 'Chain the two previous lines together: rates multiply. The notation $\\mathbf{1}[z>0]$ is an indicator, worth 1 when the condition holds and 0 when it does not.'],
+      ['$\\dfrac{\\partial L}{\\partial w} = \\dfrac{\\partial L}{\\partial z}\\cdot x, \\quad \\dfrac{\\partial L}{\\partial b} = \\dfrac{\\partial L}{\\partial z}$', 'One more link in the chain. Since $z = wx + b$, the local derivative with respect to $w$ is $x$ and with respect to $b$ is 1. So the weight\'s gradient is the incoming signal scaled by the input that arrived on it — which is why a feature that is always large produces large gradients, connecting straight back to §0.3.4.']
+    ], 'Read the ladder from the bottom up and you are doing the forward pass; read it from line 4 downwards and you are doing the backward pass. Every quantity on the right-hand side of the backward lines was already computed on the way forward, which is precisely why backpropagation caches activations, and precisely why training a network needs several times the memory of merely running one.')}
+
+<h3>Watching numbers flow both ways</h3>
+
+<p><b>What you are looking at.</b> Four boxes laid left to right are the four stages of the derivation you have just read: the input $x$, the linear combination $z = wx + b$, the activation $a = \\mathrm{ReLU}(z)$, and the loss $L = \\tfrac{1}{2}(a-y)^2$. The bold blue number inside each box is that stage's <i>value</i>, computed left to right, which is the forward pass. The red number printed beneath each box is $\\partial L/\\partial\\,\\cdot$, the derivative of the final loss with respect to that stage, computed right to left, which is the backward pass. Blue arrows along the top carry values forwards; red arrows along the bottom carry gradients backwards. The line at the foot of the panel shows the two numbers you actually want, $\\partial L/\\partial w$ and $\\partial L/\\partial b$.</p>
+
+<p><b>What to do with it.</b> The four sliders set the input $x$, the weight $w$, the bias $b$ and the target $y$. Start by moving the target $y$ and watching the red number under the loss box, which is $a - y$: it is the prediction error, and it flips sign exactly when the prediction crosses the target. Then check the arithmetic yourself on one setting — read off $\\partial L/\\partial z$ and $x$, multiply them, and confirm the product is the $\\partial L/\\partial w$ printed at the bottom. The lab is doing no more than the multiplication you just did.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Now drive $z$ negative, by dragging $w$ or $b$ down until the value in the second box goes below zero. The ReLU output collapses to 0, and — this is the part to watch — every red number to the <i>left</i> of the activation collapses to exactly 0 as well, including $\\partial L/\\partial w$ and $\\partial L/\\partial b$. The loss is still large and the gradient with respect to the activation is still non-zero, but nothing gets past the ReLU, because the local derivative there is 0 and anything multiplied by 0 is 0. That unit is now unable to learn from any example that leaves it switched off: it is a <b>dead ReLU</b>, and you have just built one with two sliders. Everything about activation function design (§3.3) and initialisation (§3.4) is an argument about how to stop this happening across millions of units at once.</p>
+
+${H.lab('chain', 'A computation graph, with numbers flowing both ways', 'Move the sliders and watch the forward values (blue, left to right) and the gradients (red, right to left). Every red number is the product of the local derivatives on the path back from the loss — that is all backpropagation is.')}
+
+${H.key('Every gradient in a network is a product of local derivatives along a path from the loss back to the parameter.')}
+
+<p>That sentence has an immediate and brutal consequence. Multiply forty numbers together and the result is exquisitely sensitive to their typical size. The sigmoid's derivative $\\sigma(1-\\sigma)$ is at most $0.25$, attained when $\\sigma = 0.5$, and usually a good deal less. A forty-layer stack of sigmoids therefore attenuates the gradient by at most $0.25^{40} \\approx 8 \\times 10^{-25}$ before it reaches the first layer, which is indistinguishable from zero in any arithmetic a computer performs. The early layers receive no instruction at all and simply never move: <b>vanishing gradients</b>.</p>
+
+<p>The same argument run the other way is just as unforgiving. If the typical local factor is 1.5 rather than 0.25, forty layers multiply the gradient by roughly $1.5^{40} \\approx 1.1 \\times 10^7$, and the first parameter update is ten million times too large. That is <b>exploding gradients</b>, and it usually announces itself as a loss that becomes NaN in the first few hundred steps.</p>
+
+<p>Now read the standard deep-learning toolkit as answers to that one problem. ReLU has a local derivative of exactly 1 wherever it is active, so it neither shrinks nor grows the product. A residual connection adds a path whose local derivative is exactly 1, giving the gradient a route to the early layers that bypasses the multiplication entirely (§3.7). Normalisation layers keep the activations in a range where the local derivatives stay near 1 (§3.6). Gradient clipping simply refuses to apply an update larger than a set size (§4.11). Four apparently unrelated techniques, one shared cause.</p>
+
+${H.history(`<p>The chain rule itself is old — Leibniz was using it in the 1670s. What took much longer was noticing that it could be applied <i>mechanically</i> to an arbitrarily large computation, and that the order in which you accumulate the product matters enormously.</p>
+<p>Reverse-mode accumulation, which is what backpropagation is, was published in general form by Seppo Linnainmaa in 1970 in the context of estimating rounding errors in long numerical programs; Paul Werbos proposed applying it to neural networks in his 1974 doctoral thesis; and the 1986 paper of Rumelhart, Hinton and Williams is what actually put it into general circulation. It was reinvented independently more than once, which tells you it was not obvious at the time even though it now looks inevitable.</p>
+<p>For years afterwards a good deal of effort went into optimisation methods that avoided derivatives altogether — genetic algorithms, simulated annealing, and the like — partly because differentiating a large hand-written program was genuinely miserable work. Automatic differentiation removed that objection completely, and one way to read the last decade is that it became worthwhile to design models purely for differentiability, because anything differentiable trains itself (§3.11).</p>`)}
+
+${H.practice(`<p>Three things go wrong with derivatives in real code, and none of them is conceptual.</p>
+<p><b>Your hand-derived gradient is wrong.</b> Check it against a finite difference, exactly as the table in §0.3.1 did: compute $(f(\\theta + h) - f(\\theta - h))/2h$ for each parameter and compare against what your code returned. Use $h \\approx 10^{-5}$ in double precision. Much larger and the approximation error dominates; much smaller and subtracting two nearly equal numbers destroys the answer through cancellation, so the error curve is U-shaped in $h$ and there is a sweet spot in the middle (§1.15).</p>
+<p><b>The gradient is fine but the function is not differentiable where you asked.</b> ReLU at zero, absolute value at zero, and any hard threshold. Frameworks pick a convention and move on, and in practice this causes far less trouble than it sounds like it should, because the probability of landing exactly on the kink is negligible.</p>
+<p><b>The gradient is fine and the numbers overflow anyway.</b> Computing a softmax or a log-likelihood by exponentiating first will overflow for logits above about 710 in double precision, and it is entirely avoidable by rearranging the algebra so the exponentials never exceed 1. This is why every framework has a fused <code>log_softmax</code> and a <code>BCEWithLogitsLoss</code>, and why §0.5 tells you to use them.</p>`)}
 
 ${H.probe([
-      ['Why reverse-mode and not forward-mode differentiation?', 'The loss is one number and the parameters are many. Reverse mode costs about one forward pass per <i>output</i>; forward mode costs one per <i>input</i>. One output, billions of inputs — reverse wins by a factor of billions.'],
-      ['What does the Hessian tell you?', 'Curvature. Its eigenvalue ratio (the condition number) sets both the largest stable step and the convergence rate (§1.9).']
-    ])}`,
+      ['What is a derivative, in one sentence, without the word limit?', 'The rate at which a function changes per unit change in its input, at one specific point — equivalently, the slope of the best straight-line approximation to the function there.'],
+      ['Why does the gradient point in the direction of steepest increase?', 'The change in $f$ from a small unit step $u$ is $\\nabla f \\cdot u$, a dot product, which equals $\\|\\nabla f\\|\\cos\\theta$. That is maximised when $\\theta = 0$, meaning $u$ points along the gradient itself.'],
+      ['Why reverse-mode and not forward-mode differentiation?', 'The loss is one number and the parameters are many. Reverse mode costs about one forward pass per <i>output</i>; forward mode costs one per <i>input</i>. One output and a billion inputs means reverse mode wins by a factor of a billion.'],
+      ['What does the Hessian tell you, and why do you rarely build one?', 'Curvature in every direction. Its condition number sets both the largest stable learning rate and the convergence rate (§1.9). You rarely build it because for $p$ parameters it has $p^2$ entries and costs $p^3$ to invert.'],
+      ['Where do vanishing gradients come from?', 'The chain rule makes every gradient a product of local derivatives. Sigmoid contributes at most 0.25 per layer, so across depth the product collapses geometrically. ReLU, residual connections and normalisation all exist to keep those factors near 1.']
+    ], 'Describing backpropagation as "the algorithm that trains neural networks". It is not an algorithm for training; it is a method for computing derivatives cheaply. The training is gradient descent, which then consumes those derivatives. Interviewers separate the two on purpose.')}`,
     labs: {
       deriv: function (host) {
         let x = -1.6;
@@ -764,19 +952,28 @@ ${H.probe([
         q: 'Gradient descent updates $\\theta \\leftarrow \\theta - \\eta\\nabla L$. Why the minus sign?',
         options: ['To keep parameters positive', 'The gradient points uphill; we want to go downhill', 'It cancels the learning rate', 'Convention only — plus works too'],
         answer: 1,
-        why: '∇L is the direction of steepest <i>increase</i>. Descending means moving against it.'
+        why: 'The gradient is the direction of steepest <i>increase</i>, which §0.3.3 derives from the dot product rather than asserting: a small step $u$ changes the loss by $\\nabla L \\cdot u = \\|\\nabla L\\|\\cos\\theta$, and that is largest when $u$ points along the gradient itself. Since you want the loss to fall, you walk the other way, and the minus sign is how that gets written. Option D is the tempting one because signs often are conventional — but here it is not. Flip it to a plus and you have gradient <i>ascent</i>, which climbs the loss surface and diverges, and that mistake is easy to make and unpleasant to diagnose because the code runs perfectly and the loss simply goes up for ever.'
       },
       {
         q: 'A 40-layer network trains with sigmoid activations and the early layers barely move. The most direct explanation is…',
         options: ['The learning rate is too large', 'Each backward step multiplies by σ′ ≤ 0.25, so the product over depth collapses', 'The loss is non-convex', 'Batch size is too small'],
         answer: 1,
-        why: 'Vanishing gradients: the chain rule multiplies local derivatives, and 0.25⁴⁰ is astronomically small. ReLU passes 1 on the active side; residual connections add a path whose local derivative is exactly 1.'
+        why: 'This is the vanishing gradient, and it follows directly from the boxed sentence in §0.3.5: every gradient is a <i>product</i> of local derivatives along the path back from the loss. The sigmoid\'s derivative $\\sigma(1-\\sigma)$ peaks at 0.25 and is usually smaller, so forty layers attenuate by at most $0.25^{40} \\approx 8\\times10^{-25}$ — the early layers receive an instruction indistinguishable from zero and never move. Option A is the tempting answer because a bad learning rate is the usual first suspect, but too large a rate makes the loss <i>diverge</i> rather than making one end of the network freeze while the other trains normally; the depth-dependent pattern is the clue. The fixes all attack the same product: ReLU contributes a factor of exactly 1 on its active side, residual connections add a path whose local derivative is exactly 1 (§3.7), and normalisation keeps activations where the local derivatives stay near 1 (§3.6).'
+      },
+      {
+        q: 'You are minimising $f(x) = x^2$ with gradient descent. For which learning rates $\\eta$ does the procedure converge?',
+        options: ['Any $\\eta > 0$', 'Only $\\eta < 1$', 'Only $\\eta < 0.5$', 'Any $\\eta$, provided you take enough steps'],
+        answer: 1,
+        why: 'Work the update out rather than guessing. With $f\' = 2x$ the rule $x \\leftarrow x - \\eta\\,2x$ multiplies $x$ by $(1 - 2\\eta)$ every step, so the iterates shrink exactly when $|1-2\\eta| < 1$, which means $0 < \\eta < 1$. At $\\eta = 1$ the factor is $-1$ and the point oscillates for ever between $+x$ and $-x$; above 1 it grows without bound. Options A and D are tempting because more steps usually help — but no number of steps rescues a procedure whose every step makes things worse, and the pitfall in §0.3.2 traces $3 \\to -3.6 \\to 4.32 \\to -5.184$ to show it happening. The general statement is the one to carry away: the largest stable step is 2 divided by the curvature, which for $x^2$ is 2, giving the bound 1. In a real model the curvature differs by direction, the steepest one sets the limit for everything, and that is exactly what the condition number in §0.3.4 measures.'
       }
     ],
     cards: [
-      { q: 'Chain rule, and why it matters here', a: '$\\frac{d}{dx}f(g(x)) = f\'(g(x))g\'(x)$ — backpropagation is this product accumulated right-to-left with cached activations.' },
+      { q: 'What a derivative is', a: 'The rate of change of a function at one point — the slope of the best straight-line approximation there, and the thing that tells an optimiser which way is downhill.' },
+      { q: 'Chain rule, and why it matters here', a: '$\\frac{d}{dx}f(g(x)) = f\'(g(x))g\'(x)$ — rates multiply. Backpropagation is this product accumulated right-to-left with cached activations.' },
       { q: 'Why reverse-mode autodiff?', a: 'One scalar output, many parameters. Reverse mode costs ~one forward pass per output; forward mode costs one per input.' },
-      { q: 'Gradient vs Hessian', a: 'Gradient = direction of steepest ascent (first derivatives). Hessian = curvature (second derivatives); its condition number governs how hard optimisation is.' }
+      { q: 'Gradient vs Hessian', a: 'Gradient = direction of steepest ascent (first derivatives). Hessian = curvature (second derivatives); its condition number governs how hard optimisation is.' },
+      { q: 'Largest stable learning rate', a: 'About $2 \\div$ curvature. The steepest direction sets the limit, so an ill-conditioned loss forces a tiny step on every direction.' },
+      { q: 'Why gradients vanish or explode', a: 'They are products of per-layer local derivatives. Factors below 1 collapse geometrically with depth; factors above 1 blow up.' }
     ]
   });
 
@@ -784,34 +981,208 @@ ${H.probe([
   ML.section({
     id: 'probability-basics', track: 'start', num: '0.4',
     title: 'Probability, from the ground',
-    lede: 'Joint, marginal, conditional — three views of one table. Get them straight here and Bayes in §1.1 is a one-line consequence rather than a formula to memorise.',
+    lede: 'Joint, marginal and conditional are not three formulas. They are three ways of reading one table, and every one of them is arithmetic you can do by counting rows. Get them straight here and Bayes in §1.1 becomes a one-line consequence rather than something to memorise, while expectation and variance turn into the vocabulary that §1.5 uses to explain where losses come from.',
     html: `
-<h2><span class="sn">0.4.1</span> The objects</h2>
-<p>A <b>random variable</b> is a quantity whose value is uncertain: a coin flip, tomorrow's demand, the next token. A <b>distribution</b> assigns probability across its possible values — non-negative, summing (or integrating) to one. That is the whole of the axioms you need.</p>
-<p>With two variables you get one object and two views of it:</p>
-<ul>
-<li><b>Joint</b> $P(A, B)$ — the probability of both. The full table.</li>
-<li><b>Marginal</b> $P(A) = \\sum_b P(A, b)$ — sum the table along a direction and one variable disappears.</li>
-<li><b>Conditional</b> $P(A \\mid B) = P(A, B) / P(B)$ — keep only the row where $B$ happened and rescale it so it sums to one.</li>
-</ul>
-${H.key('A conditional probability is not a new quantity. It is the same table, restricted to a smaller world and renormalised.')}
+<p>You are asked whether a particular loan applicant will default. You cannot answer yes and you cannot answer no, because you genuinely do not know. But it would be quite wrong to say you know nothing: you have a filing cabinet holding last year's thousand applications with the outcome written on each one, and this applicant looks like some of them more than others.</p>
 
-${H.lab('joint', 'One table, three views', 'Drag the four joint probabilities. The marginals appear on the edges; the conditional strip shows what happens when you delete every outcome incompatible with the evidence and rescale. Watch independence appear exactly when the conditional matches the marginal.')}
+<p>Ordinary arithmetic has no way to write down that state of knowledge. It can hold a number, and it can hold a yes or a no, but it has no notation for "probably not, and here is how strongly". Probability is the arithmetic that does, and — this is the part worth believing early — almost all of it is counting rows in a table and then dividing.</p>
 
-<h2><span class="sn">0.4.2</span> Independence, and why it is a strong claim</h2>
-<p>$A$ and $B$ are independent iff $P(A, B) = P(A)P(B)$, equivalently $P(A \\mid B) = P(A)$: learning $B$ tells you nothing about $A$. It is rare in real data and extremely convenient in models — Naive Bayes (§2.5) assumes it between features, and is a useful classifier <i>despite the assumption being false</i>, for reasons that section makes precise.</p>
+<h2><span class="sn">0.4.1</span> One table, and everything that comes out of it</h2>
 
-<h2><span class="sn">0.4.3</span> Expectation and variance, in one line each</h2>
-$$\\mathbb{E}[X] = \\sum_x x\\,p(x), \\qquad \\mathrm{Var}(X) = \\mathbb{E}[(X - \\mathbb{E}[X])^2] = \\mathbb{E}[X^2] - \\mathbb{E}[X]^2$$
-<p>Expectation is the long-run average — the centre of mass of the distribution. Variance is the average squared distance from that centre; its square root, the standard deviation, is in the same units as $X$ and is the one to quote. §1.3 shows the asymmetry that runs through the entire site: expectation is linear <i>always</i>, variance adds only under independence.</p>
+<p>Open the filing cabinet. For each of the 1,000 applications, record just two facts: whether the applicant had a previous default on record, and whether they defaulted this time. Two yes-or-no facts give four possible combinations, so the whole cabinet collapses into four numbers:</p>
 
-<h2><span class="sn">0.4.4</span> Discrete or continuous</h2>
-<p>Discrete variables have a probability <b>mass</b> function: $p(x)$ is a probability. Continuous variables have a <b>density</b>: $p(x)$ is not a probability and can exceed 1 — only $\\int_a^b p(x)dx$ is a probability. This is why a Gaussian's peak height changes with its width, and why likelihoods of continuous data can be greater than one without anything being wrong.</p>
+${H.table(['out of 1,000 applicants', 'defaulted this time', 'repaid', 'row total'], [
+      ['<b>had a prior default</b>', '90', '110', '<b>200</b>'],
+      ['<b>no prior default</b>', '60', '740', '<b>800</b>'],
+      ['<b>column total</b>', '<b>150</b>', '<b>850</b>', '<b>1,000</b>']
+    ])}
+
+<p>Every probability in this section is one of those numbers divided by another. Write $D$ for the event "defaulted this time" and $R$ for the event "had a prior default on record"; the letter $P$ in front of an event is read "the probability of", so $P(D)$ is read "the probability of D".</p>
+
+<p><b>The joint.</b> $P(R, D)$, read "the probability of R and D", is the probability that both things are true of the same applicant. That is the top-left cell over the grand total: $90/1000 = 0.09$. The four joint probabilities are $0.09$, $0.11$, $0.06$ and $0.74$, and they sum to exactly 1 because every applicant falls into precisely one cell. The joint table is the complete description of the situation; nothing else in this section adds information to it, they only summarise it differently.</p>
+
+<p><b>The marginal.</b> Suppose you no longer care about prior defaults and only want the overall default rate. Add up the column: $90 + 60 = 150$, so $P(D) = 150/1000 = 0.15$. In symbols,</p>
+
+$$P(D) = \\sum_{r} P(r, D)$$
+
+<p>where $\\sum$ is the Greek capital sigma met in §0.2 and means "add up what follows", and the $r$ underneath says to run through every possible value of the prior-default variable — here just the two, yes and no. Summing a variable away like this is called <b>marginalising it out</b>, and the name is not a metaphor: these totals were traditionally written in the margins of the table, which is exactly where they appear in the table above.</p>
+
+<p><b>The conditional.</b> Now the question that actually matters. You have learned that this particular applicant <i>does</i> have a prior default. What is the probability they default now?</p>
+
+<p>Do it by hand and the formula will never need memorising. The information rules out 800 of the 1,000 rows, so throw them away; you are left with the top row and its 200 applicants. Of those, 90 defaulted. So the answer is $90/200 = 0.45$. Written as a formula, dividing top and bottom by 1,000 to turn the counts into probabilities:</p>
+
+$$P(D \\mid R) = \\frac{P(R, D)}{P(R)} = \\frac{0.09}{0.20} = 0.45$$
+
+<p>The vertical bar is read "given", so $P(D \\mid R)$ is read aloud as "the probability of D given R". The denominator's whole job is to restore the total to 1 after you have thrown rows away: the surviving cells were $0.09$ and $0.11$, which add to $0.20$ rather than 1, and dividing both by $0.20$ turns them into $0.45$ and $0.55$, a proper distribution over a smaller world.</p>
+
+${H.key('A conditional probability is not a new quantity. It is the same table with the impossible rows deleted, rescaled so what remains sums to one again.')}
+
+${H.analogy(`<p>Conditioning is cropping a photograph. You cut away the part of the frame that the evidence has ruled out, and then you enlarge what is left so that it fills the frame again.</p>
+<p>Both halves matter. The cropping is what makes the answer specific to your evidence. The enlarging is what keeps it a probability — a photograph that filled only a fifth of the frame would not be a photograph, and a set of weights adding to 0.20 is not a distribution. When you see the division by $P(B)$ in the formula, that is the enlargement, nothing more.</p>`)}
+
+<h3>The two conditionals are different numbers, and confusing them is the classic error</h3>
+
+<p>Turn the same table round. Among the 150 people who defaulted, how many had a prior default on record? That is $90/150 = 0.60$, so $P(R \\mid D) = 0.60$.</p>
+
+<p>So $P(D \\mid R) = 0.45$ and $P(R \\mid D) = 0.60$. Same table, same 90 in the numerator, entirely different denominators, and entirely different meanings. The first says "given a prior default, defaulting is slightly less likely than not". The second says "most people who default had form". Read the second and conclude the first and you have just made the most expensive mistake in applied probability.</p>
+
+<p>It gets worse when the two base rates are far apart, which is the usual case for rare events. §1.1 is devoted to that gap and to the formula that converts between the two conditionals safely. For now, the habit to build is simply this: whenever you see a conditional probability, say out loud which quantity is being held fixed, because that is the denominator and the denominator is the whole answer.</p>
+
+<h2><span class="sn">0.4.2</span> Independence: when the evidence changes nothing</h2>
+
+<p>In the table above, learning about a prior default moved the default probability from $0.15$ to $0.45$ — a threefold change, which is why the feature is worth collecting. Sometimes learning something moves nothing at all, and that special case has a name.</p>
+
+<p>Two events are <b>independent</b> when</p>
+
+$$P(A, B) = P(A)\\,P(B), \\qquad \\text{equivalently} \\qquad P(A \\mid B) = P(A)$$
+
+<p>The two statements say the same thing; substitute the first into the definition of the conditional and the $P(B)$ cancels. The second form is the one to think in: knowing $B$ leaves your belief about $A$ exactly where it was.</p>
+
+<p>Check the loan table. If prior default and current default were independent, the top-left cell would have to be $P(R) \\times P(D) = 0.20 \\times 0.15 = 0.03$, so 30 applicants. The actual number is 90. They are three times as likely to co-occur as independence would allow, so they are strongly dependent — which is the whole reason the feature earns a place in the model.</p>
+
+${H.intuition(`<p>Independence is what makes large probability calculations possible at all, and it is worth seeing the size of the effect.</p>
+<p>A joint distribution over 20 yes-or-no variables has $2^{20}$ cells, which is 1,048,576 numbers you would have to estimate from data. If the variables are independent, the whole thing is determined by 20 numbers, one per variable, because every cell is just a product of them. That is a compression of fifty thousand to one, bought entirely with an assumption.</p>
+<p>This is why independence assumptions are everywhere in machine learning even though they are almost always false. Naive Bayes (§2.5) assumes every feature is independent of every other given the label, which is plainly untrue of real features, and it remains a serviceable classifier anyway — for reasons that section makes precise. The pattern to internalise is that an independence assumption is a deliberate trade: you knowingly accept a wrong model in exchange for one you can actually estimate.</p>`)}
+
+${H.pitfall(`<p>Independence is a much stronger claim than "these look unrelated", and two specific confusions cause real damage.</p>
+<p><b>Uncorrelated is not independent.</b> Let $X$ take the values $-2, -1, 0, 1, 2$ with equal probability and let $Y = X^2$. Then $Y$ is completely determined by $X$, so they could hardly be more dependent — yet their correlation is exactly zero. Check it: the covariance is $\\mathbb{E}[XY] - \\mathbb{E}[X]\\mathbb{E}[Y]$, and here $\\mathbb{E}[X] = 0$ by symmetry while $\\mathbb{E}[XY] = \\mathbb{E}[X^3] = (-8 - 1 + 0 + 1 + 8)/5 = 0$, so both terms vanish. Correlation detects straight-line relationships only, and a symmetric parabola is invisible to it (§1.3).</p>
+<p><b>Assumed independence inflates your confidence.</b> Suppose three weak models each get 55 per cent of cases right. If their errors are genuinely independent, a majority vote is right with probability $3(0.55)^2(0.45) + (0.55)^3 = 0.575$ — a useful gain. If instead they are all wrong on the same hard cases, the vote is right 55 per cent of the time and you have gained nothing while paying for three models. Real ensembles land somewhere between, and the whole art of §2.16 is engineering the errors to be as independent as possible.</p>`)}
+
+<h3>Seeing all three views move together</h3>
+
+<p><b>What you are looking at.</b> The four coloured squares are the joint distribution over two yes-or-no variables, $A$ and $B$: the top row is $A=1$ in blue, the bottom row is $A=2$ in red, the left column is $B=1$ and the right column is $B=2$. The number printed in each square is that cell's joint probability, and the colour deepens as the probability grows. Down the right-hand side are the row totals, which are the marginals $P(A=1)$ and $P(A=2)$; underneath the grid are the column totals, the marginals of $B$. The horizontal bar below everything is the conditional distribution of $A$ given whichever value of $B$ you have selected — it is the corresponding column of the grid, stretched to fill the full width, which is the cropping-and-enlarging of the analogy above drawn literally.</p>
+
+<p><b>What to do with it.</b> The four sliders set the four cell values, and they are renormalised to sum to 1 before anything is drawn, so moving one slider changes all four displayed probabilities. Start by pushing the top-left cell up and watch two things at once: the row marginal on the right grows, and the conditional bar shifts blue-wards. Then use the <i>condition on</i> buttons to switch the evidence between $B=1$ and $B=2$ and watch the bar jump — that jump is the entire content of the phrase "the evidence is informative".</p>
+
+<p><b>The thing genuinely worth noticing.</b> Press <i>Strong dependence</i>. The marginal $P(A=1)$ sits at $0.500$, but the conditional $P(A=1 \\mid B=1)$ reads $0.900$: before the evidence it was a coin flip, after the evidence it is nearly certain. Now press <i>Make them independent</i>. The marginal is $0.450$ and the conditional reads $0.455$, which is the same number up to the two decimal places the sliders can hold, and the <i>independent?</i> readout flips to <i>yes</i>. That is the definition made visible — under independence the conditional and the marginal coincide, so conditioning on $B$ is a null operation and the feature carries no information about $A$ whatsoever. A feature that does this to your label is a feature you can delete.</p>
+
+${H.lab('joint', 'One table, three views', 'The four sliders set the joint probabilities; they are rescaled to sum to 1 before drawing. Marginals appear on the edges. The bar below is the conditional — the selected column of the table, stretched back out to full width. Independence is the case where that bar matches the marginal exactly.')}
+
+<h2><span class="sn">0.4.3</span> From events to quantities: random variables and distributions</h2>
+
+<p>So far everything has been a yes-or-no event. Most of the time you want a number instead: how many of the next three loans default, how much a customer spends, what the next token is. A <b>random variable</b> is a quantity whose value is not yet determined, written with a capital letter, usually $X$. Its <b>distribution</b> is the complete list of values it might take together with the weight attached to each.</p>
+
+<p>The entire rulebook is two lines. Every weight must be zero or greater, because a negative probability means nothing. And the weights must total exactly 1, because the variable is certain to take one of its values. That is all the probability axiomatics this course needs from you.</p>
+
+${H.worked('a distribution built from scratch', `<p>Three loans are about to be decided. Suppose each defaults with probability $0.15$, independently of the others, and let $X$ be the number that default. $X$ can be 0, 1, 2 or 3, so its distribution has four numbers in it.</p>
+<p>$P(X=0) = 0.85^3 = 0.614125$ — all three repay.</p>
+<p>$P(X=1) = 3 \\times 0.15 \\times 0.85^2 = 0.325125$ — the 3 is there because the defaulter could be any one of the three.</p>
+<p>$P(X=2) = 3 \\times 0.15^2 \\times 0.85 = 0.057375$, and $P(X=3) = 0.15^3 = 0.003375$.</p>
+<p>Add them: $0.614125 + 0.325125 + 0.057375 + 0.003375 = 1.000000$ exactly. That check is worth doing every time you build a distribution by hand, because it catches almost every arithmetic slip.</p>
+<p>Notice where independence was used: it is what allowed the probabilities to be multiplied together in each line. Without it, none of these products would be legitimate.</p>`)}
+
+<p>That particular shape has a name, the <b>binomial distribution</b>, and §1.2 catalogues it alongside the other distributions worth recognising on sight. What matters here is the shape of the object: a list of values and a list of weights, adding to one.</p>
+
+<h2><span class="sn">0.4.4</span> Expectation: the one number that summarises a distribution</h2>
+
+<p>Four numbers is already more than you want to carry around, so the natural next question is how to compress a distribution into a single representative value. The obvious idea — average the possible values — is wrong, because it treats a wildly unlikely outcome as equal to a near-certain one. The fix is to weight each value by how likely it is:</p>
+
+$$\\mathbb{E}[X] = \\sum_x x \\, p(x)$$
+
+<p>The symbol $\\mathbb{E}$ is a decorated capital E, and $\\mathbb{E}[X]$ is read "the expectation of X" or "the expected value of X". The formula says: go through every value $X$ might take, multiply it by its probability, and total the results. It is a weighted average in which the weights are the probabilities.</p>
+
+<p>On the three-loan distribution:</p>
+
+$$\\mathbb{E}[X] = 0(0.614125) + 1(0.325125) + 2(0.057375) + 3(0.003375) = 0.45$$
+
+<p>which is exactly $3 \\times 0.15$. That is not a coincidence and it is worth noticing early: the expected number of defaults among three loans is three times the expected number among one, even though the loans interact in the formula in complicated ways. Expectation simply adds, always, whether or not the variables are independent, and §1.3 shows how much mileage that one fact gives you.</p>
+
+${H.pitfall(`<p>The expectation need not be a value the variable can ever take. You will never observe 0.45 defaults; $X$ is a count, so it is always 0, 1, 2 or 3. "Expected" is a technical term meaning the long-run average, not a prediction of what will happen next.</p>
+<p>This bites in practice whenever a model trained on squared error is asked for a decision rather than a number. Squared error drives the model towards the conditional expectation, and the expectation of a lumpy or skewed target can sit in a valley where no real outcome lives — the average of a distribution that is mostly zero with an occasional 1,000 is neither zero nor 1,000. §1.5 explains why squared error targets the mean specifically, and §2.13 explains how to pick a metric that reflects the decision you actually face.</p>`)}
+
+<h2><span class="sn">0.4.5</span> Variance: how much the outcome moves about</h2>
+
+<p>Two distributions can share an expectation and be nothing alike. A payout that is always £5 and a payout that is £0 or £10 on a coin flip both have expectation £5, and no one would call them equivalent. What separates them is spread, and the standard measure of spread is the average squared distance from the expectation:</p>
+
+$$\\mathrm{Var}(X) = \\mathbb{E}\\big[(X - \\mathbb{E}[X])^2\\big]$$
+
+<p>In words: take how far each outcome falls from the centre, square it so that overshoots and undershoots both count as spread rather than cancelling, and average those squares with the probabilities as weights. The squaring is the same device that appeared in the squared-error loss of §0.1 and for the same two reasons — it removes the sign, and it penalises large departures disproportionately.</p>
+
+<p>Computing it straight from that definition means finding the mean first and then sweeping the distribution a second time. There is a rearrangement that lets you do it in one pass, and it is used constantly:</p>
+
+${H.deriv('the computational form $\\mathrm{Var}(X) = \\mathbb{E}[X^2] - \\mathbb{E}[X]^2$', [
+      ['$\\mathrm{Var}(X) = \\mathbb{E}[(X - \\mu)^2]$', 'The definition, writing $\\mu$ (the Greek letter mu) for $\\mathbb{E}[X]$ to keep the algebra readable. Note that $\\mu$ is an ordinary fixed number, not a random one.'],
+      ['$= \\mathbb{E}[X^2 - 2\\mu X + \\mu^2]$', 'Expand the square inside, exactly as you would expand $(a-b)^2$ in school algebra.'],
+      ['$= \\mathbb{E}[X^2] - 2\\mu\\,\\mathbb{E}[X] + \\mu^2$', 'Split the expectation across the sum. This is allowed because expectation is a weighted sum and sums can be regrouped; constants such as $2\\mu$ and $\\mu^2$ pass straight through because the weights already total 1.'],
+      ['$= \\mathbb{E}[X^2] - 2\\mu^2 + \\mu^2$', 'Substitute $\\mathbb{E}[X] = \\mu$ into the middle term.'],
+      ['$= \\mathbb{E}[X^2] - \\mu^2$', 'Combine the last two terms: $-2\\mu^2 + \\mu^2 = -\\mu^2$. So the variance is the mean of the squares minus the square of the mean.']
+    ], 'Check it on the three-loan distribution. $\\mathbb{E}[X^2] = 0 + 1(0.325125) + 4(0.057375) + 9(0.003375) = 0.585$, and $\\mu^2 = 0.45^2 = 0.2025$, so the variance is $0.585 - 0.2025 = 0.3825$. The textbook formula for a binomial gives $np(1-p) = 3 \\times 0.15 \\times 0.85 = 0.3825$ — the same number. One warning: this form is elegant on paper and treacherous in floating-point, because when the mean is large the two terms are nearly equal and subtracting them destroys most of the significant digits (§1.15).')}
+
+<p>Variance is measured in the square of whatever units $X$ has, which makes it awkward to talk about — the variance of a height in metres is in square metres. Its square root, the <b>standard deviation</b>, written $\\sigma$ (the Greek letter sigma), is back in the original units and is the number to quote. Here $\\sigma = \\sqrt{0.3825} \\approx 0.62$ defaults.</p>
+
+${H.intuition(`<p>The single most useful consequence of variance in all of applied work is what happens when you average.</p>
+<p>If you take $n$ independent measurements each with standard deviation $\\sigma$ and average them, the average has standard deviation $\\sigma/\\sqrt{n}$. The square root is the entire story. Averaging 4 measurements halves the noise. Getting another factor of two costs 16 measurements, then 64, then 256.</p>
+<p>That one expression sets the price of nearly everything you will want to be sure about. It is why an A/B test needs four times the traffic to detect an effect half the size (§2.25), why a validation set of 200 rows gives an accuracy estimate you should not trust to the second decimal place (§1.6), and why increasing the batch size gives steadily diminishing returns on gradient quality (§3.5). The <i>reason</i> the square root appears is that variances add when you sum independent quantities while standard deviations do not — and that asymmetry, expectation adding always but variance adding only under independence, is the subject of §1.3.</p>`)}
+
+<h2><span class="sn">0.4.6</span> Mass and density: the distinction that causes real trouble</h2>
+
+<p>Everything so far assumed a variable with a countable list of possible values. Now ask a question about a continuous one. What is the probability that an adult chosen at random is exactly 1.8 metres tall — not 1.80001, not 1.79999, but exactly 1.800000... with zeros for ever?</p>
+
+<p>The answer is zero. There are infinitely many possible heights, and if any single one carried a positive probability then adding up enough of them would take the total past 1. So every individual height has probability exactly zero, and yet heights near 1.8 metres are obviously more common than heights near 2.4 metres. Both statements are true, and they need reconciling.</p>
+
+<p>The reconciliation is to stop asking about points and start asking about intervals. The probability that a height falls between 1.79 and 1.81 metres is a perfectly sensible positive number. What describes how that probability is spread out is a <b>density</b>, written $p(x)$, and the rule connecting it to probabilities is</p>
+
+$$P(a \\le X \\le b) = \\int_a^b p(x)\\,dx$$
+
+<p>The elongated S is an <b>integral</b> sign, and the expression is read "the integral of p of x, dx, from a to b". It means the area under the curve $p$ between $a$ and $b$. If that sounds like an entirely new piece of machinery, notice it is built the same way the derivative was in §0.3: chop the interval into thin strips, add up the little rectangles, and let the strips get thinner. Area is what a sum of shrinking slices converges to, just as a slope was what a shrinking rise-over-run converged to.</p>
+
+${H.key('A density is not a probability. It is probability per unit of $x$, and only its area over an interval is a probability.')}
+
+<p>The clearest way to feel the difference is to change the units and watch what happens to each.</p>
+
+${H.worked('the same bus, two sets of units', `<p>A bus arrives at a uniformly random moment within a 10-minute window. Its density, measured in minutes, is flat at $1/10 = 0.1$ per minute across the window.</p>
+<p>The probability it arrives during a particular 2-minute stretch is the density times the width: $0.1 \\times 2 = 0.2$. The probability it arrives at exactly 4 minutes past is $0.1 \\times 0 = 0$, as it must be.</p>
+<p>Now measure the same bus in hours. The window is $1/6$ of an hour, so the density is $1/(1/6) = 6$ per hour. The density value has gone from $0.1$ to $6$ while absolutely nothing about the bus has changed.</p>
+<p>The probability, however, has not moved. The 2-minute stretch is $1/30$ of an hour, and $6 \\times 1/30 = 0.2$, exactly as before. Probabilities are pure numbers; densities carry units of "per something", and their numerical value depends entirely on what that something is.</p>`)}
+
+<p>Two consequences follow immediately, and both routinely alarm people who have not seen this.</p>
+
+<p><b>A density can exceed 1.</b> A uniform distribution on the interval $[0, 0.5]$ must have density 2 everywhere on that interval, because the area of a rectangle of width $0.5$ and height 2 is exactly 1. Nothing is wrong. Similarly a Gaussian bell curve of standard deviation $\\sigma$ has peak height $1/(\\sigma\\sqrt{2\\pi})$, which for $\\sigma = 0.1$ is about $3.99$ and for $\\sigma = 0.01$ is about $39.9$. Squeeze a distribution narrower and its density must rise to keep the area at 1.</p>
+
+<p><b>A log-likelihood of continuous data can be positive.</b> If the density at your observed point is 4, its logarithm is $+1.39$, and a model reporting a positive log-likelihood — equivalently a negative loss — has not gone wrong. This surprises people every time it appears in a density model such as a normalising flow or a variational autoencoder (§6.3), and it is entirely explained by the paragraph above.</p>
+
+${H.table(['', 'Discrete: probability <b>mass</b> $p(x)$', 'Continuous: probability <b>density</b> $p(x)$'], [
+      ['What $p(x)$ is', 'The probability that $X$ equals $x$', 'Probability per unit of $x$ near $x$'],
+      ['Can it exceed 1?', 'No, never', 'Yes, freely'],
+      ['$P(X = x)$', 'Equal to $p(x)$', 'Exactly 0, for every single $x$'],
+      ['Total is 1 by', '$\\sum_x p(x) = 1$', '$\\int p(x)\\,dx = 1$'],
+      ['Changing units', 'Nothing changes', 'Every value rescales'],
+      ['Typical use here', 'Class probabilities, token distributions', 'Gaussian noise models, latent variables']
+    ])}
+
+${H.more('what a probability actually means, and why anyone argues about it', `<p>Nothing above says what a probability <i>is</i>, only how the numbers behave. That is deliberate: the rules of arithmetic are agreed, and the interpretation is not.</p>
+<p>One reading is <b>frequentist</b>: a probability is the long-run fraction of times an event occurs if the situation is repeated indefinitely. It is concrete and it fits coin flips and loan books well. It struggles with one-off questions, because "the probability that this particular bridge fails next year" has no repetitions to count.</p>
+<p>The other reading is <b>Bayesian</b>: a probability is a degree of belief, which may be updated as evidence arrives. It handles one-off questions comfortably and pays for it by requiring you to state a prior belief before seeing any data, which is a genuine commitment people reasonably disagree about.</p>
+<p>The formal framework beneath both was settled by Kolmogorov in 1933, who took non-negativity, total mass 1 and additivity as axioms and derived everything else, which is why the two camps never disagree about a calculation — only about what the answer means. §1.14 develops the Bayesian machinery properly, and §1.6 shows the two readings giving genuinely different answers to what looks like the same question about a confidence interval.</p>`)}
+
+<h2><span class="sn">0.4.7</span> Where this is going</h2>
+
+<p>Two payments come due almost immediately, and both are worth previewing so you can see that this section was not bookkeeping.</p>
+
+<p><b>Bayes' rule is four lines of algebra from the definition of a conditional.</b> Nothing new is required — only the observation that a joint probability can be factored in either order.</p>
+
+${H.deriv("Bayes' rule, straight from §0.4.1", [
+      ['$P(A \\mid B) = \\dfrac{P(A, B)}{P(B)}$', 'The definition of conditional probability, exactly as derived by deleting rows and rescaling.'],
+      ['$P(A, B) = P(A \\mid B)\\,P(B)$', 'Multiply both sides by $P(B)$. This is the same statement rearranged, and it says a joint probability is a conditional times the thing conditioned on.'],
+      ['$P(A, B) = P(B \\mid A)\\,P(A)$', 'Apply the identical rearrangement with the roles of $A$ and $B$ swapped. The joint does not care about the order you write it in, so both factorisations describe the same number.'],
+      ['$P(A \\mid B)\\,P(B) = P(B \\mid A)\\,P(A)$', 'Lines 2 and 3 are two expressions for the same joint probability, so they may be set equal.'],
+      ['$P(A \\mid B) = \\dfrac{P(B \\mid A)\\,P(A)}{P(B)}$', 'Divide through by $P(B)$, which is legitimate whenever $P(B) > 0$ — and if $P(B)$ were zero you would not be conditioning on it.']
+    ], 'That is the whole derivation, and it is the answer to the question raised in §0.4.1 about the two different conditionals. Check it on the loan table: $P(D \\mid R) = P(R \\mid D)P(D)/P(R) = (0.60 \\times 0.15)/0.20 = 0.45$, which is the number we counted directly. §1.1 does not derive anything new; it explains why the formula is so persistently counter-intuitive when $P(A)$ is small.')}
+
+<p><b>Losses come from probability.</b> §0.1 introduced squared error as a reasonable-looking way to score a numerical prediction and flagged that the choice was not obvious. The resolution is that a loss is a statement about how you believe the noise in your data behaves: assume Gaussian noise and maximising the likelihood of your data is <i>identical</i> to minimising squared error, while assuming a yes-or-no outcome gives cross-entropy instead. §1.5 makes both of those exact. Until then, hold the idea that every loss you meet is a probabilistic assumption in disguise.</p>
+
+${H.practice(`<p>Three things about probability that only bite once you are writing code.</p>
+<p><b>Work in logs.</b> A joint probability over 500 tokens is a product of 500 numbers below 1, which underflows to exactly zero in floating point long before you reach the end. Adding logarithms instead keeps everything in a comfortable range and turns the products into sums. Every library therefore hands you <code>log_softmax</code> and <code>logsumexp</code> rather than the raw quantities (§1.10, §1.15).</p>
+<p><b>A number between 0 and 1 is not automatically a probability.</b> A classifier's output is a probability only if it is calibrated — if, among all the cases it scored 0.7, roughly 70 per cent really were positive. Modern networks are frequently and badly overconfident, and the fix is a separate step rather than a better model (§2.12).</p>
+<p><b>Renormalise after masking.</b> The moment you zero out some options — banned tokens, unavailable products, invalid actions — the remaining weights no longer sum to 1, and every subsequent expectation is silently wrong. Conditioning is deletion <i>and</i> rescaling, and code that forgets the second half of that sentence produces plausible numbers that are quietly incorrect.</p>`)}
 
 ${H.probe([
-      ['Define conditional probability without the formula.', 'Restrict attention to the world where the evidence is true, then rescale so the remaining outcomes sum to one.'],
-      ['Can a density be greater than 1?', 'Yes — a density is not a probability. A uniform on $[0, 0.5]$ has density 2 everywhere on its support.']
-    ], 'Confusing $P(A\\mid B)$ with $P(B\\mid A)$. That single confusion is the base-rate error in §1.1 and the most common probability mistake in interviews.')}`,
+      ['Define conditional probability without writing the formula.', 'Restrict attention to the world in which the evidence is true, discard everything incompatible with it, then rescale what is left so it sums to one again.'],
+      ['Can a probability density be greater than 1?', 'Yes. A density is probability per unit of $x$, not a probability. A uniform on $[0, 0.5]$ has density 2 everywhere on its support, and a Gaussian with $\\sigma = 0.1$ peaks near 4.'],
+      ['What is $P(X = x)$ for a continuous variable?', 'Exactly zero, for every $x$. Only intervals carry probability, and their probability is the area under the density.'],
+      ['State independence in two equivalent ways, and say which is more useful.', '$P(A,B) = P(A)P(B)$, and $P(A \\mid B) = P(A)$. The second is more useful because it says what independence <i>means</i>: the evidence leaves your belief unchanged.'],
+      ['Why does averaging $n$ measurements reduce noise by $\\sqrt{n}$ rather than $n$?', 'Variances of independent quantities add, so the variance of a mean falls as $1/n$; the standard deviation is its square root and therefore falls as $1/\\sqrt{n}$.']
+    ], 'Confusing $P(A\\mid B)$ with $P(B\\mid A)$. In the loan table above they are 0.45 and 0.60 — same numerator, different denominators, different meanings. That single confusion is the base-rate error of §1.1 and the most common probability mistake in interviews.')}`,
     labs: {
       joint: function (host) {
         // joint over A in {a1,a2}, B in {b1,b2}
@@ -886,19 +1257,28 @@ ${H.probe([
         q: 'Given the joint table, how do you get the marginal $P(A)$?',
         options: ['Divide by $P(B)$', 'Sum the joint over all values of $B$', 'Multiply by $P(B\\mid A)$', 'Take the maximum over $B$'],
         answer: 1,
-        why: 'Marginalisation is summation over the variable you want to eliminate — the law of total probability, which is exactly the denominator of Bayes.'
+        why: 'Marginalising is summing away the variable you no longer care about, which in the table of §0.4.1 was literally adding up a column: $90 + 60 = 150$ defaults out of 1,000. Option A is the tempting distractor because dividing by $P(B)$ is also a legitimate operation on the joint — but that is <i>conditioning</i>, not marginalising, and it answers a different question. Marginalising asks "forget B entirely"; conditioning asks "assume a particular B". One sums the table, the other selects a slice of it and rescales. The sum in this question also has a formal name, the law of total probability, and it is exactly the denominator that appears in Bayes\' rule (§1.1) — which is why a badly estimated marginal quietly corrupts every posterior you compute from it.'
       },
       {
         q: 'Which is true of a continuous probability density $p(x)$?',
         options: ['It is always ≤ 1', 'It integrates to 1 and may exceed 1 pointwise', 'It equals $P(X = x)$', 'It must be symmetric'],
         answer: 1,
-        why: 'Density is probability per unit length. Only integrals over intervals are probabilities; $P(X=x)=0$ for continuous $X$.'
+        why: 'A density is probability <i>per unit</i> of $x$, so its numerical value depends on the units you chose and can be arbitrarily large: the bus in §0.4.6 has density 0.1 per minute or 6 per hour for exactly the same journey. What is fixed is the area, which must be 1 overall and gives the probability of any interval you pick. Option A is the trap, and it is tempting precisely because it is true for discrete <i>mass</i> functions, where $p(x)$ really is a probability and really is capped at 1 — the whole point of this subsection is that the continuous case is not the same object wearing a different hat. Option C is the same confusion stated more sharply: for continuous $X$, $P(X=x)$ is exactly 0 for every $x$, since infinitely many positive point-probabilities could not total 1. This matters in practice because a log-likelihood computed from a density can come out positive, and people report that as a bug when it is not (§6.3).'
+      },
+      {
+        q: 'A feature $B$ turns out to be independent of the label $A$. What is $P(A \\mid B)$?',
+        options: ['Zero', 'Equal to $P(A)$ — unchanged by the evidence', 'Equal to $P(B)$', 'Impossible to say without the joint table'],
+        answer: 1,
+        why: 'Independence is defined by $P(A,B) = P(A)P(B)$, and substituting that into the definition of the conditional makes the $P(B)$ cancel and leaves $P(A \\mid B) = P(A)$ exactly. That second form is the one to think in: the evidence arrived and moved your belief nowhere. Option D is the plausible-sounding wrong answer, because normally you cannot compute a conditional without the joint — but independence <i>is</i> a complete statement about the joint, so nothing further is needed. The practical reading is the one to keep: a feature independent of the label carries zero information about it and can be deleted without any loss, which you can watch happen in the lab by pressing <i>Make them independent</i> and seeing the conditional bar settle onto the marginal. Be careful about the converse, though: zero <i>correlation</i> does not imply independence, as the parabola example in §0.4.2 shows.'
       }
     ],
     cards: [
-      { q: 'Conditional probability in one sentence', a: 'The same measure restricted to the world where the evidence holds, renormalised to sum to one.' },
+      { q: 'Conditional probability in one sentence', a: 'The same table with the impossible rows deleted, renormalised so what remains sums to one.' },
       { q: 'Definition of independence', a: '$P(A,B)=P(A)P(B)$, equivalently $P(A\\mid B)=P(A)$ — the evidence changes nothing.' },
-      { q: 'Variance, two forms', a: '$\\mathrm{Var}(X)=\\mathbb{E}[(X-\\mu)^2]=\\mathbb{E}[X^2]-\\mathbb{E}[X]^2$.' }
+      { q: 'Expectation, in words', a: 'The weighted average of the possible values, weighted by their probabilities. It need not be a value the variable can take.' },
+      { q: 'Variance, two forms', a: '$\\mathrm{Var}(X)=\\mathbb{E}[(X-\\mu)^2]=\\mathbb{E}[X^2]-\\mathbb{E}[X]^2$. Its square root, $\\sigma$, is in the original units.' },
+      { q: 'Mass versus density', a: 'Mass $p(x)$ <i>is</i> a probability and is at most 1. Density is probability per unit of $x$, may exceed 1, and only its area over an interval is a probability.' },
+      { q: 'Why averaging helps only as $\\sqrt{n}$', a: 'Independent variances add, so the variance of a mean falls as $1/n$ and the standard deviation as $1/\\sqrt{n}$. Four times the data halves the noise.' }
     ]
   });
 
@@ -906,58 +1286,141 @@ ${H.probe([
   ML.section({
     id: 'python-toolkit', track: 'start', num: '0.5',
     title: 'The working toolkit: numpy, pandas, scikit-learn, PyTorch',
-    lede: 'The four libraries that carry ninety per cent of practical work, with the idioms that matter and the three mistakes that quietly invalidate results.',
+    lede: 'Four libraries carry very nearly all of the practical work: numpy for arrays, pandas for tables, scikit-learn for classical models, PyTorch for networks. This section is about the three ideas that make them usable — thinking in whole arrays rather than loops, keeping shapes straight, and the fit-then-transform discipline — and about the one habit that separates a number you can report from a number that is quietly a lie.',
     html: `
-<h2><span class="sn">0.5.1</span> numpy — everything is an array with a shape</h2>
+<p>You have a million numbers in a Python list and you want to standardise them: subtract the mean, divide by the standard deviation. The obvious code writes itself.</p>
+
+${H.code(`total = 0.0
+for v in values:            # a plain Python list of 1,000,000 floats
+    total += v
+mu = total / len(values)
+
+out = []
+for v in values:
+    out.append((v - mu) / sd)`)}
+
+<p>It is correct, it is readable, and on a modern laptop it takes something in the region of a tenth of a second. That does not sound like a problem until you notice that this is one operation on one column, and a real preprocessing pass does perhaps fifty such operations across a hundred columns. The tenth of a second becomes several minutes, every time you change anything, and the loop that felt harmless has eaten your afternoon.</p>
+
+<p>The reason it is slow is worth knowing, because it explains the entire design of the library that replaces it. Every element of a Python list is a full object with a type tag and a reference count, scattered somewhere in memory; every trip round the loop the interpreter has to look up what <code>+</code> means for these particular objects, allocate a new object for the result, and update bookkeeping. Almost none of the time is spent adding.</p>
+
+<p>What you want is for the million numbers to sit side by side in one block of memory, all the same type, so that a compiled loop can march through them with no interpretation at all. That is what a numpy array is, and the same operation on one takes a couple of milliseconds — commonly fifty to a hundred times faster, and considerably more when the operation is one the library can hand to specialised linear-algebra code.</p>
+
+${H.key('Describe the operation on the whole array. Never write a Python loop over rows when an array operation exists.')}
+
+<h2><span class="sn">0.5.1</span> numpy: arrays, axes, and shapes that must line up</h2>
+
+<p>An array has three things worth knowing about it: its <b>shape</b>, a tuple saying how large it is along each axis; its <b>dtype</b>, the single machine type every element shares, usually <code>float64</code> or <code>float32</code>; and its contents. §0.2 established the shape rule that governs everything — $[n \\times d]$ times $[d \\times k]$ gives $[n \\times k]$, with the inner dimensions cancelling — so what follows builds on that rather than repeating it.</p>
+
 ${H.code(`import numpy as np
 
-X = np.random.randn(1000, 8)          # 1000 examples, 8 features
-w = np.random.randn(8)
-y = X @ w + 0.1 * np.random.randn(1000)   # @ is matrix multiply
+X = np.random.randn(1000, 8)              # [n=1000, d=8] a batch of examples
+w = np.random.randn(8)                    # [d=8]         one weight per feature
+y = X @ w + 0.1 * np.random.randn(1000)   # [n=1000]      @ is matrix multiply
 
-# vectorise: never loop over rows if a matrix op exists
-mu, sd = X.mean(0), X.std(0)          # per-column statistics
-Z = (X - mu) / sd                     # broadcasting: (1000,8) - (8,) works
+# vectorised standardisation: the whole loop above, in two lines
+mu, sd = X.mean(axis=0), X.std(axis=0)    # [8] and [8] — per-column statistics
+Z = (X - mu) / sd                         # [1000, 8] — broadcasting does the work
 
 # the least-squares solution, three ways
 beta_normal = np.linalg.solve(X.T @ X, X.T @ y)     # fine, and fast
 beta_lstsq  = np.linalg.lstsq(X, y, rcond=None)[0]  # numerically safer
 beta_ridge  = np.linalg.solve(X.T @ X + 1e-2*np.eye(8), X.T @ y)`)}
-<p>Two habits pay for themselves: annotate shapes in comments, and prefer <code>np.linalg.lstsq</code> or a QR/SVD-based solver to explicitly inverting $X^\\mathsf{T}X$ — the inverse is numerically fragile precisely when your features are collinear, which is the case you were worried about anyway.</p>
 
-<h2><span class="sn">0.5.2</span> pandas — tables, and the leakage trap</h2>
+<p>The single most confusing thing for a newcomer is the <code>axis</code> argument, and there is a rule that removes the confusion permanently. <code>X.mean(axis=0)</code> on a $[1000 \\times 8]$ array returns 8 numbers, not 1000. That seems backwards until you say the rule aloud: <b>the axis you name is the axis that disappears</b>. Axis 0 is the row axis, so naming it collapses the thousand rows away and leaves one value per column. Naming <code>axis=1</code> collapses the eight columns and leaves one value per row.</p>
+
+<p>The second thing worth learning properly is <b>broadcasting</b>, which §0.2 introduced as the reason a bias vector can be added to a matrix. The full rule is short. Line the two shapes up from the right-hand end. Two dimensions are compatible if they are equal, or if one of them is 1, or if one array has run out of dimensions entirely. Compatible dimensions of size 1 are stretched — conceptually, and without ever copying the data — to match the other. So $[1000 \\times 8]$ against $[8]$ lines up as $8$ against $8$, then $1000$ against nothing, and the result is $[1000 \\times 8]$: the same eight column means are reused for every row, which is exactly what standardisation wants.</p>
+
+${H.pitfall(`<p>Now look at what those rules permit. Take a vector of true labels with shape $[1000]$ and a vector of predictions that came out of a model with shape $[1000 \\times 1]$ — a difference nobody notices, because both print as a column of a thousand numbers.</p>
+<p>Line the shapes up from the right: $1$ against $1000$, which is compatible because one of them is 1; then $1000$ against nothing, also compatible. Broadcasting therefore produces a $[1000 \\times 1000]$ array containing every pairwise difference, a million numbers where you wanted a thousand. Taking <code>.mean()</code> of that gives a perfectly plausible-looking float, no exception is raised, and your reported error is meaningless.</p>
+<p>This is the most common silent bug in numerical Python and it costs people days. Three habits kill it. Write the expected shape in a comment after every line, as §0.2 insisted. Use <code>.ravel()</code> or <code>.squeeze(-1)</code> to flatten a stray trailing axis the moment it appears. And in any function whose output you will report, put an outright <code>assert pred.shape == y.shape</code> at the top — one line, and it converts a silent wrong answer into a loud stack trace.</p>`)}
+
+${H.practice(`<p>Two further numpy behaviours cause trouble in real code.</p>
+<p><b>Slices are views, not copies.</b> <code>B = A[:, :3]</code> does not copy anything; it hands you a window onto the same memory, so writing into <code>B</code> changes <code>A</code>. This is a deliberate performance decision — copying a large array is expensive — and it is fine once you expect it. When you want a genuine copy, say <code>A[:, :3].copy()</code>.</p>
+<p><b>Prefer a decomposition to an explicit inverse.</b> The first of the three least-squares lines above forms $X^\\mathsf{T}X$ and solves with it, which is fast and usually fine. But squaring a matrix squares its condition number, so if $X$ was already awkward — collinear features, exactly the case §0.2 warned about — the squared version is far worse, and you can lose most of your significant digits. <code>np.linalg.lstsq</code> works on $X$ directly through a QR or SVD factorisation and is the safer default. §1.15 quantifies how many digits each route costs you.</p>`)}
+
+<h2><span class="sn">0.5.2</span> pandas: tables with names, and the aggregate that sees the future</h2>
+
+<p>numpy arrays are homogeneous and anonymous: every element has the same type and the columns have no names. Real data is neither. A loan application table has dates, strings, integers and floats side by side, and you want to refer to a column as <code>utilisation</code> rather than as column 6. A pandas <b>DataFrame</b> is a collection of named columns, each internally a numpy array of its own type, plus an <b>index</b> that labels the rows.</p>
+
 ${H.code(`import pandas as pd
 
 df = pd.read_parquet("applications.parquet")
-df["utilisation"] = df.balance / df.limit
+df["utilisation"] = df.balance / df.limit           # whole-column arithmetic
 df["age_days"] = (df.decision_date - df.opened_date).dt.days
 
-# GOOD: aggregate with an explicit time boundary
+# GOOD: an aggregate with an explicit time boundary
 hist = (df[df.decision_date < cutoff]
         .groupby("customer_id")["amount"].mean()
         .rename("mean_amount_before_cutoff"))
 
 # WRONG: this aggregate sees the whole history, including the future
 df["mean_amount"] = df.groupby("customer_id")["amount"].transform("mean")`)}
-${H.flag('That last line is the single most common leakage bug in tabular work: a group aggregate computed over the full dataset lets each row see its own future. §2.11 has the full checklist.')}
 
-<h2><span class="sn">0.5.3</span> scikit-learn — fit/transform, and why pipelines are not optional</h2>
+<p>Before the wrong line, two things about the index, because it is where pandas surprises people. The index is not decoration: arithmetic between two Series aligns on <i>labels</i>, not on positions. Add a Series indexed $0,1,2$ holding $1,2,3$ to one indexed $1,2,3$ holding $10,20,30$ and you get four rows — $\\mathrm{NaN}$, $12$, $23$, $\\mathrm{NaN}$ — because labels 0 and 3 had no partner. If you were expecting three rows of element-wise sums, you now have a column of nulls arriving from nowhere. The habit that prevents it is <code>.reset_index(drop=True)</code> after any filtering, or using <code>.values</code> when you genuinely want positional arithmetic.</p>
+
+<p>The second is dtypes. A column of strings is stored as <code>object</code>, meaning a numpy array of pointers to Python objects, which puts you straight back in the slow world described at the top of this section. Converting such a column to <code>category</code> can shrink it by an order of magnitude and speed up grouping considerably. Equally, a date column read as a string will compare and sort alphabetically, so <code>"2024-1-9" &lt; "2024-11-02"</code> comes out true and every time-based split you build afterwards is wrong. Check <code>df.dtypes</code> before you check anything else.</p>
+
+<h3>Why that last line is the most expensive mistake in tabular work</h3>
+
+<p>Both <code>groupby</code> lines compute a mean per customer. The difference is which rows go into the mean, and it is worth making completely concrete.</p>
+
+<p>Suppose customer 4471 appears three times: a January application for £100, a February one for £200, and a December one for £900. The <code>transform("mean")</code> call attaches the same number to all three rows, namely $(100 + 200 + 900)/3 = 400$. So the January row now carries a feature whose value is 400 — a number that depended on a transaction that had not happened yet and could not possibly have been known in January.</p>
+
+<p>Your model will find this feature enormously useful, because it is: it is a partial view of the future. Your backtest will look excellent. And on the day the model goes live, the feature is computed from history alone, comes out as 100 rather than 400, and the performance you promised evaporates. The failure is not detectable by any check on the model, because the model is fine. The data was wrong.</p>
+
+${H.flag('This is the single most common leakage bug in tabular machine learning, and it is worth stating as a rule: any aggregate attached to a row must be computed only from information that existed before that row\'s timestamp. §2.11 has the full checklist, and §2.14 covers the out-of-time validation that catches what the checklist misses.')}
+
+<h2><span class="sn">0.5.3</span> scikit-learn: fit, transform, and the discipline that protects your score</h2>
+
+<p>scikit-learn's whole API is one idea repeated. Every object has <code>fit</code>, which looks at data and stores something; and then either <code>transform</code>, which applies what it stored, or <code>predict</code>, which uses what it stored to make predictions. That is it, across two hundred classes.</p>
+
+<p>The important consequence is easy to miss. Look at what <code>StandardScaler.fit</code> actually does: it computes the mean and the standard deviation of each column and stores them, as <code>mean_</code> and <code>scale_</code>. Those stored numbers are then used by <code>transform</code>. In other words <b>a scaler is a model with learned parameters</b>, no different in kind from a regression's coefficients. It just happens to have two per column instead of one.</p>
+
+<p>Once you see the scaler as a model, the rule about validation writes itself. You would never dream of fitting a classifier on your validation rows and then reporting its accuracy on those same rows. Fitting a scaler on them is the same act, only quieter — the validation rows contributed to the mean and the standard deviation, so information from them has been baked into the training data before the model ever saw it.</p>
+
 ${H.code(`from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 pipe = Pipeline([
-    ("scale", StandardScaler()),          # fitted INSIDE each fold
-    ("clf", LogisticRegression(C=1.0, max_iter=1000)),
+    ("scale",  StandardScaler()),                  # fitted INSIDE each fold
+    ("select", SelectKBest(f_classif, k=20)),      # fitted INSIDE each fold
+    ("clf",    LogisticRegression(C=1.0, max_iter=1000)),
 ])
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
 auc = cross_val_score(pipe, X, y, cv=cv, scoring="roc_auc")
 print(auc.mean(), auc.std())`)}
-<p>The rule the pipeline enforces: <b>every learned transformation — scaling, imputation, target encoding, binning — must be fitted on the training fold only</b>. Scale first and cross-validate second and your validation rows have already influenced the mean and standard deviation; the score you report is optimistic and the mechanism is invisible.</p>
 
-<h2><span class="sn">0.5.4</span> PyTorch — the same three objects, on a GPU</h2>
+<p>A <code>Pipeline</code> is not a tidiness device. It is a correctness device. When <code>cross_val_score</code> splits the data, it calls <code>fit</code> on the whole pipeline using the training fold only, so the scaler's mean, the selector's chosen columns and the classifier's coefficients are all learned from the same restricted set of rows; then it calls <code>predict</code> on the held-out fold, and every stage merely applies what it stored. Standardise the whole matrix first and cross-validate afterwards and none of that protection exists.</p>
+
+${H.key('Every learned transformation — scaling, imputation, encoding, binning, feature selection — is fitted on the training rows only, inside the fold. Treat them as model parameters, because that is what they are.')}
+
+<p>Now the honest part, because the rule is usually taught with more conviction than evidence. If the only thing you fit outside the fold is a <code>StandardScaler</code> on a few thousand rows, the leak is real but tiny — the validation rows moved the column mean by a fraction of its standard error, and the reported score is inflated by well under a percentage point. Many people notice this, conclude that the rule is pedantry, and drop it.</p>
+
+<p>That conclusion is the trap, because the same mistake applied to a transformation that <i>looks at the labels</i> is not small at all. Feature selection, target encoding and group-mean imputation all read $y$ while they fit. Do any of those on the full dataset and the inflation stops being a rounding error and becomes the entire result.</p>
+
+<h3>Manufacturing a discovery out of pure noise</h3>
+
+<p><b>What you are looking at.</b> The horizontal axis is the number of candidate features you offer to a feature selector, doubling from 8 to 256. The vertical axis is five-fold cross-validated accuracy. The dashed grey line at $0.500$ is the accuracy of guessing. Underneath both curves sits exactly the same procedure: standardise, keep the $k$ features most strongly correlated with the label, fit a small ridge classifier on those, score the held-out fold. The <span style="color:var(--red)">red</span> curve does the selection once on the whole dataset before cross-validating, which is the mistake. The <span style="color:var(--blue)">blue</span> curve does the selection separately inside each training fold, which is correct. Both are averaged over eight independently generated datasets, which steadies the lines without removing all of the wobble that a 60-row sample honestly has.</p>
+
+<p><b>What to do with it.</b> Leave <i>genuinely informative features</i> at 0. This means the labels are coin flips and every single feature is pure noise: there is nothing to find, and any honest procedure must report 0.5. Now read the two curves from left to right. Then raise the number of informative features to 2 or 3 and watch what changes — the blue curve lifts off the chance line because there is now something real to detect, and it <i>sinks</i> again as the pile of noise features grows and the genuine ones get harder to pick out of the crowd. Increase the number of rows and both curves become better behaved, which is the usual relationship between sample size and self-deception.</p>
+
+<p><b>The thing genuinely worth noticing.</b> With zero informative features, the blue curve stays flat along the 0.500 line — wandering a couple of points either side, because 60 rows is a small sample and even a correct estimate is noisy — while the red curve climbs steadily past 0.60, past 0.70, and keeps going as you offer the selector more noise to choose from. There is no signal in this data. None. The red procedure is reporting a discovery it manufactured entirely out of the act of looking — with 256 candidates, a handful will correlate with the labels by luck, and because the selection was made using all the rows, those lucky features are still lucky in the held-out fold. The gap widens with the number of candidates because the more you look, the luckier the best-looking thing gets. Nothing in the code raises a warning, the cross-validation is textbook, and the number is a fabrication.</p>
+
+${H.lab('leak', 'Fitting outside the fold, measured', 'Both curves run the identical modelling procedure. The only difference is whether the feature selection is fitted on all the rows or refitted inside each training fold. Set the informative-feature count to 0 to work with data that contains nothing at all to find.')}
+
+${H.practice(`<p>The pipeline rule covers the transformations scikit-learn knows about. Three real-world leaks slip past it, and all three have to be handled by hand.</p>
+<p><b>Leaks upstream of the code.</b> If the feature table was assembled by a SQL job that aggregated over the whole period, no pipeline can help you — the damage was done before Python started. Read the feature definitions, not just the model code.</p>
+<p><b>Duplicate or near-duplicate rows.</b> The same customer appearing in both the training and the validation fold is memorisation dressed up as generalisation. Split by entity, using <code>GroupKFold</code>, rather than by row.</p>
+<p><b>Time.</b> A random split on time-ordered data trains on the future to predict the past, which no amount of fold discipline repairs, because the folds themselves are wrong. Use an out-of-time split (§2.14) whenever the data has an arrow of time in it, which is nearly always.</p>`)}
+
+<h2><span class="sn">0.5.4</span> PyTorch: the same three objects, differentiated automatically</h2>
+
+<p>A PyTorch <b>tensor</b> is a numpy array with two additions: it can live on a GPU, and it can remember the operations performed on it. That second property is the whole point. As you compute, PyTorch quietly records the computation graph — the same chain of stages you dragged sliders through in §0.3 — and <code>loss.backward()</code> then walks that graph from the loss backwards, applying the chain rule at each node and depositing the resulting gradient in each parameter's <code>.grad</code> attribute. Reverse-mode automatic differentiation is exactly §0.3.5 done by machine, and §3.11 covers how the graph is built and freed.</p>
+
 ${H.code(`import torch, torch.nn as nn
 
 model = nn.Sequential(nn.Linear(8, 64), nn.ReLU(), nn.Linear(64, 1))
@@ -966,42 +1429,200 @@ loss_fn = nn.BCEWithLogitsLoss()      # logits in, not probabilities
 
 for xb, yb in loader:
     opt.zero_grad(set_to_none=True)   # gradients accumulate by default
-    logits = model(xb).squeeze(-1)
+    logits = model(xb).squeeze(-1)    # [B, 1] -> [B]; shapes must match yb
     loss = loss_fn(logits, yb.float())
     loss.backward()                   # reverse-mode autodiff (§0.3)
     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-    opt.step()`)}
-${H.table(['Idiom', 'Why'], [
-      ['<code>BCEWithLogitsLoss</code> not <code>Sigmoid</code> + <code>BCELoss</code>', 'Fuses the log-sum-exp; numerically stable at large logits (§1.10)'],
-      ['<code>opt.zero_grad()</code> every step', 'PyTorch accumulates gradients; forgetting it silently sums minibatches'],
-      ['<code>model.eval()</code> + <code>torch.no_grad()</code> at inference', 'Turns off dropout and batch-norm updates, and stops building the graph'],
-      ['<code>clip_grad_norm_</code>', 'The cheapest insurance against a single bad batch producing NaN (§4.11)'],
-      ['<code>AdamW</code> not <code>Adam(weight_decay=)</code>', 'Decoupled decay actually decays; see §3.5']
+    opt.step()                        # theta <- theta - eta * grad`)}
+
+<p>Read that loop against §0.1 and it is the three objects and nothing else. <code>model</code> is $f_\\theta$. <code>loss_fn</code> is $\\ell$. <code>opt.step()</code> is $\\theta \\leftarrow \\theta - \\eta\\nabla_\\theta L$. Everything in between exists to compute the gradient that the last line consumes.</p>
+
+<p>The one genuinely surprising line is the first. PyTorch <i>adds</i> each new gradient to whatever is already in <code>.grad</code> rather than replacing it, which sounds like a design mistake until you want to simulate a batch larger than your GPU can hold — then you deliberately run several small batches, let the gradients pile up, and step once. Because accumulation is the default, forgetting to clear it is silent: your first step uses one batch's gradient, your second uses the sum of two, your tenth the sum of ten, and the effective learning rate grows without bound while the code runs perfectly.</p>
+
+${H.table(['Idiom', 'What goes wrong without it'], [
+      ['<code>BCEWithLogitsLoss</code>, not <code>Sigmoid</code> then <code>BCELoss</code>', 'The fused version rearranges the algebra so the exponentials never overflow. Done separately, a logit of 800 saturates the sigmoid to exactly 1.0, the log of $1-1.0$ is $-\\infty$, and the loss becomes NaN (§1.10)'],
+      ['<code>opt.zero_grad()</code> at the top of every step', 'Gradients accumulate by design, so each step applies an ever-growing sum of past batches'],
+      ['<code>model.eval()</code> and <code>torch.no_grad()</code> at inference', '<code>eval()</code> switches dropout off and stops batch-norm updating its running statistics; <code>no_grad()</code> stops building the graph, saving a large amount of memory'],
+      ['<code>clip_grad_norm_</code>', 'One pathological batch produces a huge gradient, the parameters jump somewhere absurd, and every subsequent loss is NaN (§4.11)'],
+      ['<code>AdamW</code>, not <code>Adam(weight_decay=...)</code>', 'In plain Adam the decay term is divided by the same running gradient scale as everything else, so it decays much less than you asked (§3.5)'],
+      ['<code>float32</code> by default, not <code>float64</code>', 'Doubles halve your throughput and memory bandwidth for accuracy a network cannot use. Save the extra precision for the places that need it (§1.15)']
     ])}
 
-<h2><span class="sn">0.5.5</span> The three mistakes</h2>
+<h2><span class="sn">0.5.5</span> The three mistakes that invalidate results</h2>
+
+<p>Everything above is craft. These three are the ones that turn a working project into a number nobody should have believed, and every one of them produces code that runs cleanly and reports a confident answer.</p>
+
 ${H.checklist([
-      '<b>Fitting a transformer outside the fold.</b> Scaling, imputation and encoding are learned parameters. Treat them as model parameters, because they are.',
-      '<b>Shuffling time-structured data.</b> A random k-fold on a time series trains on the future to predict the past. Use out-of-time validation (§2.14).',
-      '<b>Reporting the tuned score.</b> The validation set that chose your hyperparameters is no longer an unbiased estimate. Nest it, or hold out a final untouched set.'
-    ])}`,
+      '<b>Fitting a transformer outside the fold.</b> Scaling, imputation, encoding and selection all learn parameters from data. Treat them as model parameters, because they are. The lab above shows the size of the damage when the transformation reads the labels: chance dressed up as 0.75.',
+      '<b>Shuffling time-structured data.</b> A random k-fold on a time series trains on the future to predict the past. The score will be excellent and unreproducible in production. Use out-of-time validation (§2.14), and split by entity when rows repeat.',
+      '<b>Reporting the tuned score.</b> The validation set that chose your hyperparameters has been used for fitting, just at a coarser grain, so it is no longer an unbiased estimate of anything. Nest the tuning inside an outer loop, or hold out a final set you touch exactly once (§2.15).'
+    ])}
+
+${H.history(`<p>None of this stack was planned. Numeric, the ancestor of numpy, appeared in the mid-1990s; a rival array package split the community, and numpy exists because Travis Oliphant merged the two in 2006. pandas began in 2008 as one analyst’s tooling at a quantitative fund and was open-sourced two years later. scikit-learn started as a Google Summer of Code project in 2007 and was rebuilt at INRIA into the library that fixed the fit/predict convention now imitated everywhere.</p>
+<p>The idea underneath all of them — that you should describe an operation on a whole array rather than on its elements — is much older, and goes back at least to APL in the 1960s and to the array syntax added to Fortran in 1990. What changed was not the idea but the economics: once vectorised numerical code became dramatically faster than interpreted loops on the same hardware, an ergonomic array language stopped being an elegance and became the only practical way to work.</p>`)}
+
+${H.probe([
+      ['Why is a StandardScaler fitted inside the cross-validation fold rather than before the split?', 'Because it has learned parameters — the per-column mean and standard deviation — so fitting it on all the rows lets the validation rows influence the training data. It is the same error as fitting a classifier on its own test set, only quieter.'],
+      ['You are told a model scores 0.78 AUC in cross-validation. What do you ask?', 'How the folds were built, whether every learned transformation was inside them, whether rows can repeat across folds, and whether the data has a time order that a random split destroyed. Then whether 0.78 is the tuned number or a genuinely held-out one.'],
+      ['What does axis=0 mean in numpy?', 'The axis being collapsed. On a $[n \\times d]$ array, <code>mean(axis=0)</code> removes the row axis and returns $d$ column means.'],
+      ['Why does PyTorch accumulate gradients instead of replacing them?', 'So that a large batch can be simulated by several small ones on limited memory. The cost is that forgetting <code>zero_grad</code> is silent rather than an error.'],
+      ['Name a leak that a scikit-learn Pipeline cannot protect you from.', 'Anything upstream of Python — a feature table built by a SQL aggregate over the whole period — plus duplicate entities spanning folds, and a random split on time-ordered data.']
+    ], 'Answering "I use a Pipeline" as though it were a complete answer. The pipeline handles the transformations sklearn can see. It does nothing about how the folds were constructed, about the same customer appearing in two of them, or about a feature that was already contaminated before the file was written.')}`,
+    labs: {
+      leak: function (host) {
+        const PS = [8, 16, 32, 64, 128, 256];
+        let seed = 23, cacheKey = '', cache = null;
+
+        const st = Viz.controls(host, [
+          { k: 'signal', label: 'genuinely informative features', min: 0, max: 4, step: 1, value: 0, fmt: v => String(v) },
+          { k: 'n', label: 'rows of data', min: 40, max: 160, step: 20, value: 60, fmt: v => String(v) },
+          { k: 'k', label: 'features the selector keeps', min: 2, max: 10, step: 1, value: 5, fmt: v => String(v) }
+        ], () => S.redraw());
+
+        const out = Viz.readout(host, [
+          { k: 'lk', label: 'reported CV, fitted outside', cls: 'key' },
+          { k: 'hn', label: 'honest CV, fitted inside' },
+          { k: 'gap', label: 'invented accuracy' }
+        ]);
+
+        /* one dataset: PS[last] candidate columns, `signal` of them real */
+        function run(n, k, signal, sd) {
+          const R = Num.rng(sd), P = PS[PS.length - 1], folds = 5;
+          const cols = [], y = new Array(n);
+          for (let j = 0; j < P; j++) {
+            const c = new Array(n);
+            for (let i = 0; i < n; i++) c[i] = R.normal(0, 1);
+            cols.push(c);
+          }
+          for (let i = 0; i < n; i++) {
+            let s = 0;
+            for (let j = 0; j < signal; j++) s += cols[j][i];
+            y[i] = (0.8 * s + R.normal(0, 1)) > 0 ? 1 : 0;
+          }
+          const all = []; for (let i = 0; i < n; i++) all.push(i);
+
+          function absCorr(c, rows) {
+            const m = rows.length;
+            let mx = 0, my = 0;
+            for (let q = 0; q < m; q++) { mx += c[rows[q]]; my += y[rows[q]]; }
+            mx /= m; my /= m;
+            let sxy = 0, sxx = 0, syy = 0;
+            for (let q = 0; q < m; q++) {
+              const dx = c[rows[q]] - mx, dy = y[rows[q]] - my;
+              sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+            }
+            const den = Math.sqrt(sxx * syy);
+            return den > 1e-12 ? Math.abs(sxy / den) : 0;
+          }
+
+          const hit = { leaky: PS.map(() => 0), honest: PS.map(() => 0) };
+          const seen = PS.map(() => 0);
+
+          for (let f = 0; f < folds; f++) {
+            const tr = all.filter(i => i % folds !== f), te = all.filter(i => i % folds === f);
+            if (tr.length < 6 || !te.length) continue;
+            const sc = { leaky: cols.map(c => absCorr(c, all)), honest: cols.map(c => absCorr(c, tr)) };
+            ['leaky', 'honest'].forEach(mode => {
+              const s = sc[mode];
+              PS.forEach((p, pi) => {
+                const order = []; for (let j = 0; j < p; j++) order.push(j);
+                order.sort((a, b) => s[b] - s[a]);
+                const use = order.slice(0, Math.min(k, p));
+                const mu = use.map(j => { let t = 0; tr.forEach(i => { t += cols[j][i]; }); return t / tr.length; });
+                const Phi = tr.map(i => [1].concat(use.map((j, q) => cols[j][i] - mu[q])));
+                const wv = Num.ridgeFit(Phi, tr.map(i => y[i]), 1.0);
+                te.forEach(i => {
+                  let z = wv[0];
+                  use.forEach((j, q) => { z += wv[q + 1] * (cols[j][i] - mu[q]); });
+                  if (((z > 0.5) ? 1 : 0) === y[i]) hit[mode][pi]++;
+                });
+                if (mode === 'leaky') seen[pi] += te.length;
+              });
+            });
+          }
+          return {
+            leaky: hit.leaky.map((v, i) => seen[i] ? v / seen[i] : 0.5),
+            honest: hit.honest.map((v, i) => seen[i] ? v / seen[i] : 0.5)
+          };
+        }
+
+        function curves() {
+          const key = [st.n, st.k, st.signal, seed].join('|');
+          if (key === cacheKey && cache) return cache;
+          const reps = 8, L = PS.map(() => 0), Hn = PS.map(() => 0);
+          for (let r2 = 0; r2 < reps; r2++) {
+            const o = run(st.n, st.k, st.signal, seed + r2 * 977);
+            PS.forEach((p, i) => { L[i] += o.leaky[i] / reps; Hn[i] += o.honest[i] / reps; });
+          }
+          cacheKey = key; cache = { L: L, Hn: Hn };
+          return cache;
+        }
+
+        const S = Viz.surface(host, {
+          height: 320,
+          draw: function (ctx, w, h, T) {
+            const c = curves();
+            const P = Viz.plot(ctx, w, h, { xd: [2.7, 8.3], yd: [0.3, 1] }).frame({
+              xlabel: 'candidate features offered to the selector',
+              ylabel: '5-fold CV accuracy',
+              xticks: [3, 4, 5, 6, 7, 8],
+              xfmt: v => String(Math.round(Math.pow(2, v)))
+            });
+            P.hline(0.5, { color: T.faint, dash: [4, 4], label: 'coin flip' });
+            const xs = PS.map(p => Math.log(p) / Math.LN2);
+            P.clip(() => {
+              P.line(xs.map((x, i) => [x, c.L[i]]), { color: T.red, width: 2.6 });
+              P.line(xs.map((x, i) => [x, c.Hn[i]]), { color: T.blue, width: 2.6 });
+              P.dots(xs.map((x, i) => [x, c.L[i]]), { r: 4.5, color: T.red, stroke: true });
+              P.dots(xs.map((x, i) => [x, c.Hn[i]]), { r: 4.5, color: T.blue, stroke: true });
+            });
+            const last = PS.length - 1, d = c.L[last] - c.Hn[last];
+            out({
+              lk: c.L[last].toFixed(3),
+              hn: c.Hn[last].toFixed(3),
+              gap: (d >= 0 ? '+' : '') + d.toFixed(3)
+            });
+          }
+        });
+
+        Viz.buttons(host, [
+          { label: 'New random datasets', on: () => { seed = 1 + Math.floor(Math.random() * 1e6); S.redraw(); } },
+          { label: 'Pure noise (signal = 0)', on: () => { st.$set('signal', 0); S.redraw(); } }
+        ]);
+        Viz.legend(host, [
+          { c: Viz.theme().red, t: 'selection fitted on all rows, then cross-validated' },
+          { c: Viz.theme().blue, t: 'selection refitted inside each training fold' },
+          { c: Viz.theme().faint, t: 'chance (0.500)' }
+        ]);
+      }
+    },
     quiz: [
       {
         q: 'Why wrap the scaler and the model in a Pipeline before cross-validating?',
         options: ['It is faster', 'So the scaler is re-fitted inside each training fold, preventing the validation rows from influencing it', 'It makes the model more accurate', 'Because sklearn requires it'],
         answer: 1,
-        why: 'Any learned transformation fitted on all the data leaks information from the validation fold into training, inflating the score by an amount you cannot see.'
+        why: 'A scaler has learned parameters — the per-column mean and standard deviation it stores as <code>mean_</code> and <code>scale_</code> — so fitting it is fitting a model. Do that on the whole dataset and the validation rows have already influenced the numbers the training rows are transformed with, which is the same error as training a classifier on its test set, just quieter. Option C is the tempting one: a pipeline does not improve the model at all, and in fact the honest score it produces is usually <i>lower</i> than the leaky one, which is precisely why the practice feels like a step backwards when you first adopt it. For a scaler alone the inflation is small, often under a percentage point, and that is exactly why people talk themselves out of the rule. The lab above shows what the same mistake does to a transformation that reads the labels: an accuracy of 0.75 on data that contains no signal whatsoever.'
       },
       {
         q: 'You forget to call opt.zero_grad() in a PyTorch loop. What happens?',
-        options: ['The model does not train at all', 'Gradients accumulate across batches, so each step uses a stale sum of gradients', 'Learning rate is ignored', 'It raises an exception'],
+        options: ['The model does not train at all', 'Gradients accumulate across batches, so each step uses a growing sum of past gradients', 'Learning rate is ignored', 'It raises an exception'],
         answer: 1,
-        why: 'PyTorch accumulates into .grad by design (useful for gradient accumulation). Forgetting to clear it makes every step an increasingly large, increasingly wrong sum.'
+        why: 'PyTorch adds each new gradient into <code>.grad</code> rather than overwriting it, and this is deliberate: it is what lets you simulate a batch larger than your memory allows by running several small batches and stepping once. The consequence of forgetting to clear it is that step one applies one batch\'s gradient, step two the sum of two, step ten the sum of ten — so the effective learning rate grows without bound and the run usually diverges after a few hundred steps. Option D is the answer people expect, because a mistake this damaging surely ought to be an error; it is not, and that is the whole reason it is worth knowing. Nothing in the API can tell the difference between deliberate accumulation and a forgotten line, so the code runs perfectly and produces nonsense.'
+      },
+      {
+        q: 'You subtract predictions of shape (1000, 1) from labels of shape (1000,) and take the mean of the result. What do you get?',
+        options: ['A correct mean error', 'A shape error', 'The mean of a 1000×1000 array of all pairwise differences', 'Always zero'],
+        answer: 2,
+        why: 'Broadcasting lines shapes up from the right: 1 against 1000 is compatible because one side is 1, and then 1000 against nothing is compatible because the second array has run out of dimensions. So numpy obligingly builds a $[1000 \\times 1000]$ array holding every pairwise difference, and <code>.mean()</code> of it is a real number that looks entirely reasonable. Option B is the tempting answer, and it is tempting for a good reason — this <i>should</i> be an error, and the fact that it is not is why the bug survives to production. The defences are cheap: annotate shapes in comments as §0.2 insists, flatten stray trailing axes with <code>.ravel()</code> or <code>.squeeze(-1)</code> as soon as they appear, and put an <code>assert pred.shape == y.shape</code> in any function whose output you intend to report.'
       }
     ],
     cards: [
-      { q: 'The pipeline rule', a: 'Every learned transformation is fitted inside the training fold only — scaling, imputation, encoding, binning.' },
-      { q: 'Why BCEWithLogitsLoss over Sigmoid+BCELoss', a: 'It fuses the sigmoid and the log using the log-sum-exp trick, so large logits do not overflow.' }
+      { q: 'The vectorisation rule', a: 'Describe the operation on the whole array. A Python loop over rows pays interpreter overhead per element; an array operation runs a compiled loop over contiguous memory.' },
+      { q: 'What does axis=0 mean?', a: 'The axis you name is the axis that disappears. On $[n \\times d]$, <code>mean(axis=0)</code> collapses the rows and returns $d$ column means.' },
+      { q: 'The broadcasting rule', a: 'Line the shapes up from the right. Dimensions match if equal, if one is 1, or if one array has run out — and size-1 dimensions are stretched.' },
+      { q: 'The pipeline rule', a: 'Every learned transformation is fitted inside the training fold only — scaling, imputation, encoding, binning, selection.' },
+      { q: 'The groupby-transform leak', a: 'A group aggregate over the whole table attaches each row a number computed from its own future. Bound every aggregate by the row\'s timestamp.' },
+      { q: 'Why BCEWithLogitsLoss over Sigmoid+BCELoss', a: 'It fuses the sigmoid and the log using the log-sum-exp trick, so large logits do not saturate to exactly 1 and produce a NaN loss.' }
     ]
   });
 })();

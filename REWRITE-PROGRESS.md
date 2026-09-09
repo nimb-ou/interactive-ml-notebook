@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**1 / 116 sections complete.**
+**8 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -12,13 +12,13 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
 | x | 0.1 | `what-is-ml` | 10-onramp.js | 3246 |
-|   | 0.2 | `linear-algebra-basics` | 10-onramp.js | 615 |
-|   | 0.3 | `calculus-basics` | 10-onramp.js | 486 |
-|   | 0.4 | `probability-basics` | 10-onramp.js | 427 |
-|   | 0.5 | `python-toolkit` | 10-onramp.js | 653 |
-|   | 0.6 | `notation` | 11-onramp-b.js | 999 |
-|   | 0.7 | `matrix-calculus` | 11-onramp-b.js | 1185 |
-|   | 0.8 | `first-model` | 11-onramp-b.js | 911 |
+| x | 0.2 | `linear-algebra-basics` | 10-onramp.js | 615 |
+| x | 0.3 | `calculus-basics` | 10-onramp.js | 486 |
+| x | 0.4 | `probability-basics` | 10-onramp.js | 427 |
+| x | 0.5 | `python-toolkit` | 10-onramp.js | 653 |
+| x | 0.6 | `notation` | 11-onramp-b.js | 999 |
+| x | 0.7 | `matrix-calculus` | 11-onramp-b.js | 1185 |
+| x | 0.8 | `first-model` | 11-onramp-b.js | 911 |
 
 ## Part 1 — Mathematical & statistical foundations
 

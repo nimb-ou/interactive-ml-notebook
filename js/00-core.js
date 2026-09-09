@@ -533,12 +533,20 @@ window.ML = (function () {
     $$('pre code', root).forEach(code => {
       if (code.dataset.hl) return;
       code.dataset.hl = '1';
-      let h = escapeHtml(code.textContent);
-      h = h.replace(/(#[^\n]*)/g, '<span class="tok-c">$1</span>');
-      h = h.replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;)/g, '<span class="tok-s">$1</span>');
-      h = h.replace(/\b(import|from|def|return|for|in|if|elif|else|while|class|with|as|lambda|not|and|or|None|True|False|yield|assert|try|except|raise|const|let|function|new|of|break|continue)\b/g, '<span class="tok-k">$1</span>');
-      h = h.replace(/\b(\d+\.?\d*(e-?\d+)?)\b/g, '<span class="tok-n">$1</span>');
-      code.innerHTML = h;
+      /* Split into comments/strings and everything else FIRST, then highlight
+         keywords only in the "else" pieces. Doing the replacements in sequence
+         over one string made the keyword pass match the word `class` inside the
+         `<span class="tok-c">` markup the comment pass had just emitted, which
+         produced nested broken tags in every code block containing a comment. */
+      const parts = escapeHtml(code.textContent)
+        .split(/(#[^\n]*|&quot;[^&]*?&quot;|&#39;[^&]*?&#39;)/g);
+      code.innerHTML = parts.map((p, i) => {
+        if (!p) return '';
+        if (i % 2) return '<span class="' + (p.charAt(0) === '#' ? 'tok-c' : 'tok-s') + '">' + p + '</span>';
+        return p
+          .replace(/\b(import|from|def|return|for|in|if|elif|else|while|class|with|as|lambda|not|and|or|None|True|False|yield|assert|try|except|raise|const|let|function|new|of|break|continue)\b/g, '<span class="tok-k">$1</span>')
+          .replace(/\b(\d+\.?\d*(e-?\d+)?)\b/g, '<span class="tok-n">$1</span>');
+      }).join('');
     });
   }
 
