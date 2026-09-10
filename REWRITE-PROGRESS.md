@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**8 / 116 sections complete.**
+**17 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -24,16 +24,16 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | 1.1 | `bayes` | 20-foundations.js | 458 |
-|   | 1.2 | `distributions` | 20-foundations.js | 398 |
-|   | 1.3 | `expectation` | 20-foundations.js | 264 |
-|   | 1.4 | `concentration` | 20-foundations.js | 379 |
+| x | 1.1 | `bayes` | 20-foundations.js | 458 |
+| x | 1.2 | `distributions` | 20-foundations.js | 398 |
+| x | 1.3 | `expectation` | 20-foundations.js | 264 |
+| x | 1.4 | `concentration` | 20-foundations.js | 379 |
 |   | 1.5 | `mle-map` | 20-foundations.js | 331 |
-|   | 1.6 | `intervals` | 21-foundations-b.js | 974 |
-|   | 1.7 | `causal` | 21-foundations-b.js | 616 |
-|   | 1.8 | `linear-algebra` | 21-foundations-b.js | 406 |
-|   | 1.9 | `calculus-ml` | 21-foundations-b.js | 457 |
-|   | 1.10 | `information` | 21-foundations-b.js | 500 |
+| x | 1.6 | `intervals` | 21-foundations-b.js | 974 |
+| x | 1.7 | `causal` | 21-foundations-b.js | 616 |
+| x | 1.8 | `linear-algebra` | 21-foundations-b.js | 406 |
+| x | 1.9 | `calculus-ml` | 21-foundations-b.js | 457 |
+| x | 1.10 | `information` | 21-foundations-b.js | 500 |
 |   | 1.12 | `optimization` | 22-foundations-c.js | 1287 |
 |   | 1.13 | `sampling` | 22-foundations-c.js | 858 |
 |   | 1.14 | `bayesian-inference` | 22-foundations-c.js | 1011 |
