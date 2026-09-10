@@ -9,37 +9,81 @@
     id: 'nn-fundamentals', track: 'deep', num: '3.1',
     title: 'Neural network fundamentals',
     lede: 'The bridge into modern AI: every training detail in this part recurs at ten thousand times the scale in Part 4.',
-    rests: 'Rests on §0.3 (chain rule), §1.5 (the loss), §1.9 (conditioning).',
+    rests: 'Rests on §0.2 (matrices as functions on space), §0.3 (chain rule), §1.5 (the loss), §1.9 (conditioning).',
     html: `
-<h2><span class="sn">3.1.1</span> From perceptron to universal approximator</h2>
-<p>A perceptron is a linear model with a step: $\\hat y = \\mathbb{1}[w^\\mathsf{T}x + b > 0]$. Stack them with a nonlinear activation between layers and you get a <b>universal approximator</b> — a network with one sufficiently wide hidden layer can approximate any continuous function on a compact set to arbitrary accuracy.</p>
-${H.flag('That theorem is weaker than it sounds. It says a good approximation <i>exists</i>; it says nothing about how wide, whether gradient descent finds it, or how much data it takes. Depth is what makes the approximation efficient in practice — composing simple features beats one enormous layer at the same parameter count.')}
+<p>Take four points sitting at the corners of a unit square: $(0,0)$ and $(1,1)$ belong to class 0, while $(1,0)$ and $(0,1)$ belong to class 1. This is the XOR pattern, and it looks like the most harmless dataset imaginable — four points, two classes, perfectly balanced. Now try to separate the two classes the way §2.4's logistic regression does: draw one straight line and put every 0 on one side of it and every 1 on the other.</p>
 
-<h3>Why a nonlinearity is not optional</h3>
-<p>Two linear layers compose to one: $W_2(W_1x) = (W_2W_1)x$. Without a nonlinearity, depth buys nothing at all. The activation is what lets each layer bend the space so the next layer's linear cut can separate what was previously entangled — which is the same job the kernel did in §2.6, except here the feature map is <i>learned</i> rather than chosen.</p>
+<p>There is no such line. Walk around the square corner by corner and the label flips every single time, so any line you draw has at least one point stranded on the wrong side of it — try the diagonals, try anything through the middle, it does not matter. A linear model is exactly one cut across the whole feature space, and this pattern cannot be described by one cut. This is not a contrived example chosen to be difficult; it is the simplest possible case of a much larger fact, which is that most of the structure worth modelling in images, audio and language is not linearly separable either. Logistic regression, on its own, is stuck.</p>
 
-<h2><span class="sn">3.1.2</span> The playground</h2>
-<p>Below is a real network — forward pass, backpropagation, Adam, all computed in your browser. Nothing is pre-baked. Build a shape, press train, and watch the decision boundary form.</p>
+<h2><span class="sn">3.1.1</span> The tempting fix that does nothing</h2>
+
+<p>The obvious next move is to stack two linear models: run the input through one linear layer, then feed the result into a second linear layer, hoping the extra step buys extra power. It is worth checking that idea in full before reaching for anything more complicated, because the check is short and the answer is completely decisive.</p>
+
+${H.deriv('why two linear layers are exactly as powerful as one', [
+      ['$h = W_1 x + b_1$', 'The first layer: an ordinary linear layer from §0.2, producing a new list of numbers from the input $x$.'],
+      ['$\\hat y = W_2 h + b_2$', 'The second layer, fed the first layer\'s output $h$ instead of the raw input.'],
+      ['$\\hat y = W_2(W_1 x + b_1) + b_2$', 'Substitute the first line into the second. Nothing clever has happened yet — this is just writing out what "feed the output into the next layer" means.'],
+      ['$= (W_2 W_1) x + (W_2 b_1 + b_2)$', 'Expand and regroup. Matrix multiplication is associative, so $W_2(W_1 x)$ equals $(W_2 W_1)x$ (§0.2), and the two bias terms combine into one constant vector by ordinary vector addition.'],
+      ['$= Wx + b, \\quad W := W_2W_1, \\;\\; b := W_2b_1 + b_2$', 'Name the combined matrix and the combined bias. Whatever $W_1$, $W_2$, $b_1$ and $b_2$ happened to be, this final line has exactly the shape of a single linear layer.']
+    ], 'Nothing in this argument used any property of $W_1$ or $W_2$ beyond their being matrices, so it holds for any two linear layers, and by induction for any chain of them — two, twenty, two hundred. Stack a hundred linear layers and you still have, at most, the expressive power of one. Depth bought you nothing: more parameters to store and more arithmetic to do, computing a function a single layer could already represent.')}
+
+<p>Put numbers through it so the claim is not just symbolic. Take $W_1 = \\begin{bmatrix}2 & 0\\\\ 1 & 1\\end{bmatrix}$ and $W_2 = \\begin{bmatrix}1 & 1\\\\ 0 & 3\\end{bmatrix}$, both with zero bias, and feed in $x = (1, 2)$. Going layer by layer: $h = W_1x = (2\\times1+0\\times2,\\; 1\\times1+1\\times2) = (2, 3)$, and then $\\hat y = W_2 h = (1\\times2+1\\times3,\\; 0\\times2+3\\times3) = (5, 9)$. Now collapse first: $W = W_2W_1 = \\begin{bmatrix}3 & 1\\\\ 3 & 3\\end{bmatrix}$, and $Wx = (3\\times1+1\\times2,\\; 3\\times1+3\\times2) = (5, 9)$ — the identical answer, reached without ever computing $h$. The two-layer network and the single collapsed matrix are not merely similar. They are the same function.</p>
+
+${H.history(`<p>This is not a modern observation. It is essentially the objection Marvin Minsky and Seymour Papert raised in their 1969 book <i>Perceptrons</i>, which showed that a single-layer perceptron — no hidden layer at all — cannot represent XOR, and cast serious doubt on whether stacking would help, since a stack of purely linear units collapses to one. The book is widely credited with cooling funding and enthusiasm for neural networks for most of the 1970s, a period sometimes called the first "AI winter". The irony is that the fix was already implicit in the objection: it is not depth that was missing, it is a nonlinearity between the layers. Once backpropagation made training multi-layer networks with nonlinearities practical — popularised by Rumelhart, Hinton and Williams in 1986 — the XOR problem became a textbook first example rather than an open question, and it still is one (§0.3 walks a full backprop derivation on a network like the one below).</p>`)}
+
+<h2><span class="sn">3.1.2</span> The nonlinearity, and what it actually buys you</h2>
+
+<p>The fix is to put a nonlinear function — an <b>activation</b> — between the two linear steps, applied to every entry of $h$ separately: $\\hat y = W_2\\,\\phi(W_1x + b_1) + b_2$, where $\\phi$ (the Greek letter phi) might be as simple as $\\phi(z) = \\max(0, z)$, which zeroes out every negative entry and leaves positive entries untouched. This is called a <b>ReLU</b>, short for rectified linear unit, and it is deliberately the least exotic nonlinear function imaginable — its whole job is to <i>not</i> be linear, and it does that job with a single comparison.</p>
+
+<p>The moment $\\phi$ sits between the two matrices, the collapsing argument above breaks. $W_2\\phi(W_1x+b_1)+b_2$ cannot in general be rewritten as $Wx+b$ for any fixed matrix $W$, because $\\phi$ treats different regions of the input differently — it keeps some coordinates and discards others, and which coordinates get discarded changes as $x$ moves. A single linear map can never do that; every linear map treats the whole of space the same way, stretching and rotating it uniformly (§0.2). A nonlinearity is what lets one layer's output depend on <i>which region</i> the input landed in, not merely on a fixed weighted sum of it, and that is precisely the extra freedom XOR needs.</p>
+
+${H.worked('an exact, hand-built network that solves XOR — no training required', `<p>Take two hidden units with weights $W_1 = \\begin{bmatrix}1&1\\\\1&1\\end{bmatrix}$ and biases $b_1 = (0, -1)$, a ReLU activation, and an output layer $w_2 = (1, -2)$ with $b_2 = 0$. Check all four corners.</p>
+<p>$(0,0)$: both units see $x_1+x_2=0$, so $h_1=\\mathrm{ReLU}(0)=0$ and $h_2=\\mathrm{ReLU}(0-1)=0$. Output $= 1(0) - 2(0) = 0$. Correct.</p>
+<p>$(1,0)$ and $(0,1)$: both see $x_1+x_2=1$, so $h_1=\\mathrm{ReLU}(1)=1$ and $h_2=\\mathrm{ReLU}(1-1)=0$. Output $=1(1)-2(0)=1$. Correct on both corners, by the symmetry of $x_1+x_2$.</p>
+<p>$(1,1)$: both see $x_1+x_2=2$, so $h_1=\\mathrm{ReLU}(2)=2$ and $h_2=\\mathrm{ReLU}(2-1)=1$. Output $=1(2)-2(1)=0$. Correct.</p>
+<p>All four labels come out exactly right, with weights chosen by hand rather than learned. The two hidden units carve the plane into three bands along the direction $x_1+x_2$ — below 0, between 0 and 1, above 1 — and the output layer reads off which band a point fell into. That is the entire mechanism: each ReLU unit contributes a fold in the surface, and the output layer is once again linear, just linear <i>on top of a surface that has already been bent</i>.</p>`)}
+
+${H.analogy(`<p>A single linear layer is like a pane of flat glass: whatever pattern of light passes through it comes out uniformly stretched, sheared or dimmed, but a straight edge going in is always a straight edge coming out. Stacking flat panes of glass, however many you like, still leaves you with flat glass — the combined effect of any number of uniform stretches is itself a uniform stretch (that is exactly the matrix-multiplication argument above).</p>
+<p>An activation function is a crease pressed into the glass at every point. One crease lets you fold the light differently on either side of it. Stack creased panes and the folds compound: the second pane can bend what the first pane already bent, in a way a single sheet of glass, however you stretched it, never could. Depth is valuable only once there is something to crease.</p>`)}
+
+<h2><span class="sn">3.1.3</span> From perceptron to universal approximator</h2>
+
+<p>The building block above — a linear combination of inputs, thresholded or squashed by a nonlinearity — is called a <b>perceptron</b> when the nonlinearity is a hard step: $\\hat y = \\mathbb{1}[w^\\mathsf{T}x+b>0]$, where $\\mathbb{1}[\\cdot]$ is 1 when the condition holds and 0 otherwise. A single perceptron is exactly the linear classifier that could not solve XOR. A <b>multilayer perceptron</b>, or MLP, is what you get by stacking several layers of perceptron-like units with a smooth nonlinearity between them and training the whole stack with backpropagation (§3.2) rather than hand-deriving the weights as in the worked example above.</p>
+
+<p>Push the width of a single hidden layer high enough and something strong becomes true: a network with one sufficiently wide hidden layer can approximate any continuous function on a bounded region of input space to any desired accuracy. This is the <b>universal approximation theorem</b>, and it is the formal statement behind the informal claim that neural networks can "learn anything".</p>
+
+${H.flag('That theorem is weaker than it sounds, and the gap between what it promises and what people assume it promises is worth stating precisely. It says a good approximation <i>exists</i> somewhere among the possible settings of the weights. It says nothing about how wide "sufficiently wide" needs to be for a given function — the required width can grow astronomically for functions with fine detail. It says nothing about whether gradient descent, starting from a random initialisation, will ever find that setting rather than getting stuck somewhere worse (§1.12). And it says nothing about how much data you would need to pin the right function down among all the ones the network could represent, which is a generalisation question entirely separate from an approximation one. Depth is what makes the approximation efficient in practice: composing many small nonlinear bends, layer after layer, reaches functions that a single enormous layer could only reach with far more units, because each new layer can reuse and recombine the features the previous layer already built.')}
+
+<h2><span class="sn">3.1.4</span> Watching a network build its own features</h2>
+
+<p><b>What you are looking at.</b> The lab below trains a real multilayer network — forward pass, backpropagation, Adam optimiser — entirely in your browser, on one of five two-dimensional datasets. The main panel shows the data points, coloured by class, with the network's current decision boundary drawn as a shaded region behind them: blue where it predicts one class, red the other, with the intensity of the colour showing how confident the prediction is. To the right, a small grid of tiny heatmaps shows the first hidden layer, one panel per unit. Each panel colours every point in the plane by how strongly that single hidden unit activates there, so you are looking directly at one learned feature at a time — literally the function $\\phi(w^\\mathsf{T}x+b)$ for one unit's own weights. Below those panels, a small line plot tracks the training loss as it falls.</p>
+
+<p><b>What to do with it.</b> Start on <i>circles</i> with one hidden layer of two units and press <i>Train 200 epochs</i>. Watch the two unit panels: each one settles into a crude half-plane, shaded on one side and not the other, because with a linear-in-effect first layer and only two of them, a half-plane cut is all a single unit can represent. Then switch to <i>spiral</i> with the same tiny network and train again — the loss plateaus, the boundary stays a rough wedge, and it never resolves the spiral no matter how long you train it. Now raise the width to 8 and the depth to 3 and train again on the spiral: the unit panels stop looking like clean half-planes and start looking like curved bands, and the boundary follows the spiral's arms.</p>
+
+<p><b>The thing genuinely worth noticing.</b> The failure on the two-unit spiral is not a training failure — running it for longer does not fix it, because the problem is capacity, not optimisation. Two units can produce at most two folds in the decision surface, and a spiral needs many. Once you add width or depth, the same Adam optimiser, on the same data, finds a boundary that actually wraps around the arms, and the individual unit panels show <i>why</i>: later units build curved features out of combinations of the cruder half-plane features the first layer produced. That progressive elaboration — features built out of features — is what "depth" buys once there is a nonlinearity to make it real, and it is the thing every much larger network in Part 4 is also doing, just with millions of units instead of a handful you can watch directly.</p>
 
 ${H.lab('playground', 'Build and train a neural network', 'Choose a dataset, a shape and an activation, then train. The small panels are the individual hidden units — each one is a feature the network invented. Watch them specialise: on the spiral, units first learn crude half-planes, then bend.')}
 
-<h2><span class="sn">3.1.3</span> What each knob actually does</h2>
+<h2><span class="sn">3.1.5</span> What each knob actually does</h2>
+<p>Every control in that lab maps onto a real modelling decision, and the same knobs reappear, scaled up, throughout the rest of this course.</p>
 ${H.table(['Knob', 'Effect', 'Failure mode when wrong'], [
-      ['<b>Width</b>', 'How many features per layer', 'Too narrow: underfits, loss plateaus high'],
-      ['<b>Depth</b>', 'How composed those features can be', 'Too deep without residuals/normalisation: gradients vanish (§3.3)'],
-      ['<b>Activation</b>', 'The shape of the bend', 'Saturating activations kill gradients through depth'],
-      ['<b>Learning rate</b>', 'Step size', 'Too high: loss oscillates or NaNs. Too low: never arrives'],
+      ['<b>Width</b>', 'How many features per layer — how many folds one layer can add', 'Too narrow: underfits, loss plateaus high, as the two-unit spiral above showed'],
+      ['<b>Depth</b>', 'How composed those features can be — later layers combine earlier ones', 'Too deep without residuals/normalisation: gradients vanish (§3.3)'],
+      ['<b>Activation</b>', 'The shape of the fold', 'Saturating activations kill gradients through depth'],
+      ['<b>Learning rate</b>', 'Step size in gradient descent (§0.3)', 'Too high: loss oscillates or NaNs. Too low: never arrives'],
       ['<b>Batch size</b>', 'Gradient noise per step', 'Too large: wasted compute past the critical batch size (§4.11)'],
       ['<b>Weight decay</b>', 'Pull toward small weights', 'Too high: underfits; too low: memorises']
     ])}
 
-<h2><span class="sn">3.1.4</span> The features are the point</h2>
-<p>Classical ML asks you to engineer features and then fits a simple model on top (§2.11). A neural network fits the feature extractor and the classifier <i>jointly</i>, which is why it wins wherever features are hard to write down — pixels, audio, text — and why it usually loses on small tabular data where the features are already meaningful and boosted trees can exploit them directly (§2.8).</p>
+<h2><span class="sn">3.1.6</span> The features are the point</h2>
+<p>Classical ML asks you to engineer features by hand and then fits a simple model on top of them (§2.11): someone decides that "ratio of two columns" or "distance to the nearest cluster centre" is a useful quantity, computes it once, and hands it to a linear model or a tree. A neural network collapses that two-stage process into one. The early layers <i>are</i> the feature engineering — the hidden-unit panels in the lab above are literally features being invented — and the final layer is a simple linear or logistic model sitting on top of them, trained jointly with the features it depends on rather than after them.</p>
+
+<p>That joint training is why neural networks win wherever the useful features are hard to state in advance — pixels, waveforms, raw text — and why they usually lose on small-to-medium tabular data, where a human already knows the meaningful quantities (age, income, days-since-last-purchase) and a boosted tree (§2.8) can exploit that structure directly, with less data and far less tuning. The network is not spending its capacity discovering "income divided by household size matters" when a person could simply have told it so.</p>
 
 ${H.probe([
-      ['Why do you need a nonlinearity?', 'Composed linear maps collapse to a single linear map; without one, depth is free of content.'],
-      ['What does the universal approximation theorem actually guarantee?', 'Existence of an approximating network, not learnability, not efficiency, and not generalisation.'],
-      ['When would you not use a neural net?', 'Small-to-medium tabular data with meaningful features — gradient boosting is usually better and far easier to explain.']
+      ['Why do you need a nonlinearity?', 'Composed linear maps collapse to a single linear map, as the associativity argument in §3.1.1 shows directly: $W_2(W_1x+b_1)+b_2 = Wx+b$ for some fixed $W$ and $b$. Without a nonlinearity between layers, depth adds parameters and computation but no new functions the network can represent.'],
+      ['What does the universal approximation theorem actually guarantee?', 'Existence of an approximating network somewhere in weight space — nothing about how wide it must be, whether gradient descent can find it, or how much data would be needed to identify it. Depth, not the theorem itself, is what makes approximation practical.'],
+      ['When would you not use a neural net?', 'Small-to-medium tabular data with features a person already understands — gradient boosting is usually more accurate, needs less data, and is far easier to explain than a network spending its capacity rediscovering feature interactions a domain expert could have named directly.']
     ])}`,
     labs: {
       playground: function (host) {
@@ -147,13 +191,13 @@ ${H.probe([
         q: 'You stack three linear layers with no activation between them. The result is…',
         options: ['a deep model with more capacity', 'exactly equivalent to a single linear layer', 'a model that cannot be trained', 'a convex problem with better conditioning'],
         answer: 1,
-        why: 'Composition of linear maps is linear: $W_3W_2W_1$ is one matrix. The nonlinearity is what makes depth mean anything.'
+        why: 'Composition of linear maps is linear, and the proof is nothing more than matrix associativity: $W_3(W_2(W_1x)) = (W_3W_2W_1)x$ is one matrix applied once, exactly as §3.1.1 derives for two layers and induction extends to any number. Option A is the tempting one, because more layers really do mean more parameters and more arithmetic — but neither of those is the same thing as more <i>representable functions</i>, and here the extra parameters buy nothing: every setting of $W_3, W_2, W_1$ collapses to some single matrix $W$, so the family of functions three linear layers can express is identical to the family one layer can express. The nonlinearity between layers is what breaks that collapse and is the only thing that makes depth mean anything.'
       },
       {
         q: 'The universal approximation theorem guarantees…',
         options: ['that gradient descent will find a good network', 'that a sufficiently wide network can approximate any continuous function on a compact set', 'good generalisation', 'that depth beats width'],
         answer: 1,
-        why: 'It is an existence result about approximation only — nothing about optimisation, sample complexity or generalisation.'
+        why: 'It is a pure existence result about approximation: somewhere among all the possible weight settings for a wide-enough single hidden layer, one of them gets arbitrarily close to any continuous function on a bounded region. Option A is the trap, because "a good network exists" and "gradient descent will find it starting from a random initialisation" are entirely different claims — the theorem is silent on optimisation, and §1.12 is where the difficulty of actually finding good minima gets treated properly. It says nothing about how much data identifying the right function requires (generalisation) and nothing about whether width or depth is the more efficient route to it — in practice depth usually wins, which is the opposite of what the theorem, read carelessly, might suggest.'
       }
     ],
     cards: [
@@ -167,42 +211,65 @@ ${H.probe([
     id: 'backprop', track: 'deep', num: '3.2',
     title: 'Backpropagation, by hand',
     lede: 'Nothing more than the chain rule applied layer by layer in reverse, reusing cached forward activations so the whole gradient costs about one forward pass. That is the entire reason deep learning is computationally feasible.',
+    rests: 'This section leans directly on two derivations done in full elsewhere: §0.3.5 derives the chain rule and applies it to a one-unit network; §0.7.6 costs both bracketing orders of the resulting matrix product and shows reverse mode wins by a factor of hundreds on a toy network, millions at real scale. Neither is rederived here — this section is those two results, applied layer by layer to a real multi-layer network, with the bookkeeping made concrete.',
     html: `
-<h2><span class="sn">3.2.1</span> The mechanism</h2>
-<p>For a composed function $f = f_3 \\circ f_2 \\circ f_1$, the derivative is a product of Jacobians: $\\partial f/\\partial x = J_3 J_2 J_1$. Backpropagation evaluates that product <b>right-to-left</b>, which is cheaper than left-to-right whenever the output is a scalar — one number out, many parameters in. That asymmetry is why reverse-mode automatic differentiation, not forward-mode, powers deep learning.</p>
+<p>A network with three hidden layers computes a composition $L = \\ell(f_3(f_2(f_1(x))))$: the input goes through a layer, then another, then another, and finally a loss compares the result with a label. Suppose you need $\\partial L/\\partial W^{(1)}$, the gradient of the loss with respect to the very first layer's weights, buried three compositions deep. You already know, from §0.3.5, that this is a product of local derivatives along the path from the loss back to that parameter. The question this section answers is not <i>what</i> to multiply — that was settled in §0.3 — but <i>how to organise the multiplication</i> so that computing the gradient of a million-parameter network costs about the same as running it once forward, rather than a million times.</p>
 
-${H.worked('worked backprop — one step, by hand', `
+<h2><span class="sn">3.2.1</span> Why you cannot just write the derivative out</h2>
+
+<p>The naive plan is to expand $L$ symbolically as one long formula in terms of every weight, then differentiate that formula with respect to each parameter in turn. This is exactly what §0.7.1 did for a two-parameter linear model, and it worked fine there. It stops working the moment the network has any depth to it, for a reason that has nothing to do with calculus being hard: the expanded formula for $L$ in terms of a deep network's weights has a term for every path from an input to the output, and the number of such paths multiplies at every layer. Differentiating that expanded mess by hand, one weight at a time, is the same combinatorial explosion §0.3.1 used to rule out grid-searching a loss — asking one question at a time about a problem whose size grows exponentially in its depth.</p>
+
+<p>What rescues the situation is the same thing that rescued gradient descent in §0.3: never expand the formula. Keep the network as a sequence of small, simple steps, and apply the chain rule <i>mechanically</i>, one layer at a time, reusing intermediate results rather than recomputing them. That reuse is backpropagation, and it is worth being precise about what is genuinely new here versus what is a direct application of results already earned. The chain rule itself, and the observation that a gradient is a product of local derivatives along a path, is §0.3.5 in full. The observation that this product should be evaluated starting from the scalar loss and working backwards, rather than starting from the many parameters and working forwards, is §0.7.6's cost-and-shape argument, with the concrete tally of 535,040 multiply-adds one way against 104,775,328 the other on a four-layer example. Backpropagation is the discipline of doing exactly that, layer after layer, with one extra ingredient: caching.</p>
+
+<h2><span class="sn">3.2.2</span> A worked step, by hand</h2>
+
+<p>Before the general machinery, work one concrete case all the way through, forward and back, small enough to check by hand at every line.</p>
+
+${H.worked('worked backprop — one full step, by hand', `
 <p>A two-layer net with one unit per layer: $z_1 = w_1x + b_1$, $a_1 = \\mathrm{ReLU}(z_1)$, $\\hat y = w_2a_1 + b_2$, loss $L = \\tfrac12(\\hat y - y)^2$. Take $x=1$, $w_1=0.5$, $w_2=1.0$, biases 0, target $y=1$.</p>
-<p><b>Forward.</b> $z_1 = 0.5$, $a_1 = 0.5$, $\\hat y = 0.5$, $L = \\tfrac12(0.5-1)^2 = 0.125$.</p>
-<p><b>Backward.</b> $\\partial L/\\partial\\hat y = \\hat y - y = -0.5$. Then $\\partial L/\\partial w_2 = (\\hat y - y)a_1 = -0.25$; $\\partial L/\\partial a_1 = (\\hat y-y)w_2 = -0.5$; through ReLU ($z_1 > 0$, so the gate passes) $\\partial L/\\partial z_1 = -0.5$; and $\\partial L/\\partial w_1 = \\partial L/\\partial z_1 \\cdot x = -0.5$.</p>
-<p><b>Update</b> at $\\eta = 0.1$: $w_2 \\to 1.025$, $w_1 \\to 0.55$.</p>
-<p><b>Re-forward.</b> $a_1 = 0.55$, $\\hat y = 0.564$, $L = 0.095$ — down from 0.125. ✓</p>
-<p>Two things this makes concrete. Every gradient is a product of local derivatives along one path — multiply enough factors below 1 and you get the vanishing gradient (which is why the ReLU gate, passing 1 rather than $\\sigma' \\le 0.25$, was such a large practical change). And $a_1$ appears in $\\partial L/\\partial w_2$, which is <i>why</i> forward activations must be cached: that cache is the memory activation checkpointing (§4.11) trades away.</p>`)}
+<p><b>Forward.</b> $z_1 = 0.5(1) = 0.5$. $a_1 = \\mathrm{ReLU}(0.5) = 0.5$, since $0.5 > 0$ the gate is open. $\\hat y = 1.0(0.5) = 0.5$. $L = \\tfrac12(0.5-1)^2 = \\tfrac12(0.25) = 0.125$.</p>
+<p><b>Backward, one link of the chain at a time.</b> Start where the loss is defined: $\\partial L/\\partial\\hat y = \\hat y - y = 0.5 - 1 = -0.5$, exactly the residual, by the power rule applied to the square (§0.3.2). Now step back through the second layer: $\\partial L/\\partial w_2 = (\\partial L/\\partial\\hat y)\\cdot(\\partial\\hat y/\\partial w_2) = (-0.5)(a_1) = (-0.5)(0.5) = -0.25$, and $\\partial L/\\partial a_1 = (\\partial L/\\partial\\hat y)\\cdot(\\partial\\hat y/\\partial a_1) = (-0.5)(w_2) = (-0.5)(1.0) = -0.5$. Step back through the ReLU: since $z_1 = 0.5 > 0$ the gate's local derivative is 1 (§0.3.5), so $\\partial L/\\partial z_1 = (-0.5)(1) = -0.5$, unchanged. Step back through the first layer: $\\partial L/\\partial w_1 = (\\partial L/\\partial z_1)\\cdot x = (-0.5)(1) = -0.5$.</p>
+<p><b>Update</b> at $\\eta = 0.1$: $w_2 \\leftarrow 1.0 - 0.1(-0.25) = 1.025$; $w_1 \\leftarrow 0.5 - 0.1(-0.5) = 0.55$.</p>
+<p><b>Re-forward, to check the step actually helped.</b> $z_1 = 0.55$, $a_1 = 0.55$, $\\hat y = 1.025 \\times 0.55 = 0.56375$, $L = \\tfrac12(0.56375-1)^2 = \\tfrac12(0.43625)^2 \\approx 0.0952$ — down from 0.125, exactly as gradient descent promises (§0.3.2).</p>
+<p>Two things about this arithmetic generalise directly to networks a million times larger. First, every gradient here was a product of local factors read straight off the forward computation — $x$, $w_2$, and the ReLU gate — multiplied along the single path from the loss back to each parameter, with nothing rederived from scratch at each step. Second, $a_1$ was needed again during the backward pass, to compute $\\partial L/\\partial w_2$, well after the forward pass had already produced it and moved on. That reuse is not incidental; it is the entire reason backward passes need a cache of forward values, and §3.2.4 below makes the memory cost of that cache explicit.</p>`)}
+
+<h3>Watching numbers flow both ways</h3>
+
+<p><b>What you are looking at.</b> Five boxes laid left to right are the stages of the worked example above: the input $x$, the pre-activation $z_1 = w_1x+b_1$, the activation $a_1 = \\phi(z_1)$, the prediction $\\hat y = w_2a_1+b_2$, and the loss $L$. The bold number inside each box is that stage's forward <i>value</i>, computed left to right along the blue arrows. The red number beneath each box is $\\partial L/\\partial\\,\\cdot$ for that stage, computed right to left along the red arrows — the backward pass. The line beneath the diagram spells out the two products you actually want, $\\partial L/\\partial w_2$ and $\\partial L/\\partial w_1$, exactly as multiplied out in the worked box above.</p>
+
+<p><b>What to do with it.</b> Four controls are yours to set directly: the input $x$, the target $y$, the learning rate $\\eta$, and the activation function. The weights $w_1, w_2$ (and the biases, held at 0) are the network's own parameters — you do not set them directly, you only change them by training, exactly as in real backpropagation. Press <i>Reset to the worked example</i> to land on $x=1$, $y=1$, $\\eta=0.1$ with ReLU, matching the worked box above line for line. Then press <i>Take one step</i> and check the printed $\\partial L/\\partial w_2$ and $\\partial L/\\partial w_1$ against the arithmetic you just did by hand — they should match to three decimal places. Press it again, or press <i>Run 50 steps</i>, and watch the loss curve in the corner fall.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Switch the activation to sigmoid and watch $\\partial L/\\partial w_1$ shrink relative to the ReLU case, even though $\\partial L/\\partial w_2$ barely changes. The difference is entirely the local gate: a ReLU that is active contributes a factor of exactly 1 to the product passing through it, while a sigmoid contributes at most $0.25$ (§0.3.2's rule table). With only two layers the effect is a modest shrink you can read off the readout. Stack forty layers of sigmoid instead of two and that same factor, multiplied forty times, is the vanishing gradient — the subject of the next section, and something you are already watching happen in miniature here.</p>
 
 ${H.lab('bp', 'Backprop, step by step, with your numbers', 'Every intermediate value and every gradient, recomputed as you move the inputs. Press <i>step</i> to apply the update and watch the loss fall — the same arithmetic as the worked box, under your control.')}
 
-<h2><span class="sn">3.2.2</span> The general algorithm</h2>
+<h2><span class="sn">3.2.3</span> The general algorithm</h2>
+<p>The worked example above had one unit per layer, so every product was a product of scalars. A real layer has many units, so each local derivative becomes a vector or a matrix, and the chain rule becomes the matrix chain rule of §0.7.6: multiply Jacobians instead of numbers, in the same right-to-left order, for the same reason. Written as an algorithm, layer by layer:</p>
 ${H.steps([
-      '<b>Forward:</b> compute and cache $z^{(l)} = W^{(l)}a^{(l-1)} + b^{(l)}$ and $a^{(l)} = \\phi(z^{(l)})$ for every layer.',
-      '<b>Output error:</b> $\\delta^{(L)} = \\nabla_a L \\odot \\phi\'(z^{(L)})$ — for sigmoid + cross-entropy this simplifies to $\\hat y - y$.',
-      '<b>Propagate:</b> $\\delta^{(l)} = (W^{(l+1)\\mathsf{T}}\\delta^{(l+1)}) \\odot \\phi\'(z^{(l)})$.',
-      '<b>Gradients:</b> $\\partial L/\\partial W^{(l)} = \\delta^{(l)}a^{(l-1)\\mathsf{T}}$ and $\\partial L/\\partial b^{(l)} = \\delta^{(l)}$.'
+      '<b>Forward:</b> compute and cache $z^{(l)} = W^{(l)}a^{(l-1)} + b^{(l)}$ and $a^{(l)} = \\phi(z^{(l)})$ for every layer, keeping every $a^{(l)}$ in memory rather than discarding it.',
+      '<b>Output error:</b> $\\delta^{(L)} = \\nabla_a L \\odot \\phi\'(z^{(L)})$, where $\\odot$ means multiply entry by entry — for sigmoid output with cross-entropy loss this pair of local derivatives cancels down to the clean $\\hat y - y$ derived in full in §0.7.6.',
+      '<b>Propagate:</b> $\\delta^{(l)} = (W^{(l+1)\\mathsf{T}}\\delta^{(l+1)}) \\odot \\phi\'(z^{(l)})$ — exactly the linear-layer backward rule $\\partial\\mathcal{L}/\\partial x = W^\\top g$ derived from first principles in §0.7.6, applied once per layer, with the activation\'s local derivative folded in.',
+      '<b>Gradients:</b> $\\partial L/\\partial W^{(l)} = \\delta^{(l)}a^{(l-1)\\mathsf{T}}$ and $\\partial L/\\partial b^{(l)} = \\delta^{(l)}$ — the outer product $\\partial\\mathcal{L}/\\partial W = g\\,x^\\top$ from the same derivation, with $\\delta^{(l)}$ playing the role of $g$ and $a^{(l-1)}$ the role of the layer\'s input.'
     ])}
-<p>Note the outer product in step 4: the gradient of a weight matrix is (error at this layer) × (activation from the layer below). That single line is what every framework's <code>backward()</code> implements.</p>
+<p>Read step 4 as a sentence, because it is the one line every framework's <code>backward()</code> implements: <b>the gradient of a weight matrix is the error arriving at this layer, outer-producted with the activation that fed it.</b> A unit that received a large incoming activation gets a proportionally large weight gradient, which is the same "features that are always large dominate the update" fact §0.2 and §0.3.4 raised about scaling — it now shows up as a property of every single layer, not just the input.</p>
 
 ${H.code(`# backprop in numpy, for a 2-layer net — this is the whole idea
-z1 = X @ W1 + b1;  a1 = np.maximum(0, z1)      # cache a1
+z1 = X @ W1 + b1;  a1 = np.maximum(0, z1)      # cache a1 — needed again below
 z2 = a1 @ W2 + b2; p  = 1 / (1 + np.exp(-z2))
 
-d2 = (p - y) / len(X)                          # dL/dz2 for BCE+sigmoid
-dW2 = a1.T @ d2;        db2 = d2.sum(0)
-d1  = (d2 @ W2.T) * (z1 > 0)                   # ReLU gate
-dW1 = X.T  @ d1;        db1 = d1.sum(0)`)}
+d2 = (p - y) / len(X)                          # dL/dz2 for BCE+sigmoid — the clean p - y
+dW2 = a1.T @ d2;        db2 = d2.sum(0)        # step 4: error outer-producted with the input it saw
+d1  = (d2 @ W2.T) * (z1 > 0)                   # step 3: propagate through W2ᵀ, then gate through ReLU
+dW1 = X.T  @ d1;        db1 = d1.sum(0)        # step 4 again, one layer earlier`)}
+
+<h2><span class="sn">3.2.4</span> Why forward activations must be cached</h2>
+<p>Look again at step 4: $\\partial L/\\partial W^{(l)}$ needs $a^{(l-1)}$, the activation the layer <i>received</i> during the forward pass, not anything computed during the backward pass. If that value had not been kept in memory, computing this one gradient would mean re-running the forward pass from the input up to layer $l-1$ all over again — for every layer, at every training step. Caching is not an optimisation added on top of backpropagation; it is the thing that makes the reverse-mode cost analysis of §0.7.6 actually hold. Without the cache, "one backward pass costs about one forward pass" becomes false, because part of the forward pass gets paid for twice.</p>
+<p>This is also, precisely, the trade activation checkpointing makes in the other direction (§4.11): it deliberately discards some of the cache to save memory, accepting that a partial forward recomputation will be needed later. Seen from here, checkpointing is not a separate trick — it is choosing, layer by layer, to pay the cost that caching exists to avoid, in exchange for fitting a bigger model in the same GPU memory.</p>
 
 ${H.probe([
-      ['Why reverse-mode?', 'One scalar loss, many parameters: reverse mode costs ~one forward pass per output, forward mode one per input.'],
-      ['Why must activations be cached?', 'The weight gradient is δ times the incoming activation; without the cache you would recompute the forward pass — which is exactly the trade activation checkpointing makes.'],
-      ['Where do vanishing gradients come from?', 'The product of local derivatives along a path; factors below 1 compound geometrically with depth.']
+      ['Why reverse-mode rather than forward-mode?', 'One scalar loss, many parameters. §0.7.6 costs both bracketing orders of the same Jacobian product on a concrete four-layer example and finds reverse mode cheaper by a factor of 196 there, growing without bound as the network grows — reverse mode costs about one sweep per output, forward mode about one per input, and a loss has one output against millions of inputs.'],
+      ['Why must activations be cached?', 'The weight gradient at layer $l$ is $\\delta^{(l)}a^{(l-1)\\mathsf{T}}$ (§3.2.3, step 4) — it needs the activation the layer received on the way forward. Without the cache you would have to recompute part of the forward pass during the backward pass, which is exactly the cost activation checkpointing (§4.11) knowingly re-introduces to save memory.'],
+      ['Where do vanishing gradients come from, in this picture?', 'Every $\\delta^{(l)}$ in step 3 is the previous $\\delta^{(l+1)}$ multiplied by a local activation derivative. Multiply enough factors below 1 along a long chain — sigmoid contributes at most 0.25 per layer — and the product compounds toward zero geometrically, which §3.3 develops in full.']
     ])}`,
     labs: {
       bp: function (host) {
@@ -297,13 +364,13 @@ ${H.probe([
         q: 'In the worked example, $\\partial L/\\partial w_1 = -0.5$. Which chain produces it?',
         options: ['$(\\hat y - y)\\cdot a_1$', '$(\\hat y-y)\\cdot w_2\\cdot \\phi\'(z_1)\\cdot x$', '$(\\hat y - y)\\cdot x^2$', '$w_1 \\cdot x$'],
         answer: 1,
-        why: 'Four local derivatives multiplied along the single path from L back to w₁: loss → output weight → activation gate → cached input.'
+        why: 'Four local derivatives multiplied along the single path from $L$ back to $w_1$: the residual $\\hat y - y$ at the loss, the output weight $w_2$ crossed on the way back through the second layer, the activation gate $\\phi\'(z_1)$ (1 for an active ReLU), and finally $x$, the input the first layer actually saw. Option A is the tempting distractor because it is the <i>correct</i> gradient for $w_2$, one layer later in the chain — mixing up which layer\'s local factors belong in which product is the single most common backprop-by-hand mistake, and it is exactly what the worked derivation in §3.2.2 walks past step by step so you cannot skip a link.'
       },
       {
         q: 'Activation checkpointing trades…',
         options: ['accuracy for speed', 'memory for recomputation — it discards cached activations and recomputes them in the backward pass', 'batch size for depth', 'precision for range'],
         answer: 1,
-        why: 'The cache exists because weight gradients need the incoming activations; dropping it saves memory at the cost of a partial extra forward pass.'
+        why: 'The weight-gradient rule $\\partial L/\\partial W^{(l)} = \\delta^{(l)}a^{(l-1)\\mathsf{T}}$ needs the activation a layer received on the forward pass, so a standard backward pass keeps every one of those activations in memory for the whole training step. Checkpointing deliberately throws most of that cache away and, when the backward pass later needs a discarded activation, recomputes it with a small extra forward pass from the nearest surviving checkpoint. It genuinely costs compute — typically one extra forward pass\'s worth — in exchange for fitting a model that would not otherwise fit in memory at all, which is a trade worth making far more often than it sounds.'
       }
     ],
     cards: [
@@ -319,7 +386,21 @@ ${H.probe([
     title: 'Activations and the vanishing gradient',
     lede: 'One plot explains a decade of architecture history: what a function’s derivative does to a product of forty factors.',
     html: `
-<h2><span class="sn">3.3.1</span> The candidates</h2>
+<p>§3.2 ended on a small, worrying observation: switching the one-unit network's activation from ReLU to sigmoid visibly shrank $\\partial L/\\partial w_1$, even with only two layers between the parameter and the loss. Every gradient in a network is a product of local derivatives along the path back from the loss (§0.3.5, §3.2.3), and a sigmoid's local derivative is never larger than a ReLU's. Two layers barely notice. Forty do. This section makes that difference precise, walks through why it decided a decade of architecture choices, and works through the three fixes that let networks train at real depth today.</p>
+
+<h2><span class="sn">3.3.1</span> The derivative that started it</h2>
+
+<p>The sigmoid, $\\sigma(z) = 1/(1+e^{-z})$, was the default nonlinearity for most of the 1990s and 2000s, chosen because it squashes any real number into $(0,1)$ and reads naturally as a probability. Its derivative is worth deriving once rather than just quoting, because the shape of the result — not just its formula — is what causes the trouble.</p>
+
+${H.deriv('the sigmoid derivative, $\\sigma\'(z) = \\sigma(z)(1-\\sigma(z))$', [
+      ['$\\sigma(z) = \\dfrac{1}{1+e^{-z}} = (1+e^{-z})^{-1}$', 'Rewrite as a power so the power rule and chain rule (§0.3.2) apply directly.'],
+      ['$\\sigma\'(z) = -(1+e^{-z})^{-2}\\cdot(-e^{-z}) = \\dfrac{e^{-z}}{(1+e^{-z})^2}$', 'Chain rule: differentiate the outer power, then multiply by the derivative of the inner expression $1+e^{-z}$, which is $-e^{-z}$ (§0.3.2\'s exponential rule); the two minus signs cancel.'],
+      ['$= \\dfrac{1}{1+e^{-z}}\\cdot\\dfrac{e^{-z}}{1+e^{-z}}$', 'Split the fraction into two factors, both built from the same expression $1+e^{-z}$.'],
+      ['$= \\sigma(z)\\cdot\\dfrac{(1+e^{-z})-1}{1+e^{-z}} = \\sigma(z)\\,(1-\\sigma(z))$', 'Rewrite the second factor as $1 - \\dfrac{1}{1+e^{-z}} = 1-\\sigma(z)$, using the definition of $\\sigma$ again.']
+    ], 'The result is a product $\\sigma(1-\\sigma)$ of two numbers that always sum to 1 — the product of two numbers summing to a constant is maximised when they are equal, at $\\sigma=0.5$, giving $0.5\\times0.5=0.25$. That is the ceiling: no matter what $z$ is, $\\sigma\'(z) \\le 0.25$, and it falls toward zero as $z$ moves away from 0 in either direction. A unit whose pre-activation sits far from zero — which is most units, most of the time, once training has moved weights away from their random start — contributes almost nothing to any gradient product that passes through it.')}
+
+<p>Tanh, the zero-centred alternative that largely replaced sigmoid through the 2000s, has the same shape of problem in a milder form: its derivative $1-\\tanh^2z$ tops out at 1 rather than 0.25, but still collapses to 0 as $|z|$ grows. Both functions are <b>saturating</b>: flat on both sides, with a derivative that vanishes away from the origin by construction, because "squash everything into a bounded range" and "have a derivative that survives everywhere" are directly in tension — a function that is bounded above and below cannot keep rising forever, so its slope has to fall off somewhere.</p>
+
 ${H.table(['Activation', 'Definition', 'Derivative range', 'Character'], [
       ['<b>Sigmoid</b>', '$1/(1+e^{-z})$', '(0, 0.25]', 'Saturates both sides; historical; still the output layer for binary probability'],
       ['<b>Tanh</b>', '$\\tanh z$', '(0, 1]', 'Zero-centred sigmoid; better than sigmoid, still saturates'],
@@ -329,14 +410,30 @@ ${H.table(['Activation', 'Definition', 'Derivative range', 'Character'], [
       ['<b>SiLU / Swish</b>', '$z\\,\\sigma(z)$', 'smooth', 'Very close to GELU; the gate inside SwiGLU (§4.6)']
     ])}
 
+<p><b>What you are looking at.</b> The lab below plots each activation $\\phi$ on top and its derivative $\\phi'$ underneath, on the same horizontal axis $z$. A faint dashed sigmoid is drawn in both panels for reference whenever the comparison toggle is on. The green horizontal line in the lower panel marks derivative $=1$: the threshold that decides, layer after layer, whether a gradient product grows or shrinks.</p>
+
+<p><b>What to do with it.</b> Start on sigmoid and read the lower panel: the curve never reaches the green line, peaking at exactly the $0.25$ the derivation above predicts, and falling to nearly nothing within a few units of the origin in either direction. Switch to ReLU and the lower panel becomes two flat segments, at exactly 0 and exactly 1 — no gentle taper, a hard switch. Switch to GELU or SiLU and note that the derivative panel is smooth, mostly hovering near 1, but dips slightly below zero just to the left of the origin, a property plain ReLU does not have.</p>
+
+<p><b>The thing genuinely worth noticing.</b> The readout's <i>after 10 layers (max)</i> field raises the peak derivative to the tenth power — a rough proxy for what ten stacked layers of this activation do to a gradient passing through all of them at their most favourable point. On sigmoid that number is of order $10^{-6}$ even under the best case, where every single unit happens to sit exactly at $z=0$; in practice units drift away from zero during training and the true figure is worse. On ReLU it stays exactly 1, because $1^{10}=1$ regardless of depth. That one exponent, applied to a number below versus at 1, is the entire reason the choice of activation decided whether networks past a handful of layers could train at all.</p>
+
 ${H.lab('act', 'Activations and their derivatives, side by side', 'The lower panel is the one that matters: it is the factor each layer contributes to the gradient product. Note how sigmoid never exceeds 0.25 and how ReLU passes exactly 1 wherever it is active.')}
 
 <h2><span class="sn">3.3.2</span> Why depth used to be impossible</h2>
-<p>Backpropagation multiplies one such factor per layer. With sigmoid, each factor is at most 0.25, so after 10 layers the gradient is scaled by at most $0.25^{10} \\approx 10^{-6}$; after 40, $10^{-24}$. The early layers receive nothing and never learn. Exploding gradients are the same phenomenon with factors above 1.</p>
+<p>Backpropagation multiplies one such factor per layer, exactly as §3.2.3's step 3 does: $\\delta^{(l)} = (W^{(l+1)\\mathsf{T}}\\delta^{(l+1)})\\odot\\phi'(z^{(l)})$, one activation-derivative gate at every single layer on the way back. With sigmoid, each factor is at most $0.25$, so after 10 layers the gradient reaching layer 1 is scaled by at most $0.25^{10} \\approx 9.5\\times10^{-7}$; after 40 layers, at most $0.25^{40} \\approx 8\\times10^{-25}$ — a number with no meaningful representation in the floating-point arithmetic any framework uses. The early layers of such a network receive an update indistinguishable from zero and simply never move, no matter how long training runs or how good the data is. This is the <b>vanishing gradient</b>, and it is not a bug in any particular implementation; it is what the chain rule does, mechanically, to a long product of small numbers. Exploding gradients are the mirror image: a typical local factor above 1, compounding upward instead of downward, usually surfacing as a loss that turns to NaN within the first few hundred steps.</p>
+
+${H.history(`<p>This is the reason very deep networks were considered impractical for most of the 1990s and 2000s, well after the theory of backpropagation itself (§0.3.5's history box) was settled. Networks of two or three hidden layers trained tolerably; ten or more, with sigmoid or tanh units, routinely failed to learn anything in their early layers, and the community's working assumption for years was that depth simply did not help much in practice, whatever the universal approximation theorem (§3.1) said about the theory.</p>
+<p>The turning point was less a single paper than a sequence of small mechanical fixes to exactly this multiplication problem. Xavier Glorot and Yoshua Bengio's 2010 analysis of why deep networks were hard to train pointed squarely at activation saturation and initial-variance mismatch (§3.4 derives the second half of that argument). Glorot, Bordes and Bengio's 2011 paper then showed that simply replacing sigmoid and tanh with ReLU — a function whose derivative is exactly 1 wherever it is active, discussed below — measurably improved deep network training. AlexNet's 2012 ImageNet result, which used ReLU throughout an eight-layer network, is usually credited as the moment the field noticed, and ReLU became close to a universal default within two or three years. GELU (Hendrycks and Gimpel, 2016) and SiLU/Swish (Ramachandran, Zoph and Le, 2017) came later, as smoother variants motivated by slightly different arguments, and GELU in particular is now the default inside transformer feed-forward blocks (§4.5, §4.6). None of these are exotic ideas. Each one is a direct response to the single number $0.25$ derived above.</p>`)}
 
 ${H.lab('vanish', 'The gradient product, across depth', 'Set the activation and the depth, and watch the gradient magnitude reaching layer 1. This is computed by running an actual backward pass through a randomly initialised network — the collapse is not a cartoon.')}
 
+<p><b>What you are looking at.</b> This lab builds an actual randomly-initialised network of the width and depth you choose, runs one real forward pass, then one real backward pass from a random gradient at the output, and plots $\\log_{10}$ of the gradient's magnitude at every layer from the last back to the first. The horizontal axis is layer number, counting from 1 at the input; the vertical axis is a logarithm because the quantities span so many orders of magnitude that a linear scale would show nothing but a flat line at zero.</p>
+
+<p><b>What to do with it.</b> Start on sigmoid at depth 20 with residual connections off. The line falls almost as a straight ramp on this logarithmic scale — a straight line here means the underlying quantity is shrinking geometrically, exactly as the powers-of-0.25 argument above predicts — and by layer 1 the readout reports a verdict of <i>vanished</i>. Switch to ReLU with everything else unchanged: the line stays close to flat, because a factor of 1 raised to any power is still 1. Push the depth control to 40 on sigmoid and watch the readout's ratio between the last layer and layer 1 grow by roughly ten orders of magnitude for every doubling of depth.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Turn on residual connections while still using sigmoid. The collapse largely disappears, even though every individual sigmoid gate is exactly as saturating as it was a moment ago. Nothing about the activation changed; what changed is that the gradient now has an additional path back to layer 1 that does not pass through any activation gate at all, contributing a term of exactly 1 at every layer regardless of what the sigmoid units are doing. That is precisely the mechanism §3.3.3 names as the second of three fixes, and seeing it rescue an otherwise-doomed sigmoid network is a stronger argument for residual connections than any amount of prose.</p>
+
 <h2><span class="sn">3.3.3</span> The three fixes, and what each one does</h2>
+<p>Every fix that actually solved the vanishing-gradient problem attacks the same product of local derivatives from a different angle, and it is worth naming all three together because a real modern architecture uses all three at once rather than choosing between them.</p>
 ${H.table(['Fix', 'Mechanism', 'Where you meet it'], [
       ['<b>ReLU family</b>', 'Local derivative is exactly 1 on the active side, so the product does not decay', 'Everywhere since ~2012'],
       ['<b>Residual connections</b>', '$y = x + F(x)$ gives a path whose local derivative is exactly 1, so gradients reach layer 1 unattenuated', 'Every transformer block (§4.5)'],
@@ -344,13 +441,17 @@ ${H.table(['Fix', 'Mechanism', 'Where you meet it'], [
     ])}
 ${H.key('Every gradient is a product of local derivatives along a path. ReLU makes the factors 1, residuals add a path of pure 1s, and normalisation stops the inputs drifting into the flat regions. Three fixes, one problem.')}
 
+${H.intuition(`<p>It is worth noticing that these three fixes are not competing solutions to be ranked and chosen among — they attack three different multiplicative culprits, and a modern transformer block genuinely needs all three. ReLU-family activations keep the <i>per-unit gate</i> near 1 whenever a unit is active. Residual connections give the gradient an escape route that bypasses the gates entirely, so even a unit that is currently saturated or switched off does not block the whole network's training. Normalisation keeps the raw numbers flowing into each activation in the range where its gate is actually favourable in the first place, rather than drifting into the saturated tails where even a "good" activation like GELU starts to behave like a bad one.</p>
+<p>Remove any one of the three from a genuinely deep network and training degrades measurably, which is the practical proof that they are solving different pieces of the same underlying multiplication.</p>`)}
+
 <h3>Dying ReLU</h3>
-<p>A ReLU unit whose pre-activation is negative for every input in the data receives zero gradient forever — it is dead. Causes: too large a learning rate pushing weights into a bad region, or a large negative bias. Leaky ReLU, GELU and careful initialisation all reduce it. In practice with modern initialisation and Adam it is rarely the binding problem, but it is worth being able to name.</p>
+<p>ReLU trades the slow, graceful decay of a saturating activation for a sharper failure mode. Its derivative is a clean $1$ on the active side, but exactly $0$ on the inactive side — not small, exactly zero. If a unit's pre-activation $z$ turns out negative for every single example in the training set, that unit's output is $0$ everywhere, its local derivative is $0$ everywhere, and by §3.2.3's propagation step, every gradient passing back through it is multiplied by that $0$ and vanishes on the spot. The unit is not merely slow to learn; it is permanently cut off from the loss, because a gradient of exactly zero at every step never nudges its incoming weights anywhere that would reopen it. This is a <b>dead ReLU</b>, and the four-slider lab in §3.2 already showed you building one deliberately by dragging $z$ negative.</p>
+<p>The usual causes are a learning rate large enough that one bad update pushes a unit's weights into a region where it is negative on the whole training distribution, or an initial bias set too far negative to begin with. Leaky ReLU (a small nonzero slope on the negative side) and GELU or SiLU (smooth rather than hard-zero on the negative side) all remove the failure mode by construction, since none of them has a region with a local derivative of exactly zero. In practice, with the initialisation schemes of §3.4 and an adaptive optimiser such as Adam (§3.5), dying units are rarely the binding constraint on a real training run — but the mechanism is worth being able to name precisely, because "my accuracy plateaued and some fraction of units never activate on any input" is a specific, diagnosable symptom with this specific, mechanical cause.</p>
 
 ${H.probe([
-      ['Why did ReLU matter so much?', 'Its derivative is exactly 1 on the active side, so the depth-wise product of local derivatives stops decaying.'],
-      ['What do residual connections do to gradients?', 'They add a path whose local derivative is 1, so the gradient reaches early layers unattenuated regardless of depth.'],
-      ['GELU vs ReLU?', 'GELU is a smooth, probabilistically-motivated ReLU; slightly better in transformers, marginally more expensive.']
+      ['Why did ReLU matter so much?', 'Its derivative is exactly 1 on the active side, so the depth-wise product of local derivatives stops decaying geometrically the way sigmoid\'s does — §3.3.2 puts the contrast at 40 layers as $1^{40}=1$ against $0.25^{40}\\approx8\\times10^{-25}$.'],
+      ['What do residual connections do to gradients?', 'They add a path whose local derivative is exactly 1 regardless of what the wrapped function $F$ is doing, so the gradient reaches early layers unattenuated even when every activation gate along the main path is saturated — the vanish lab in §3.3.2 shows this rescuing an otherwise-collapsing sigmoid network directly.'],
+      ['GELU vs ReLU?', 'GELU is a smooth, probabilistically-motivated ReLU that dips slightly negative just left of zero instead of hard-clipping to exactly 0, which avoids the dead-unit failure mode above at a small extra compute cost; it is the default inside transformer feed-forward blocks (§4.5, §4.6).']
     ])}`,
     labs: {
       act: function (host) {
@@ -470,13 +571,13 @@ ${H.probe([
         q: 'The maximum derivative of the sigmoid is 0.25. After 12 sigmoid layers, the gradient is scaled by at most…',
         options: ['0.25', '3', '$0.25^{12} \\approx 6\\times10^{-8}$', '12 × 0.25'],
         answer: 2,
-        why: 'The chain rule multiplies one factor per layer; the product decays geometrically. This is the vanishing gradient in one line.'
+        why: 'Backpropagation multiplies one local activation derivative per layer (§3.2.3\'s propagation step), so the product decays <i>geometrically</i> with depth, not linearly. Option D is the tempting wrong answer because it applies the right intuition — "the effect compounds with the number of layers" — with the wrong operation: twelve factors of at most 0.25 multiply together rather than add, giving $0.25^{12}\\approx5.96\\times10^{-8}$, not $12\\times0.25=3$. That gap between multiplying and adding twelve small numbers is the entire content of the vanishing gradient, and it is why doubling the depth of a saturating network does not double the damage — it squares it.'
       },
       {
         q: 'Residual connections help gradients because…',
         options: ['they reduce the number of parameters', 'they add a path whose local derivative is exactly 1', 'they normalise activations', 'they increase the learning rate'],
         answer: 1,
-        why: '$\\partial(x+F(x))/\\partial x = 1 + \\partial F/\\partial x$ — the identity term keeps the product from decaying.'
+        why: 'Differentiate $y=x+F(x)$ with respect to $x$ and the chain rule gives $\\partial y/\\partial x = 1 + \\partial F/\\partial x$ — the "1" is there regardless of what $F$ computes or how saturated its internal activations are, because it comes from the identity branch of the sum, not from anything learned. That constant term is a gradient superhighway straight back to early layers: even if $\\partial F/\\partial x$ is nearly zero because every unit inside $F$ is saturated, the total local derivative is still at least 1, not 0. The vanish lab in §3.3.2 shows this directly — flipping residual connections on rescues an otherwise-collapsing 20-layer sigmoid network without changing a single activation.'
       }
     ],
     cards: [
@@ -492,9 +593,38 @@ ${H.probe([
     title: 'Initialisation: why the starting scale decides whether training happens',
     lede: 'Get the variance of the initial weights wrong by a factor of two per layer and a forty-layer network is dead before the first step.',
     html: `
-<h2><span class="sn">3.4.1</span> The requirement</h2>
-<p>You want the variance of activations — and of gradients — to stay roughly constant as you go through layers. If each layer multiplies activation variance by 1.5, forty layers multiply it by $1.5^{40} \\approx 10^7$ and everything saturates or overflows; by 0.7, and it decays to nothing.</p>
-<p>For a layer with $n_{\\text{in}}$ inputs and independent zero-mean weights, $\\mathrm{Var}(z) = n_{\\text{in}}\\mathrm{Var}(w)\\mathrm{Var}(x)$. Setting $\\mathrm{Var}(z) = \\mathrm{Var}(x)$ gives:</p>
+<p>Before a network sees a single example, someone has to fill its weight matrices with numbers. The tempting shortcut is "small random numbers" and move on — and for a two- or three-layer network, that shortcut is usually harmless. It is not harmless at forty layers, and the reason is exactly the same multiplicative mechanism §3.3 spent an entire section on, applied to the forward pass instead of the backward one. A layer does not merely apply a function; it also rescales however much signal was already in its input. Do that forty times with even a mild, consistent rescaling and the compounding is the whole story: multiply activation variance by $1.5$ at every layer and forty layers multiply it by $1.5^{40}\\approx10^7$, which overflows or saturates every downstream unit; multiply it by $0.7$ instead and forty layers give $0.7^{40}\\approx10^{-6}$, which is indistinguishable from the network computing zero. Neither number looks dangerous on its own. Raised to the fortieth power, both are.</p>
+
+<h2><span class="sn">3.4.1</span> The requirement, stated precisely</h2>
+<p>The goal, then, is to choose the initial weight variance so that a layer neither shrinks nor grows the variance of the signal passing through it — so that $\\mathrm{Var}(\\text{output}) \\approx \\mathrm{Var}(\\text{input})$, layer after layer, at the moment training begins. This is not a heuristic to be tuned by trial; it can be derived directly from how a layer's arithmetic mixes its inputs.</p>
+
+${H.deriv('the LeCun rule: preserving variance through a linear layer', [
+      ['$z = \\sum_{j=1}^{n_{\\text{in}}} w_j x_j$', 'One output unit of a layer with $n_{\\text{in}}$ inputs (§0.2). Assume the weights $w_j$ are drawn independently with mean 0 and variance $\\mathrm{Var}(w)$, and are independent of the inputs $x_j$, which themselves have mean 0 and variance $\\mathrm{Var}(x)$.'],
+      ['$\\mathrm{Var}(z) = \\sum_{j=1}^{n_{\\text{in}}}\\mathrm{Var}(w_jx_j)$', 'Variance of a sum of <i>independent</i> terms is the sum of their variances — no cross terms survive, because independence makes every covariance zero.'],
+      ['$\\mathrm{Var}(w_jx_j) = \\mathrm{Var}(w)\\,\\mathrm{Var}(x)$', 'For independent zero-mean $w$ and $x$: $\\mathrm{Var}(wx) = E[w^2x^2] - (E[wx])^2 = E[w^2]E[x^2] - 0 = \\mathrm{Var}(w)\\mathrm{Var}(x)$, using $E[w^2]=\\mathrm{Var}(w)$ and $E[x^2]=\\mathrm{Var}(x)$ because both means are zero.'],
+      ['$\\mathrm{Var}(z) = n_{\\text{in}}\\,\\mathrm{Var}(w)\\,\\mathrm{Var}(x)$', 'Substitute: $n_{\\text{in}}$ identical terms, each contributing $\\mathrm{Var}(w)\\mathrm{Var}(x)$.'],
+      ['Set $\\mathrm{Var}(z) = \\mathrm{Var}(x)$: $\\quad\\mathrm{Var}(w) = \\dfrac{1}{n_{\\text{in}}}$', 'Demand that the layer preserve variance rather than shrink or grow it, and solve for the one free quantity, $\\mathrm{Var}(w)$. This is <b>LeCun initialisation</b>: more inputs feeding a unit means each individual weight must be proportionally smaller, so their combined contribution stays the same size.']
+    ], 'This derivation assumed nothing about the activation function — it is purely about how a weighted sum of independent variables mixes their variances. It is exact for a linear layer, and a close approximation for tanh or sigmoid near the origin, where both behave almost like the identity. It is not accurate for ReLU, because ReLU is not close to linear near zero: it deletes exactly half of its input\'s variance by construction, and that deletion has to be compensated separately.')}
+
+${H.worked('checking the LeCun rule on four numbers', `<p>Take $n_{\\text{in}}=4$ and $\\mathrm{Var}(x)=1$. LeCun\'s rule gives $\\mathrm{Var}(w)=1/4=0.25$. Check the claim directly: $\\mathrm{Var}(z) = n_{\\text{in}}\\,\\mathrm{Var}(w)\\,\\mathrm{Var}(x) = 4 \\times 0.25 \\times 1 = 1$ — exactly the input variance, preserved. Halve $\\mathrm{Var}(w)$ to $0.125$ by mistake and $\\mathrm{Var}(z)=4\\times0.125\\times1=0.5$: the signal has already lost half its variance after a single layer, and forty such layers would multiply it by $0.5^{40}\\approx9\\times10^{-13}$.</p>`)}
+
+<h2><span class="sn">3.4.2</span> The correction ReLU forces</h2>
+<p>ReLU zeroes every negative pre-activation, which is precisely the "deletes half the variance" behaviour the derivation above set aside. Redo the calculation with a ReLU sitting between two linear layers, and the factor it introduces falls straight out of the algebra rather than needing to be guessed.</p>
+
+${H.deriv('the He/Kaiming rule: correcting for ReLU\'s deleted half', [
+      ['$a = \\mathrm{ReLU}(z), \\quad z \\text{ symmetric about } 0$', 'Assume the pre-activation $z$ has a distribution symmetric around zero — true for a freshly-initialised network, where $z$ is a sum of many independent zero-mean terms and is approximately Gaussian by the central limit theorem.'],
+      ['$E[a^2] = \\int_0^\\infty z^2\\,p(z)\\,dz$', 'ReLU passes positive values through unchanged and maps every negative value to exactly 0, so $a^2$ equals $z^2$ on the positive half-line and 0 on the negative half-line.'],
+      ['$= \\tfrac12\\int_{-\\infty}^{\\infty} z^2\\,p(z)\\,dz = \\tfrac12 E[z^2]$', 'By symmetry, the positive half-line carries exactly half of the total probability mass of $z^2$ integrated over all of $z$ — the negative and positive tails contribute equally to $E[z^2]$ since $p(z)=p(-z)$.'],
+      ['$E[a^2] = \\tfrac12\\,\\mathrm{Var}(z)$', 'Since $E[z]=0$, $E[z^2]=\\mathrm{Var}(z)$. ReLU keeps exactly half of the incoming variance, on average — the other half was in the discarded negative tail.'],
+      ['$\\mathrm{Var}(z_{\\text{next}}) = n_{\\text{in}}\\,\\mathrm{Var}(w)\\,E[a^2] = n_{\\text{in}}\\,\\mathrm{Var}(w)\\cdot\\tfrac12\\,\\mathrm{Var}(z)$', 'Apply the LeCun-style sum-of-independent-terms argument again, this time to the <i>next</i> layer, whose inputs are $a$ rather than $x$: the mean-square of $a$ plays the role $\\mathrm{Var}(x)$ played before.'],
+      ['Set $\\mathrm{Var}(z_{\\text{next}}) = \\mathrm{Var}(z)$: $\\quad\\mathrm{Var}(w) = \\dfrac{2}{n_{\\text{in}}}$', 'Demand variance preservation across the ReLU layer and solve. The factor of 2 is not a tuned constant; it is precisely the reciprocal of the one-half that ReLU deletes.']
+    ], 'This is He (or Kaiming) initialisation, named for Kaiming He, who with Zhang, Ren and Sun derived exactly this correction in 2015 while training networks far deeper than had previously worked reliably. The whole content of the result is one factor of 2, and that factor has a completely mechanical origin: it exists to put back the variance a ReLU throws away.')}
+
+${H.worked('the same four numbers, now through a ReLU', `<p>Take $n_{\\text{in}}=4$ and $\\mathrm{Var}(z)=4$, so $z\\sim$ something symmetric with that variance. He\'s rule gives $\\mathrm{Var}(w) = 2/4 = 0.5$. First, $E[a^2] = \\tfrac12\\mathrm{Var}(z) = \\tfrac12(4)=2$. Then $\\mathrm{Var}(z_{\\text{next}}) = n_{\\text{in}}\\,\\mathrm{Var}(w)\\,E[a^2] = 4 \\times 0.5 \\times 2 = 4$ — exactly $\\mathrm{Var}(z)$, preserved through the nonlinearity. Use the plain LeCun value $\\mathrm{Var}(w)=1/4=0.25$ instead, forgetting the ReLU correction, and $\\mathrm{Var}(z_{\\text{next}}) = 4\\times0.25\\times2 = 2$ — exactly half of 4, losing a further factor of two at every subsequent layer, which is the collapse the lab below lets you watch happen over forty layers.</p>`)}
+
+<h2><span class="sn">3.4.3</span> Xavier, and why the formula has two subscripts</h2>
+<p>The derivations above only protect the forward pass — the signal reaching the output. Backpropagation runs the same layers in reverse (§3.2), and by an identical argument applied to gradients instead of activations, preserving <i>gradient</i> variance on the way back requires $\\mathrm{Var}(w) = 1/n_{\\text{out}}$, with the layer's fan-out $n_{\\text{out}}$ playing the role $n_{\\text{in}}$ played going forward, because the backward pass multiplies by $W^\\mathsf{T}$ rather than $W$ (§0.7.6). In general $n_{\\text{in}} \\ne n_{\\text{out}}$, so no single variance satisfies both requirements exactly. Xavier Glorot and Yoshua Bengio's 2010 compromise, aimed at the symmetric, near-linear activations of their time (tanh, sigmoid), was to average the two demands: $\\mathrm{Var}(w) = 2/(n_{\\text{in}}+n_{\\text{out}})$, which reduces to LeCun's plain $1/n_{\\text{in}}$ whenever a layer happens to be square, $n_{\\text{in}}=n_{\\text{out}}$.</p>
+
 ${H.table(['Scheme', 'Variance', 'For'], [
       ['<b>Xavier / Glorot</b>', '$2/(n_{in}+n_{out})$', 'Symmetric activations (tanh, sigmoid)'],
       ['<b>He / Kaiming</b>', '$2/n_{in}$', 'ReLU — the factor 2 compensates for zeroing half the inputs'],
@@ -503,18 +633,24 @@ ${H.table(['Scheme', 'Variance', 'For'], [
       ['<b>Zeros</b>', '—', 'Biases only. Zero weights make every unit identical and the network cannot break symmetry.']
     ])}
 
+<p><b>What you are looking at.</b> The lab below builds a real 40-layer network — every layer square, so $n_{\\text{in}}=n_{\\text{out}}=$ the width you choose — fills it with random weights at the variance your chosen scheme prescribes, and pushes one batch of random unit-variance inputs through all forty layers, plotting $\\log_{10}$ of the activation variance at every depth. The green dashed line marks the target: variance exactly 1, meaning the signal neither grew nor shrank.</p>
+
+<p><b>What to do with it.</b> Start on ReLU with the He scheme and watch the blue line hug the green target line all the way to layer 40. Switch the scheme to <i>Xavier (1/n_in)</i> while staying on ReLU — this is exactly the "forgot the factor of 2" mistake the worked example above computed by hand — and watch the line fall steadily away from the target, losing very close to a factor of 2 at every single layer, until the readout reports a collapsed verdict and the top-layer variance is unmeasurably small. Then switch the activation to tanh with the same Xavier scheme: now the line tracks the target closely, because tanh near the origin behaves almost linearly and does not delete half its input's variance the way ReLU does, so the plain LeCun-style formula this lab labels "Xavier" is the correct one here.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Try the <i>too big</i> preset on ReLU and watch the <i>dead units at the top</i> readout climb into double digits, even though the variance line initially looks like it is merely exploding rather than collapsing. Large initial weights push many units' pre-activations deep into either the positive or the negative extreme; the ones that land negative are ReLU-dead from the very first forward pass, before a single gradient has been computed (§3.3.3). Initialisation does not only set the starting loss — it can silently decide, before training even begins, what fraction of the network's units will ever be able to learn at all.</p>
+
 ${H.lab('init', 'Activation variance across depth', 'A real forward pass through 40 layers at the initialisation scale you choose. Watch the variance track 1.0 with the correct scheme and explode or collapse when it is wrong — the y-axis is logarithmic for a reason.')}
 
-<h2><span class="sn">3.4.2</span> The symmetry argument</h2>
-<p>Initialise all weights to the same value and every unit in a layer computes the same function, receives the same gradient, and stays identical forever. Randomness is not a heuristic here; it is what makes units differentiate. (Biases can safely start at zero because the incoming weights already differ.)</p>
+<h2><span class="sn">3.4.4</span> Why the weights have to be random at all</h2>
+<p>Everything above chose a variance; none of it explains why the weights need to be random rather than all fixed at some single non-zero value that happens to have the right variance in aggregate — say, every weight in a layer set to exactly $\\sqrt{1/n_{\\text{in}}}$. The reason is a symmetry argument with nothing to do with variance. If every incoming weight to two different units in the same layer is identical, those two units compute the identical function of the input, receive the identical gradient during backpropagation (§3.2.3), and are updated identically forever — no number of training steps ever makes them different, because the update rule treats identical inputs identically. The layer, however wide it is drawn, behaves as if it had exactly one unit. Randomness is not a heuristic nicety here; it is the only thing that lets units specialise into different features at all. Biases, by contrast, can safely start at exactly zero, because the incoming weights already differ from unit to unit, which is enough to break the symmetry on its own.</p>
 
-<h2><span class="sn">3.4.3</span> At scale</h2>
-<p>Modern large models add two refinements. Residual branches are often initialised near zero (or scaled by $1/\\sqrt{2L}$) so the network starts close to the identity and depth costs nothing at step 0. And <b>μP</b> (maximal update parameterization, §4.11) rescales initialisation and learning rates by width so that hyperparameters tuned on a small proxy model transfer to a large one — which turns hyperparameter search on a billion-dollar run from impossible into a sweep on something cheap.</p>
+<h2><span class="sn">3.4.5</span> At scale</h2>
+<p>Modern large models add two refinements on top of the He/Xavier machinery above. Residual branches are often initialised near zero, or scaled down by $1/\\sqrt{2L}$ for a network of $L$ residual blocks, so that at step zero the network is close to the identity function and adding depth costs nothing before training has had a chance to use it — echoing §3.3.3's observation that a residual path already contributes a derivative of exactly 1 regardless of what its wrapped function computes. And <b>μP</b> (maximal update parameterisation, developed further in §4.11) rescales both the initialisation variance and the learning rate as a function of width, using variance-propagation arguments of exactly this kind extended to cover the optimiser's update itself, so that hyperparameters tuned on a small, cheap proxy model transfer directly to a much larger run. That turns hyperparameter search on a training run costing millions of dollars into a search on something that costs very little, which is the practical payoff of taking the algebra in this section seriously rather than treating "small random numbers" as good enough.</p>
 
 ${H.probe([
-      ['Why He rather than Xavier for ReLU?', 'ReLU zeroes half the inputs, halving the variance; the factor 2 compensates exactly.'],
-      ['What happens if you initialise all weights to zero?', 'Every unit computes the same thing and receives the same gradient — symmetry is never broken.'],
-      ['What does μP buy you?', 'Hyperparameters found on a small model transfer to a large one, because initialisation and learning rates are scaled by width.']
+      ['Why He rather than Xavier for ReLU?', 'ReLU zeroes roughly half of a symmetric pre-activation\'s mass, which the derivation in §3.4.2 shows keeps exactly half the incoming variance on average, $E[a^2]=\\tfrac12\\mathrm{Var}(z)$; doubling the weight variance to $2/n_{in}$ exactly compensates.'],
+      ['What happens if you initialise all weights to zero?', 'Every unit in a layer computes the identical function of the input, receives the identical gradient during backpropagation, and is updated identically forever — the layer behaves as if it had one unit no matter how wide it is drawn, because nothing in the training dynamics can break the symmetry once it starts perfectly symmetric.'],
+      ['What does μP buy you?', 'Hyperparameters found on a small, cheap proxy model transfer to a large one, because initialisation scale and learning rate are both rescaled as a function of width using the same variance-propagation logic derived here, extended to the optimiser update.']
     ])}`,
     labs: {
       init: function (host) {
@@ -573,13 +709,13 @@ ${H.probe([
         q: 'He initialisation uses variance $2/n_{in}$ rather than $1/n_{in}$ because…',
         options: ['ReLU is faster', 'ReLU zeroes roughly half the inputs, halving the variance; the 2 compensates', 'it prevents overfitting', 'gradients are twice as large'],
         answer: 1,
-        why: 'Preserving activation variance through a ReLU requires doubling the weight variance.'
+        why: 'The derivation in §3.4.2 shows exactly where the factor comes from: for a symmetric pre-activation $z$, ReLU keeps only the positive half, so $E[\\mathrm{ReLU}(z)^2] = \\tfrac12\\mathrm{Var}(z)$ — half the variance is thrown away at every layer, on average. Doubling $\\mathrm{Var}(w)$ from $1/n_{in}$ to $2/n_{in}$ exactly cancels that one-half factor, so a layer\'s output variance matches its input variance again. Option D sounds plausible only because "the fix involves a 2" — but the mechanism is compensating for a deletion, not doubling anything that was already there.'
       },
       {
         q: 'Initialising every weight to the same non-zero constant means…',
         options: ['faster convergence', 'all units in a layer stay identical forever — symmetry is never broken', 'exploding gradients', 'nothing, as long as biases are random'],
         answer: 1,
-        why: 'Identical weights produce identical activations and identical gradients; randomness is what differentiates units.'
+        why: 'Two units fed by identical incoming weights compute the identical function of the input, so they produce identical outputs, receive identical gradients during backpropagation (§3.2.3), and are updated identically at every subsequent step — nothing in ordinary gradient descent can break a symmetry that starts perfectly intact. Option D is the tempting wrong answer because it is true that biases are usually safe at exactly zero, but the question asks about the weights, and randomising only the biases while every weight into a unit is identical still leaves those units seeing the identical bias-shifted input and computing the identical function.'
       }
     ],
     cards: [
@@ -594,8 +730,58 @@ ${H.probe([
     id: 'optimisers', track: 'deep', num: '3.5',
     title: 'Optimisers: SGD, momentum, Adam, AdamW, schedules',
     lede: 'Everything here is a response to the conditioning problem in §1.9 — and AdamW versus Adam is the most-asked one-line distinction in the field.',
+    rests: 'Builds directly on §0.3.4\'s elongated bowl and the boxed rule that the largest stable learning rate is 2 divided by curvature.',
     html: `
-<h2><span class="sn">3.5.1</span> The family</h2>
+<p>§0.3.4 built one small, elongated bowl by hand — $f(w_1, w_2) = \\tfrac12(w_1^2 + 100w_2^2)$, curvature 1 along $w_1$ and 100 along $w_2$ — and showed that plain gradient descent, forced to use a learning rate small enough for the steep direction, needs about 240 steps to make the same progress a well-conditioned bowl would make in one. That example is not a curiosity. It is the shape of almost every real loss surface, because real features rarely arrive on matched scales (§0.2), and it is worth re-opening that exact bowl here to watch the specific failure mode plain gradient descent produces, before fixing it.</p>
+
+<h2><span class="sn">3.5.1</span> The zig-zag, made concrete</h2>
+
+<p>Take that same bowl and the same learning rate, $\\eta = 0.019$, chosen deliberately close to the stability limit $2/100 = 0.02$ for the steep direction. Gradient descent's update multiplies $w_1$ by $1-\\eta = 0.981$ every step — small, steady progress, same sign throughout — and multiplies $w_2$ by $1-100\\eta = 1-1.9 = -0.9$ every step. That second multiplier is negative. Starting from $w_2=1$, the sequence runs $1,\\, -0.9,\\, 0.81,\\, -0.729,\\, 0.6561,\\ldots$ — the sign of $w_2$ flips at <i>every single step</i>, while its magnitude shrinks by 10% each time. Plotted as a path in the $(w_1,w_2)$ plane, that sign-flipping is exactly the zig-zag: the optimiser bounces back and forth across the narrow direction of the valley while creeping, almost imperceptibly, along its long axis.</p>
+
+<p>The gradient itself flips sign in lockstep with $w_2$, since $\\partial f/\\partial w_2 = 100w_2$ is just a positive multiple of $w_2$. That single fact — <i>consecutive gradients disagree in sign along the steep direction, and agree in sign along the shallow one</i> — is the entire structural weakness plain gradient descent has no way to notice. It treats every step in isolation, reacting only to the current gradient, and has no memory of the fact that it was just told to go the opposite way a moment ago.</p>
+
+<h2><span class="sn">3.5.2</span> Momentum: giving the optimiser a memory</h2>
+
+<p>The fix is to stop reacting to the raw gradient and instead accumulate a running average of it, then step in the direction of the average. Formally, introduce a <b>velocity</b> $v$ and update it before updating the parameters:</p>
+$$v \\leftarrow \\beta v - \\eta g, \\qquad \\theta \\leftarrow \\theta + v$$
+<p>with $\\beta$ (a number just below 1, typically $0.9$) controlling how much of the previous velocity survives each step. This single change has opposite effects on the two directions of the ravine above, and both effects can be derived exactly rather than asserted.</p>
+
+${H.deriv('momentum under a gradient that keeps the same sign forever', [
+      ['$v_t = \\beta v_{t-1} - \\eta g, \\quad g \\text{ constant}$', 'Model the shallow direction of the ravine: the gradient $g$ keeps the same sign and roughly the same size at every step, as $w_1$\'s update above did.'],
+      ['$v_t = -\\eta g\\,(1 + \\beta + \\beta^2 + \\cdots + \\beta^{t-1})$', 'Unroll the recurrence from $v_0=0$: each past gradient survives into the present velocity, discounted by a power of $\\beta$.'],
+      ['$v_t \\to -\\dfrac{\\eta g}{1-\\beta} \\quad \\text{as } t\\to\\infty$', 'The bracket is a geometric series (§0.3\'s tools extend directly here), summing to $1/(1-\\beta)$ as the number of terms grows.']
+    ], 'Compare this steady-state velocity to plain gradient descent\'s step, which is always exactly $-\\eta g$. Momentum\'s eventual step is $1/(1-\\beta)$ times larger. At the standard $\\beta = 0.9$, that factor is $1/0.1 = 10$: momentum lets the shallow, consistently-signed direction move ten times faster than plain gradient descent would allow it to, using the very same learning rate.')}
+
+${H.deriv('momentum under a gradient that flips sign every single step', [
+      ['$v_t = \\beta v_{t-1} - \\eta g_t, \\quad g_t = -g\\,(-1)^t$', 'Model the steep direction: the gradient has constant magnitude $g$ but alternates in sign at every step, exactly as $w_2$\'s gradient did above.'],
+      ['guess a periodic solution $v_t = A(-1)^t$', 'Since the forcing term is itself perfectly periodic with period 2, look for a velocity that settles into the same rhythm rather than unrolling the whole sum.'],
+      ['$A(-1)^t = \\beta A(-1)^{t-1} + \\eta g(-1)^t = -\\beta A(-1)^t + \\eta g(-1)^t$', 'Substitute the guess into the recurrence and use $(-1)^{t-1} = -(-1)^t$ to collect every term over the same power of $(-1)^t$.'],
+      ['$A(1+\\beta) = \\eta g \\quad\\Rightarrow\\quad A = \\dfrac{\\eta g}{1+\\beta}$', 'Divide out $(-1)^t$ from both sides and solve for the one unknown amplitude $A$.']
+    ], 'The steady oscillation amplitude is $\\eta g/(1+\\beta)$, smaller than plain gradient descent\'s raw step $\\eta g$ by a factor $1/(1+\\beta)$. At $\\beta=0.9$ that factor is $1/1.9 \\approx 0.53$: momentum roughly <i>halves</i> the amplitude of the back-and-forth bouncing in the steep direction, because two gradients of opposite sign, averaged together with the recent past, largely cancel.')}
+
+<p>Put the two results side by side and the mechanism is exactly what a "memory" of past gradients should do: the same $\\beta=0.9$ multiplies the shallow direction's progress by 10 and divides the steep direction's oscillation by roughly 2, using nothing but the sign pattern each direction happened to produce. Nobody told momentum which direction was steep and which was shallow — it discovered the distinction purely from whether consecutive gradients agreed or disagreed, which is visible in the raw numbers without knowing anything about the Hessian.</p>
+
+${H.analogy(`<p>A bobsled on a long, straight, gently-sloped run accelerates the whole way down, because every push it feels points the same direction as the last. The same bobsled entering a narrow, twisting canyon does not instantly reverse its velocity every time the wall nudges it sideways — its own momentum smooths the nudge into a gentler curve, because inertia averages a sideways force against whatever direction the sled was already carrying. A gradient step with no memory is a sled with no mass: every gradient, however contradictory, is obeyed instantly and completely. Adding velocity gives the optimiser exactly the inertia that turns instant obedience into an average.</p>`)}
+
+<h2><span class="sn">3.5.3</span> RMSProp: scaling each direction by its own size</h2>
+
+<p>Momentum fixes the zig-zag using only the <i>sign</i> pattern of the gradient. A second, independent idea fixes it using the gradient's <i>magnitude</i> instead: keep a running average of each parameter's squared gradient, $s \\leftarrow \\beta_2 s + (1-\\beta_2)g^2$, and divide that parameter's step by $\\sqrt{s}$. A direction with a habitually large gradient — the steep $w_2$ above, where $g=100w_2$ dwarfs $g=w_1$ — gets divided down; a direction with a habitually small gradient gets divided down far less, so its relative step grows. This is a per-coordinate rescaling toward equal step sizes in every direction, which is precisely what dividing by curvature would do exactly if you could afford to compute the Hessian (§0.3.4's aside on Newton's method makes that connection explicit): RMSProp is a way of buying part of that benefit using only quantities gradient descent was already computing, at first-order cost.</p>
+
+<h2><span class="sn">3.5.4</span> Adam: both fixes at once, with one correction</h2>
+
+<p><b>Adam</b> runs momentum and RMSProp simultaneously, using an exponential moving average for each rather than the raw accumulator above:</p>
+$$m_t = \\beta_1 m_{t-1} + (1-\\beta_1)g_t, \\quad s_t = \\beta_2 s_{t-1} + (1-\\beta_2)g_t^2$$
+$$\\hat m_t = \\frac{m_t}{1-\\beta_1^t}, \\quad \\hat s_t = \\frac{s_t}{1-\\beta_2^t}, \\quad \\theta \\leftarrow \\theta - \\eta\\frac{\\hat m_t}{\\sqrt{\\hat s_t}+\\epsilon}$$
+<p>The $\\hat{\\phantom{m}}$ hats mark <b>bias correction</b>, and the need for it is not a minor footnote — without it, Adam's very first few steps are systematically too small, and it is worth seeing exactly how much.</p>
+
+${H.deriv('why $m_t$ starts out biased toward zero, and why dividing by $1-\\beta_1^t$ fixes it exactly', [
+      ['$m_t = (1-\\beta_1)\\sum_{i=1}^{t}\\beta_1^{t-i}g_i, \\quad m_0=0$', 'Unroll the exponential moving average from a zero start — every past gradient contributes, weighted by how recently it arrived.'],
+      ['assume $g_i = g$ for all $i$ (the calibration case)', 'To isolate the bias, ask what $m_t$ reports if the true gradient has been perfectly constant — the honest answer should be exactly $g$.'],
+      ['$m_t = (1-\\beta_1)g\\sum_{i=1}^{t}\\beta_1^{t-i} = (1-\\beta_1)g\\cdot\\dfrac{1-\\beta_1^t}{1-\\beta_1}$', 'The sum is a finite geometric series with $t$ terms and ratio $\\beta_1$, summing to $(1-\\beta_1^t)/(1-\\beta_1)$.'],
+      ['$m_t = g\\,(1-\\beta_1^t)$', 'The $(1-\\beta_1)$ factors cancel. Even though the true gradient is exactly $g$ at every step, the raw moving average $m_t$ reports only a fraction $(1-\\beta_1^t)$ of it.'],
+      ['$\\hat m_t = m_t / (1-\\beta_1^t) = g$', 'Divide by exactly the missing factor, and the bias vanishes completely — not approximately, exactly, for this calibration case.']
+    ], 'At $\\beta_1=0.9$ and $t=1$, the uncorrected estimate is $m_1=(1-0.9)g=0.1g$ — the very first step would move barely a tenth as far as the true gradient warrants, before recovering over the next several steps as $\\beta_1^t$ decays. The bias is worst exactly when it matters most: at the start of training, when the running averages have seen the fewest examples and are most likely to be wrong in whatever direction the first few gradients happened to point.')}
+
 ${H.table(['Optimiser', 'Update', 'What it fixes'], [
       ['<b>SGD</b>', '$\\theta \\leftarrow \\theta - \\eta g$', 'Nothing; the baseline'],
       ['<b>Momentum</b>', '$v \\leftarrow \\beta v - \\eta g;\\; \\theta \\leftarrow \\theta + v$', 'Accumulates the consistent direction, cancels oscillation across ravines'],
@@ -605,26 +791,35 @@ ${H.table(['Optimiser', 'Update', 'What it fixes'], [
       ['<b>Muon / Shampoo / second-order</b>', 'preconditioned updates', 'Better conditioning still, at higher cost per step; increasingly used at scale']
     ])}
 
-<h3>Adam, written out</h3>
-$$m_t = \\beta_1 m_{t-1} + (1-\\beta_1)g_t, \\quad s_t = \\beta_2 s_{t-1} + (1-\\beta_2)g_t^2$$
-$$\\hat m_t = \\frac{m_t}{1-\\beta_1^t}, \\quad \\hat s_t = \\frac{s_t}{1-\\beta_2^t}, \\quad \\theta \\leftarrow \\theta - \\eta\\frac{\\hat m_t}{\\sqrt{\\hat s_t}+\\epsilon}$$
-<p>The bias correction matters early: $m_0 = 0$ biases the first estimates toward zero, and dividing by $1-\\beta_1^t$ removes exactly that.</p>
-
-<h2><span class="sn">3.5.2</span> Adam versus AdamW — the answer to have ready</h2>
-<p>In plain Adam, L2 regularization added to the loss becomes part of $g$, so it gets divided by the same adaptive denominator $\\sqrt{\\hat s}$. Weights with large historical gradients are therefore decayed <i>less</i> — the opposite of what you wanted, and it stops behaving like weight decay at all. <b>AdamW decouples it</b>: the decay is applied directly to the weights, outside the adaptive step.</p>
+<h2><span class="sn">3.5.5</span> Adam versus AdamW — the answer to have ready</h2>
+<p>In plain Adam, L2 regularisation added to the loss becomes part of $g$, so it gets divided by the same adaptive denominator $\\sqrt{\\hat s}$ as everything else. A weight with a large history of gradients — which is exactly the weight the regulariser most wants to shrink — gets its penalty divided down along with its gradient, and ends up decayed <i>less</i> than a weight with small, quiet gradients. That is the opposite of what "pull every weight toward zero, proportionally" was supposed to mean, and it stops behaving like weight decay at all. <b>AdamW decouples it</b>: the decay is applied directly to the weights, outside the adaptive step, so it never passes through the $\\sqrt{\\hat s}$ denominator in the first place.</p>
 $$\\theta \\leftarrow \\theta - \\eta\\left(\\frac{\\hat m}{\\sqrt{\\hat s}+\\epsilon} + \\lambda\\theta\\right)$$
 ${H.key('AdamW decouples weight decay from the adaptive denominator, so decay actually decays. It generalises better and it is the modern default.')}
 
+<p><b>What you are looking at.</b> The lab below runs four real optimisers — SGD, momentum, Adam and AdamW — step by step on one of three surfaces, starting from the same point, drawn as trajectories over contour lines of the loss. The quadratic ravine is exactly the elongated bowl this section has been computing by hand; the Rosenbrock surface is a curved valley with a much harder shape than any straight-line example can show; the saddle has a flat region an optimiser can stall in before the surface drops away. Contours closer together mean the surface is steeper there.</p>
+
+<p><b>What to do with it.</b> Start on the quadratic ravine with the condition number control turned up past 20 and the learning rate left at its default. Watch the faint SGD path visibly zig-zag across the narrow axis exactly as the hand-computed $w_2$ sequence did above, while the amber momentum path cuts a straighter line by damping that same oscillation. Then switch to the saddle surface: SGD can stall for many steps near the centre, where the gradient in the escape direction is tiny, while momentum, having accumulated velocity on the way in, carries through the flat region under its own inertia.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Push the learning rate control well past its default on any surface and watch every single trajectory — including Adam's — blow up or refuse to converge. No optimiser in this lab, or in practice, rescues a step size above the stability limit derived in §0.3.4; momentum and adaptive scaling change how gracefully an optimiser handles an <i>awkwardly shaped</i> surface, not whether it can survive a learning rate that is simply too large for the steepest direction present.</p>
+
 ${H.lab('opt', 'Four optimisers on the same surface', 'Real trajectories, computed step by step. Raise the condition number and watch SGD zig-zag, momentum smooth it out, and Adam march almost straight down the valley. Then use the ill-conditioned + high-learning-rate combination to make each one fail.')}
 
-<h2><span class="sn">3.5.3</span> Learning-rate schedules</h2>
-<p>The learning rate is the single most important hyperparameter, and it should not be constant. <b>Warmup</b> (linear, a few hundred to a few thousand steps) avoids the large, badly-estimated early updates that Adam's second-moment estimate produces before it has data. <b>Cosine decay</b> is the classic follow-on. <b>WSD</b> (warmup–stable–decay) holds the rate flat for most of training and decays sharply only at the end, which matches cosine's final loss while letting you checkpoint mid-run and branch — one stable trunk, several short decay phases for different data mixtures (§4.9, §4.11).</p>
+<h2><span class="sn">3.5.6</span> Learning-rate schedules</h2>
+<p>Everything above treats $\\eta$ as fixed, but the best $\\eta$ genuinely changes over the course of training. Early on, Adam's second-moment estimate $\\hat s$ has seen almost no gradients and is a poor estimate of anything, which makes the adaptive denominator $\\sqrt{\\hat s}$ unreliable in exactly the way the bias-correction derivation above quantified — an early step can be far too large, in a direction the optimiser has not yet earned any confidence in, and land the model somewhere later training never fully recovers from. <b>Warmup</b> — ramping $\\eta$ up linearly over the first few hundred to few thousand steps — simply refuses to take that gamble, keeping steps small until the running averages have gathered enough evidence to be trusted.</p>
+<p>Once warmup ends, the rate still should not stay constant for the rest of training: a rate that was safe early, when the loss surface was far from any minimum, is often larger than ideal once the model is close to one. <b>Cosine decay</b> is the classic answer, smoothly reducing $\\eta$ along a cosine curve down to (near) zero by a predetermined final step. <b>WSD</b> (warmup–stable–decay) instead holds the rate flat for most of training and decays sharply only at the very end, which reaches essentially the same final loss as cosine while not requiring you to commit to a total step count in advance — you can checkpoint at the end of the stable phase and run several different short decays from that one trunk, for instance to compare different final data mixtures (§4.9, §4.11).</p>
+
+<p><b>What you are looking at.</b> The lab below plots learning rate against training step for four schedules on the same axes: constant (faint dashed), step decay (amber), cosine (blue) and WSD (green). The red vertical line marks where warmup ends and the peak rate is reached; the green dashed vertical line marks where WSD's decay phase begins.</p>
+
+<p><b>What to do with it.</b> Drag the <i>WSD stable fraction</i> control down and watch the green decay line start earlier and stretch out longer, while the peak plateau shortens — you are directly controlling how much of the training budget is spent at full speed versus winding down. Compare the areas under the cosine and WSD curves at a similar stable fraction: they are not identical curves, but both spend the great majority of the run near the peak rate and both end near zero, which is the shared property that lets them reach comparable final losses.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Cosine's curve is entirely determined the moment you fix the total step count — change your mind about how long to train, and the whole curve from very early on has to be redrawn to still land at zero by the new end point. WSD's stable phase does not know or care when the run will end; the decay is a short, local decision made only once you decide to stop. That difference in <i>when the schedule has to be committed</i>, not the shape of the curve itself, is why WSD has become the default for very large pretraining runs where the total budget is often revised mid-flight.</p>
 
 ${H.lab('sched', 'Schedules, drawn', 'Compare cosine, WSD, step decay and constant. The annotation marks where the "anneal" phase begins — the part of training the model is most sensitive to what it is shown.')}
 
 ${H.probe([
-      ['Adam vs AdamW in one line?', 'AdamW decouples weight decay from the adaptive denominator, so decay actually decays; it generalises better and is the default.'],
-      ['Why warmup?', 'Adam’s second-moment estimate is unreliable in the first steps; a large step then can move the model somewhere it never recovers from.'],
+      ['Adam vs AdamW in one line?', 'AdamW decouples weight decay from the adaptive denominator, so decay actually decays regardless of a weight\'s gradient history; it generalises better and is the default.'],
+      ['Why warmup?', 'Adam\'s second-moment estimate is provably biased toward zero in its first steps (§3.5.4\'s derivation), so early adaptive step sizes can be unreliable; a large step then can move the model somewhere it never recovers from.'],
+      ['Why does momentum help a zig-zagging ravine specifically?', 'Momentum accumulates a running average of the gradient. Where consecutive gradients disagree in sign — the steep, oscillating direction — the average partially cancels, damping the bounce by a factor of roughly $1/(1+\\beta)$. Where they agree — the shallow, consistent direction — the average compounds, amplifying progress by roughly $1/(1-\\beta)$, both derived exactly in §3.5.2.'],
       ['When would you still use plain SGD with momentum?', 'Vision models trained long with heavy augmentation often generalise slightly better with SGD+momentum than with Adam.']
     ])}`,
     labs: {
@@ -738,19 +933,19 @@ ${H.probe([
         q: 'In plain Adam, adding L2 to the loss behaves badly because…',
         options: ['it is applied twice', 'the penalty gradient is divided by the same adaptive denominator, so high-gradient weights decay less', 'it conflicts with momentum', 'it makes the loss non-convex'],
         answer: 1,
-        why: 'Decoupling it (AdamW) restores the intended behaviour — decay proportional to the weight, independent of gradient history.'
+        why: 'An L2 penalty added to the loss becomes part of the gradient $g$ that Adam feeds through $\\hat m/(\\sqrt{\\hat s}+\\epsilon)$, so it gets divided down by exactly the same adaptive denominator as everything else — a weight with a large history of gradients has a large $\\hat s$ and so its penalty term shrinks along with its ordinary gradient, ending up decayed <i>less</i> than a quiet weight. That is backwards from the intent of weight decay, which is meant to pull every weight toward zero in proportion to its own size, not in inverse proportion to how active it has been. AdamW (§3.5.5) fixes this by applying $\\lambda\\theta$ directly to the weights, outside the $\\sqrt{\\hat s}$ division entirely.'
       },
       {
         q: 'Warmup exists mainly to…',
         options: ['save compute', 'avoid large early steps when Adam’s second-moment estimate is still unreliable', 'increase the batch size', 'prevent overfitting'],
         answer: 1,
-        why: 'Early updates with a badly-estimated denominator can be enormous; a linear ramp keeps the first few hundred steps small.'
+        why: 'The bias-correction derivation in §3.5.4 shows exactly how unreliable the first few steps are: with a constant true gradient $g$, Adam\'s raw moving average reports only $m_t = g(1-\\beta_1^t)$, a tenth of the true value at $t=1$ with the standard $\\beta_1=0.9$. The correction $\\hat m_t = m_t/(1-\\beta_1^t)$ fixes the average, but $\\hat s_t$ is built from even less data at that point and can still be a poor, noisy estimate — dividing by a badly-estimated denominator can produce a huge first step in a direction the optimiser has not yet earned confidence in. Warmup simply keeps $\\eta$ small until enough steps have passed for both moving averages to settle.'
       },
       {
         q: 'WSD schedules are preferred over cosine at scale because…',
         options: ['they reach lower loss', 'they do not require committing to a total step count and allow branching from one stable trunk', 'they need no warmup', 'they are simpler to implement'],
         answer: 1,
-        why: 'Match cosine’s final loss while keeping mid-run checkpoints useful — several decay phases from one trunk for different data mixtures.'
+        why: 'Cosine decay is shaped by the total step count from the very first step — change your mind about how long to train and the entire curve has to be redrawn so it still reaches zero at the new end point. WSD\'s long stable phase does not depend on knowing the end point at all; the decision to decay is made locally, once, whenever you choose to stop. That lets a single stable trunk serve several different short decay phases — for instance, comparing final data mixtures — a workflow cosine\'s single committed curve cannot support, while landing at essentially the same final loss.'
       }
     ],
     cards: [
@@ -763,38 +958,68 @@ ${H.probe([
   /* ------------------------------------------------------------------ 3.6 */
   ML.section({
     id: 'normalisation', track: 'deep', num: '3.6',
-    title: 'Normalisation and regularization for networks',
+    title: 'Normalisation and regularisation for networks',
     lede: 'The stabilisers that make depth trainable, and the four ways to stop a network memorising.',
     html: `
-<h2><span class="sn">3.6.1</span> Normalisation, by axis</h2>
-<p>Every normalisation computes a mean and a variance over some axes, subtracts and divides, then applies a learned scale and shift. The only difference is <i>which axes</i>.</p>
+<p>§3.4 solved a problem at exactly one moment in time: it chose an initial weight variance so that activations neither explode nor vanish <i>at step zero</i>. That guarantee has an expiry date. The moment training begins, weights move away from their careful initial values in response to the gradient, and nothing forces them to keep obeying the variance arithmetic §3.4 derived. A hundred steps in, one layer's outputs might have drifted to twice the scale they started at; a hundred steps later, that drift has been multiplied through several more layers, and the same saturation or collapse §3.3 and §3.4 diagnosed at initialisation can reappear mid-training, self-inflicted by the very updates that are supposed to be improving the model.</p>
+
+<p>The fix normalisation offers is more aggressive than picking a good starting point and hoping it holds: recompute the right scale <i>at every forward pass, at every layer</i>, directly from whatever activations actually arrived, rather than trusting an initial choice to survive unsupervised.</p>
+
+<h2><span class="sn">3.6.1</span> One formula, four choices of axis</h2>
+<p>Every normalisation layer does the same three things to some collection of numbers $z$: compute a mean $\\mu$ and a variance $\\sigma^2$ over some chosen set of entries, subtract and divide to get $\\hat z = (z-\\mu)/\\sqrt{\\sigma^2+\\epsilon}$, and then apply a learned scale and shift, $\\gamma\\hat z + \\beta$. The small $\\epsilon$ just stops a division by zero when a batch of numbers happens to have almost no spread. The learned $\\gamma$ and $\\beta$ matter more than they look: without them, every layer would be forced to output something with exactly mean 0 and variance 1, which throws away information a later layer might have needed — a unit that genuinely benefits from a large or skewed output has no way to express that. With $\\gamma$ and $\\beta$ present and learnable, the network can always recover the un-normalised version exactly, by setting $\\gamma=\\sigma$ and $\\beta=\\mu$, so normalisation can never make the network strictly less expressive; it only changes what the <i>default</i> distribution looks like before the network chooses to override it.</p>
+
+<p>The only real design decision left is <i>which axis</i> the mean and variance are computed over, and that single choice has enormous practical consequences.</p>
+
 ${H.table(['Method', 'Normalises over', 'Depends on batch?', 'Used in'], [
       ['<b>BatchNorm</b>', 'the batch, per channel', 'Yes — and that is its weakness', 'CNNs at reasonable batch sizes'],
       ['<b>LayerNorm</b>', 'the features of one example', 'No', 'Transformers, RNNs'],
       ['<b>RMSNorm</b>', 'the features, no mean subtraction', 'No', 'Modern LLMs (§4.6) — cheaper, one less reduction'],
       ['<b>GroupNorm</b>', 'groups of channels within one example', 'No', 'Vision at small batch sizes']
     ])}
-<p>BatchNorm's batch dependence is the practical issue: it behaves differently at train and inference (running statistics), it breaks with tiny batches, and it interacts badly with sequence models where different positions have different statistics. That is why transformers use LayerNorm and its cheaper cousin RMSNorm.</p>
+
+<p>BatchNorm computes $\\mu$ and $\\sigma^2$ across every example currently in the batch, for one channel at a time. That is fine as long as a batch is large and every example is processed the same way at train and test time — but neither holds up in general. At inference you often see one example at a time, with no batch to average over, so BatchNorm has to fall back on running statistics accumulated during training, meaning the layer genuinely computes something different depending on whether it thinks it is training or serving. With small batches the estimated mean and variance are noisy, adding an unwanted source of randomness to every forward pass. And in a sequence model, different positions in a batch of variable-length sequences carry different statistics, so averaging across the batch at a fixed position mixes together quantities that were never comparable in the first place.</p>
+
+<p>LayerNorm sidesteps all three problems by normalising across the <i>features of one example</i> instead of across examples: mean and variance are computed from a single example's own activations, so the computation is identical whether that example arrives alone or inside a batch of a thousand, and nothing about training versus inference behaves differently. That is why transformers, which routinely serve one sequence at a time and process variable-length inputs, use LayerNorm rather than BatchNorm.</p>
+
+<p><b>RMSNorm</b> goes one step further by asking whether the mean-subtraction step is pulling its weight. It computes $\\hat z = z / \\sqrt{\\overline{z^2}+\\epsilon}$ — dividing by the root-mean-square of $z$ directly, with no $\\mu$ subtracted at all — and then applies the same learned $\\gamma$. Skipping the mean is not merely a simplification for its own sake: computing a variance ordinarily requires the mean first (variance is defined relative to it), so LayerNorm needs two passes over the data, one to find $\\mu$ and one to find $\\sigma^2$ around it, while RMSNorm needs only the single pass required to compute $\\overline{z^2}$. One fewer reduction per normalisation layer, repeated across every layer of a network processing trillions of tokens, is a real and measurable saving, and in practice RMSNorm performs comparably to LayerNorm on the activations a modern transformer actually produces — which is why it has become the default (§4.6).</p>
+
+${H.analogy(`<p>Think of a factory assembly line where each station is supposed to receive parts of a standard size, regardless of what happened at the stations before it. Without any correction, small variations at station 1 compound through stations 2, 3, 4 — a part that arrives a fraction too large gets built on by the next station, which builds on that, until by station 40 nothing fits together and something jams (§3.3, §3.4's collapse and explosion). A normalisation layer is a recalibration step bolted onto every single station: whatever arrives, regardless of its history, gets measured and rescaled to the standard size before the station does its own work. The station downstream never has to know or care whether the drift happened one step back or thirty.</p>`)}
+
+<p><b>What you are looking at.</b> The lab below builds an 8-layer network with a fixed, deliberately aggressive weight scale, and draws one column of histograms per layer: each column shows the distribution of that layer's activations across 256 units, with darker cells meaning more units landed in that value bin. The standard deviation printed under each column is the same quantity §3.4's variance-propagation derivation tracked, now measured empirically layer by layer rather than predicted algebraically.</p>
+
+<p><b>What to do with it.</b> Start with normalisation set to <i>none</i> and the activation on tanh. Watch the histogram columns widen and then pile up at the extreme top and bottom bins by around layer 4 — tanh saturating exactly as §3.3.1 described, with the standard deviation reading confirming the activations have spread far past a sensible range. Now switch normalisation to LayerNorm with everything else unchanged: every column looks essentially identical to every other column, all centred and the same width, regardless of how aggressive the raw weight scale is.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Switch from LayerNorm to RMSNorm and compare the columns — they are close to indistinguishable, even though RMSNorm never explicitly centres the distribution around zero the way LayerNorm does. For activations that are already roughly symmetric, which most pre-normalisation activations in a well-behaved network are, the mean-subtraction step LayerNorm performs turns out to correct for very little, and the cheaper computation buys almost the same stability. That is the empirical justification behind the algebraic saving described above.</p>
 
 ${H.lab('norm', 'What normalisation does to the distribution each layer sees', 'Activation histograms at increasing depth, with and without normalisation. Without it the distribution drifts and widens until the activation saturates; with it, every layer sees something stable.')}
 
-<h2><span class="sn">3.6.2</span> Regularization, four ways</h2>
+<h2><span class="sn">3.6.2</span> Regularisation, four ways</h2>
+<p>Normalisation keeps a network <i>trainable</i>. It says nothing about whether the network, once trained, generalises to data it has not seen — a separate concern that §1.5 frames as the bias–variance trade-off and this section makes concrete for networks specifically. A network with enough parameters can, in principle, memorise its training set exactly, achieving a training loss of nearly zero while learning nothing that transfers to a new example. Regularisation is any deliberate choice that trades away some training-set fit in exchange for a model that generalises better, and there are four standard levers.</p>
+
 ${H.table(['Method', 'Mechanism', 'Note'], [
       ['<b>Weight decay</b>', 'Pull toward small weights (a Gaussian prior, §1.5)', 'Use AdamW so it is decoupled (§3.5)'],
       ['<b>Dropout</b>', 'Randomly zero units during training; scale at inference', 'Prevents co-adaptation. Largely replaced by other methods in large transformers, still standard in smaller nets'],
-      ['<b>Early stopping</b>', 'Halt at the best validation epoch', 'The cheapest regularizer there is'],
+      ['<b>Early stopping</b>', 'Halt at the best validation epoch', 'The cheapest regulariser there is'],
       ['<b>Data augmentation</b>', 'Expand the effective dataset with label-preserving transforms', 'The most effective of all when the invariances are known']
     ])}
 
+<h3>Dropout, worked through</h3>
+<p>At training time, dropout independently zeroes each unit's output with probability $p$, and rescales every surviving unit by $1/(1-p)$ — a detail worth checking rather than taking on faith. A unit's expected output under this scheme is $(1-p)\\times\\big[\\text{value}\\times\\tfrac{1}{1-p}\\big] + p\\times 0 = \\text{value}$: the rescaling exactly cancels the effect of the dropping, in expectation, so the layer's average output matches what it would have been with no dropout at all. That is what lets inference skip dropout entirely and simply use every unit at full strength — the training-time rescaling has already made the two cases match on average, so no separate correction is needed at test time.</p>
+
+<p>Every individual forward pass during training, though, is using a different random subset of units — a different <i>thinned sub-network</i> each time, with a different random 20% or 30% of units forced to zero. Training on many different draws of that random subset is, in effect, training a huge ensemble of overlapping smaller networks (§2.7 covers ensembles directly), and using the full network at inference approximates averaging their predictions. That averaging is one half of why dropout regularises. The other half is what it prevents during training: without dropout, two units can specialise into fixing each other's specific mistakes, a fragile co-adapted pair that only works because both happen to be present together. Dropout makes that co-adaptation unreliable, since either partner might be zeroed on any given step, and so it pushes every unit toward being independently useful rather than useful only in combination with particular others.</p>
+
+<p><b>What you are looking at.</b> The lab below trains two networks side by side on the same noisy, moon-shaped dataset — one with dropout disabled, one with the dropout rate you set — and draws each network's decision boundary in its own panel, with the training points overlaid. The readout below reports training and test accuracy for both networks.</p>
+
+<p><b>What to do with it.</b> Leave the label noise control at its default and press <i>Train 1500 steps</i>. Watch the left panel's boundary bend itself around individual mislabelled points, producing a jagged, overconfident shape, while its training accuracy climbs higher than the right panel's. Then compare the test-accuracy readouts: the right network, with dropout on, very often posts a lower training accuracy and a <i>higher</i> test accuracy than the left one.</p>
+
+<p><b>The thing genuinely worth noticing.</b> That combination — worse on the data it saw, better on the data it did not — is not a contradiction to explain away. It is the single clearest signature a regulariser is doing its job, because it demonstrates directly that some of the left network's extra training accuracy was purchased by fitting noise specific to those exact training points, exactly the failure mode §1.5's bias–variance framing predicts and exactly what dropout's forced independence, described above, is designed to prevent.</p>
+
 ${H.lab('dropout', 'Dropout, and what it does to the boundary', 'Train the same network with and without dropout on noisy data. Watch the decision boundary go from jagged and confident to smoother and better-calibrated — and watch the training loss get <i>worse</i> while the test accuracy improves. That gap is the entire point.')}
 
-<h3>Why dropout works, in one line</h3>
-<p>Each forward pass trains a randomly-thinned sub-network, and inference averages over them — an ensemble (§2.7) obtained for free. It also prevents units from co-adapting to fix each other's mistakes, which forces each unit to be independently useful.</p>
-
 ${H.probe([
-      ['LayerNorm or BatchNorm for a transformer?', 'LayerNorm (or RMSNorm) — no batch dependence, and per-position statistics are meaningless in a batch of variable-length sequences.'],
-      ['What does dropout actually average over?', 'An exponential family of thinned sub-networks; inference with scaled weights approximates that ensemble.'],
-      ['Which regularizer is cheapest?', 'Early stopping — one validation curve and no extra compute.']
+      ['LayerNorm or BatchNorm for a transformer?', 'LayerNorm (or RMSNorm) — no batch dependence, and per-position statistics are meaningless in a batch of variable-length sequences; BatchNorm additionally behaves differently at train and inference because it falls back on running statistics.'],
+      ['What does dropout actually average over?', 'An exponential family of randomly thinned sub-networks, one different subset per forward pass during training; running the full network at inference approximates averaging their predictions, and the $1/(1-p)$ rescaling during training is what makes that approximation exact in expectation.'],
+      ['Which regulariser is cheapest?', 'Early stopping — one validation curve you were already computing, and no extra compute spent during training itself.']
     ])}`,
     labs: {
       norm: function (host) {
@@ -911,7 +1136,7 @@ ${H.probe([
           { label: 'Reset', on: reset }
         ]);
         reset();
-        Viz.note(host, 'Train both to 1500 steps with label noise on: the left network reaches higher training accuracy by bending around the mislabelled points, and pays for it on test. The right one refuses to. Higher training loss with better test accuracy is what a working regularizer looks like.');
+        Viz.note(host, 'Train both to 1500 steps with label noise on: the left network reaches higher training accuracy by bending around the mislabelled points, and pays for it on test. The right one refuses to. Higher training loss with better test accuracy is what a working regulariser looks like.');
       }
     },
     quiz: [
@@ -919,19 +1144,19 @@ ${H.probe([
         q: 'Transformers use LayerNorm/RMSNorm rather than BatchNorm because…',
         options: ['it is more accurate', 'batch statistics are unstable across variable-length sequences and differ between train and inference', 'BatchNorm is slower', 'LayerNorm has fewer parameters'],
         answer: 1,
-        why: 'LayerNorm normalises within one example, so nothing depends on what else is in the batch; RMSNorm additionally drops the mean subtraction.'
+        why: 'BatchNorm computes its mean and variance across the examples currently in the batch, which forces it to fall back on running statistics at inference (when a batch may not exist) and mixes together per-position statistics that are not comparable across a batch of variable-length sequences. LayerNorm computes its statistics from a single example\'s own features, so the same computation runs identically whether that example arrives alone or inside a batch of a thousand — nothing about train versus inference changes its behaviour. RMSNorm keeps that property and additionally skips the mean-subtraction step (§3.6.1), which is a genuine compute saving but is not the reason transformers moved away from BatchNorm in the first place.'
       },
       {
         q: 'Your training loss rises when you add dropout but test accuracy improves. This means…',
-        options: ['dropout is misconfigured', 'the regularizer is working as intended', 'the learning rate is too high', 'the model is underfitting'],
+        options: ['dropout is misconfigured', 'the regulariser is working as intended', 'the learning rate is too high', 'the model is underfitting'],
         answer: 1,
-        why: 'Regularization deliberately trades training fit for generalisation. The gap narrowing is the signal you want.'
+        why: 'A regulariser\'s entire purpose is to trade away some training-set fit for better generalisation (§1.5\'s bias–variance framing), so a higher training loss alongside a higher test accuracy is the direct signature of that trade succeeding — some of the fit the unregularised model achieved was fitting noise specific to the training points, not signal, and §3.6.2 shows exactly this pattern in the dropout lab. Option D, underfitting, is the tempting distractor because "worse training performance" sounds like underfitting on its own — but underfitting means the model is too weak to fit even the true signal, and it would show up as <i>both</i> training and test performance being poor, not as training loss rising while test accuracy simultaneously improves.'
       }
     ],
     cards: [
       { q: 'LayerNorm vs BatchNorm vs RMSNorm', a: 'Per-example features / per-channel over the batch / per-example features with no mean subtraction (cheapest, modern LLM default).' },
       { q: 'Why dropout works', a: 'Each pass trains a thinned sub-network; inference averages the ensemble and units cannot co-adapt.' },
-      { q: 'The four regularizers', a: 'Weight decay (AdamW), dropout, early stopping, data augmentation — augmentation is usually the strongest when invariances are known.' }
+      { q: 'The four regularisers', a: 'Weight decay (AdamW), dropout, early stopping, data augmentation — augmentation is usually the strongest when invariances are known.' }
     ]
   });
 })();

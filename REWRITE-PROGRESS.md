@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**45 / 116 sections complete.**
+**54 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -74,15 +74,15 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | 3.1 | `nn-fundamentals` | 40-deep.js | 500 |
-|   | 3.2 | `backprop` | 40-deep.js | 405 |
-|   | 3.3 | `activations` | 40-deep.js | 468 |
-|   | 3.4 | `initialisation` | 40-deep.js | 383 |
-|   | 3.5 | `optimisers` | 40-deep.js | 456 |
-|   | 3.6 | `normalisation` | 40-deep.js | 427 |
-|   | 3.7 | `cnn` | 41-deep-b.js | 527 |
-|   | 3.8 | `rnn` | 41-deep-b.js | 478 |
-|   | 3.9 | `embeddings` | 41-deep-b.js | 474 |
+| x | 3.1 | `nn-fundamentals` | 40-deep.js | 500 |
+| x | 3.2 | `backprop` | 40-deep.js | 405 |
+| x | 3.3 | `activations` | 40-deep.js | 468 |
+| x | 3.4 | `initialisation` | 40-deep.js | 383 |
+| x | 3.5 | `optimisers` | 40-deep.js | 456 |
+| x | 3.6 | `normalisation` | 40-deep.js | 427 |
+| x | 3.7 | `cnn` | 41-deep-b.js | 527 |
+| x | 3.8 | `rnn` | 41-deep-b.js | 478 |
+| x | 3.9 | `embeddings` | 41-deep-b.js | 474 |
 |   | 3.11 | `autodiff` | 42-deep-c.js | 1016 |
 |   | 3.12 | `training-dynamics` | 42-deep-c.js | 969 |
 |   | 3.13 | `compression` | 42-deep-c.js | 1029 |
