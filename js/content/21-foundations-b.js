@@ -1162,6 +1162,12 @@ ${H.probe([
         options: ['the data is not normalised', 'there is no feature space in which the kernel is an inner product, so the problem is no longer convex', 'the kernel is too smooth', 'the bandwidth γ is too small'],
         answer: 1,
         why: 'Mercer\'s condition is exactly the statement that a PSD kernel matrix corresponds to an inner product in some, possibly infinite-dimensional, feature space. If an eigenvalue is negative there is no such space, so the "kernel trick" has nothing to be a trick for, and the SVM dual stops being a convex quadratic programme with a unique optimum. The bandwidth answer is tempting because $\\gamma$ is the knob people actually turn and mis-tuning it does cause visible trouble — but a badly tuned RBF kernel is still PSD, so the symptom is overfitting rather than an invalid problem. This bites in practice when you hand-build a similarity matrix from something like an edit distance: plausible-looking similarity functions frequently are not PSD, so check the smallest eigenvalue before trusting anything downstream.'
+      },
+      {
+        q: 'A 2×2 matrix has $\\sigma_1 = 3.83$, $\\sigma_2 = 0.024$ and determinant 0.09. Which statement is correct?',
+        options: ['It is singular, so no inverse exists', 'It is invertible, but solving a system with it amplifies error by a factor of about 160', 'Its eigenvalues must be complex', 'It is orthogonal, since the determinant is non-zero'],
+        answer: 1,
+        why: 'A non-zero determinant means the matrix is invertible, so nothing has been flattened and the first option is wrong. But invertibility is a yes/no fact and the condition number $\\kappa=\\sigma_1/\\sigma_2 \\approx 160$ is the quantitative one, and it says the map stretches 160 times more along one direction than another — so the inverse magnifies whatever error is in your right-hand side by up to that factor. "Singular" is tempting because $\\sigma_2$ looks like zero next to $\\sigma_1$, and that instinct is nearly right in the way that matters: numerical trouble arrives well before a matrix is exactly singular, which is why "nearly collinear features" is already a problem in §2.3 and why ridge\'s $\\lambda I$ helps. You can reproduce this exact matrix with the <i>Ill-conditioned</i> preset in the SVD lab.'
       }
     ],
     cards: [
@@ -1383,6 +1389,12 @@ ${H.probe([
         options: ['it is faster', 'it is a Newton step in function space: curvature gives better leaf values and a loss-agnostic gain formula', 'first derivatives are unavailable', 'it prevents overfitting by itself'],
         answer: 1,
         why: 'Taylor-expanding the loss to second order around the current predictions and minimising the resulting quadratic is precisely a Newton step, and §2.8 derives the leaf weight $-G/(H+\\lambda)$ from it — a gradient divided by a curvature, which is $-H^{-1}g$ for a one-dimensional parameter. "It is faster" is tempting because second-order methods are associated with speed, but computing per-example second derivatives is extra work per split, not less; the payoff is better leaf values and a gain formula that works for any twice-differentiable loss without rederivation. Recognising this formula as Newton rather than as an arbitrary boosting rule is what §1.9.3 is for.'
+      },
+      {
+        q: 'Maximising $w^\\mathsf{T}\\Sigma w$ subject to $\\|w\\| = 1$ leads to which stationarity condition?',
+        options: ['$\\Sigma w = \\lambda w$, so $w$ is an eigenvector and the maximum value is the largest eigenvalue', '$w = \\Sigma^{-1}\\mathbf{1}$, the inverse covariance applied to a vector of ones', '$w$ must equal the mean of the data', 'The problem is unbounded, so no solution exists'],
+        answer: 0,
+        why: 'Forming the Lagrangian $w^\\mathsf{T}\\Sigma w - \\lambda(w^\\mathsf{T}w - 1)$ and differentiating gives $2\\Sigma w - 2\\lambda w = 0$, which is the eigenvector equation — and substituting back shows the objective equals $\\lambda$ at any stationary point, so the maximum is the largest eigenvalue. The last option is tempting because the objective genuinely <i>is</i> unbounded without the constraint: you could scale $w$ up forever. That is precisely why the constraint is there, and it is a good illustration of the multiplier as a price, since $\\lambda$ measures how much the objective would improve if the unit-norm restriction were loosened. This five-line derivation is the whole of PCA (§2.10), which is why it is worth being able to produce it rather than recognise it.'
       }
     ],
     cards: [
