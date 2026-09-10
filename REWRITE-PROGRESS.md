@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**36 / 116 sections complete.**
+**41 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -63,11 +63,11 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 | x | 2.17 | `interpretability` | 32-classical-c.js | 601 |
 | x | 2.18 | `production` | 32-classical-c.js | 1022 |
 | x | 2.19 | `fairness` | 32-classical-c.js | 861 |
-|   | 2.21 | `gp-bayesopt` | 33-classical-d.js | 820 |
-|   | 2.22 | `self-supervised` | 33-classical-d.js | 937 |
-|   | 2.23 | `active-transfer` | 33-classical-d.js | 847 |
-|   | 2.24 | `ranking` | 33-classical-d.js | 892 |
-|   | 2.25 | `experimentation` | 33-classical-d.js | 977 |
+| x | 2.21 | `gp-bayesopt` | 33-classical-d.js | 820 |
+| x | 2.22 | `self-supervised` | 33-classical-d.js | 937 |
+| x | 2.23 | `active-transfer` | 33-classical-d.js | 847 |
+| x | 2.24 | `ranking` | 33-classical-d.js | 892 |
+| x | 2.25 | `experimentation` | 33-classical-d.js | 977 |
 | x | 2.26 | `part2-recall` | 32-classical-c.js | 177 |
 
 ## Part 3 — Neural networks & deep learning
