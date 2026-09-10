@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**73 / 116 sections complete.**
+**80 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -150,13 +150,13 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | 7.1 | `interview-map` | 80-interview.js | 1291 |
-|   | 7.2 | `interview-breadth` | 80-interview.js | 3314 |
-|   | 7.3 | `interview-depth` | 80-interview.js | 1027 |
-|   | 7.4 | `ml-system-design` | 80-interview.js | 1912 |
-|   | 7.5 | `coding-round` | 81-interview-b.js | 1132 |
-|   | 7.6 | `case-round` | 81-interview-b.js | 1461 |
-|   | 7.7 | `behavioural` | 81-interview-b.js | 1452 |
+| x | 7.1 | `interview-map` | 80-interview.js | 1291 |
+| x | 7.2 | `interview-breadth` | 80-interview.js | 3314 |
+| x | 7.3 | `interview-depth` | 80-interview.js | 1027 |
+| x | 7.4 | `ml-system-design` | 80-interview.js | 1912 |
+| x | 7.5 | `coding-round` | 81-interview-b.js | 1132 |
+| x | 7.6 | `case-round` | 81-interview-b.js | 1461 |
+| x | 7.7 | `behavioural` | 81-interview-b.js | 1452 |
 
 ## Reference & drill room
 

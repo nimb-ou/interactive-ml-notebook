@@ -11,6 +11,12 @@
     lede: 'Interviews feel arbitrary until you know what each round is scoring. They are not testing whether you know machine learning; they are testing five specific, separable things, and almost everyone who fails does so on a dimension they never realised was being measured.',
     related: ['interview-breadth', 'ml-system-design', 'behavioural'],
     html: `
+<p>Picture two candidates for the same role, evenly matched on paper. Both walk into the ML breadth round and are asked to explain regularisation. The first gives a genuinely excellent answer: four minutes, unprompted, covering L1, L2, elastic net and dropout, with the maths for each. The second gives a ninety-second answer: what L1 does mechanically, one worked number, and the trade-off against L2, then stops talking. The second candidate is the one who gets the offer.</p>
+
+<p>Nothing about their knowledge separated them — if anything, the first candidate knew more. What separated them is that the second candidate understood what the round was actually scoring, and the first did not. That is the fact this whole section turns on, and almost nobody states it before the loop starts: an ML interview is not one long exam on "do you know machine learning". It is five short, separately-graded exams, each measuring a narrow and different thing, and a candidate can be excellent on four of them and still fail the loop on the fifth because nobody told them it was a different test with a different rubric.</p>
+
+<p>This section is that missing briefing. Read it once before you start preparing anything else, because it changes <i>how</i> you should prepare for everything that follows: which habits to drill, which failure to worry about in each room, and what the interviewer sitting across from you is actually allowed to write on their scorecard.</p>
+
 ${H.tldr([
       'A typical loop has five rounds: <b>coding</b>, <b>ML breadth</b>, <b>ML depth</b>, <b>ML system design</b>, <b>behavioural / project deep-dive</b>. Each has a distinct rubric and a distinct failure mode.',
       'Breadth rounds fail on <i>hedging</i>; depth rounds fail on <i>memorised formulas with no derivation</i>; design rounds fail on <i>jumping to the model before the requirements</i>; behavioural rounds fail on <i>no measurable outcome</i>.',
@@ -26,6 +32,13 @@ ${H.table(['Round', 'The question behind the question', 'Strong signal', 'What s
       ['<b>Behavioural / deep-dive</b>', 'What is it like when this goes wrong, and do you own outcomes?', 'One project, told in depth, with a number attached and a mistake admitted', 'No metric; "we" with no "I"; no failure you can describe honestly']
     ])}
 ${H.key('Every round is really asking one thing: <i>would I want this person debugging a production incident with me at 2am?</i> Depth, honesty about uncertainty, and structure under pressure are what actually get scored.')}
+
+${H.analogy(`<p>The closest parallel outside software is the OSCE, the structured practical exam medical schools use to certify trainee doctors. A trainee does not sit one long exam called "medicine". They rotate through short stations, each with an actor playing a patient and an examiner scoring one specific skill: taking a history, breaking bad news, suturing a wound, reading a chest X-ray. A trainee who is a brilliant diagnostician but freezes when asked to deliver bad news fails <i>that station</i>, regardless of how good their diagnosis was, because the station was never measuring diagnosis.</p>
+<p>An ML loop is assembled on exactly the same principle. The coding round is not measuring whether you know machine learning — it is measuring whether you can write correct code under mild pressure and reason about its cost. Walking into every room and giving "the one where I prove I am good at ML" answer is the single most common structural mistake candidates make, and it is the precise equivalent of giving a beautiful account of your diagnostic reasoning at the suturing station instead of picking up the needle.</p>`)}
+
+${H.history(`<p>The five-round structure is younger than it looks, and it was not designed top-down — it accreted, one round at a time, in response to a specific failure that the existing rounds could not catch. Through the 2000s an "ML interview" at most companies was barely distinguishable from a general software interview: a data-structures problem, perhaps a probability brainteaser, and a conversation about a past project. There was no dedicated system-design-for-ML round because there was, for most companies, no separate production-ML discipline yet — a model was often a research artefact, or a single pipeline retrained by hand every few months by whoever had time.</p>
+<p>What forced the split was scale. Once companies were serving models to hundreds of millions of users through pipelines with feature stores, staged rollouts and pager rotations, they found candidates who could pass every algorithms and maths question in the loop and still be unable to answer "how does this survive a 3am alert". Big tech companies added a dedicated ML system design round through the mid-2010s specifically to close that gap, and the round's rubric — requirements before models, numbers on the board, named failure modes — still reads like a direct response to that missing skill.</p>
+<p>LLM-native companies have since pushed on the loop again, adding fluency with prompting, evaluation and cost-per-request as an implicit sixth axis, usually folded into the existing rounds rather than given its own slot (§7.2.4, §5.13). The pattern to notice: every round in the loop exists because a specific failure kept slipping through without it. If you understand what each round was built to catch, its rubric stops looking arbitrary.</p>`)}
 
 <h2><span class="sn">7.1.2</span> Company archetypes, and how the emphasis shifts</h2>
 ${H.table(['Archetype', 'Weighted toward', 'Distinctive round', 'Prepare by'], [
@@ -46,9 +59,21 @@ ${H.table(['Level', 'Scope you owned', 'Ambiguity you absorbed', 'The sentence t
     ])}
 ${H.note('This is why "tell me about a project" is the most pivotal question in the loop. The same work described as a task, a feature or a system-with-a-judgement-call maps to three different levels. Be accurate — inflating this is easy to detect on the follow-ups — but do not undersell scope you genuinely owned.')}
 
+${H.intuition(`<p>Once you see the levelling axis as "how far upstream did you operate", a rubric that sounds vague on paper becomes close to mechanical to apply to your own history. Ask, in order: was the problem already fully specified when it reached you? If so, you were given a task — a junior signal, however well you executed it. Did you choose the modelling approach yourself and carry it through to launch? Mid-level. Did you choose <i>which problem</i> was worth solving, perhaps overriding what you were originally asked to build? Senior. Did you decide what an entire team's time should go toward in the first place? Staff and above.</p>
+<p>The part that surprises people is that seniority is not a measure of how technically hard the work was. A junior engineer can do something genuinely difficult inside a well-specified task; a staff engineer can spend a quarter on something technically simple — reading a dashboard, concluding a project should be killed, and killing it — and that is the stronger signal, because it is scope and judgement being scored, not difficulty. When you are choosing which project to tell as your main story, choose for scope first and impressiveness second.</p>`)}
+
+<p><b>What you are looking at.</b> Eight sliders, one per preparation dimension, each running from "shaky" to "could teach it", plus a ninth slider for how many weeks remain until your loop. Underneath, a horizontal bar chart shows the <i>weighted gap</i> for each dimension — how far you are from strong, multiplied by how much that dimension typically moves a hiring decision — so the bars are not simply sorted by your self-rating.</p>
+
+<p><b>What to do with it.</b> Rate yourself honestly on each slider — resist the pull to rate everything a 4, which defeats the point of the exercise — then read the generated plan beneath the chart. It allocates your remaining hours across dimensions in proportion to the weighted gap and links each block to the specific sections that close it.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Set every slider to the same value, say 3, and watch the bars refuse to come out equal. System design and breadth are weighted roughly 1.3× and 1.2×; statistics sits at 0.9×. That is the tool making an explicit, arguable claim: a "shaky" in system design costs you more than a "shaky" in statistics, in most loops, because more rounds probe it and it discriminates candidates more sharply. Disagree with the weighting if your target role is unusual — a quant-trading loop genuinely does invert it — but notice that the disagreement is now something you can name and argue about, rather than a vague feeling about what to read first.</p>
+
 ${H.lab('readiness', 'Where is your prep actually weak?', 'Rate yourself honestly on each dimension. The output is an ordered plan with the specific sections to read, weighted by how much each dimension moves a hiring decision.')}
 
 <h2><span class="sn">7.1.4</span> The habits that raise every score</h2>
+
+<p>The five rounds have different rubrics, but they share an interviewer, and every interviewer is silently scoring a second, unstated layer underneath the content of your answer: <i>can I trust what this person tells me?</i> The six habits below are not round-specific tricks. They are the behaviours that build that trust regardless of which room you are in, which is why they show up, reworded, in every rubric this section will describe.</p>
+
 ${H.steps([
       '<b>Restate the question before answering.</b> Ten seconds, and it prevents the most expensive failure mode — a brilliant answer to a question nobody asked.',
       '<b>Answer, then elaborate.</b> Give the one-sentence answer first, then the nuance. Interviewers taking notes need the answer; if you build to it for three minutes they will have stopped listening.',
@@ -139,19 +164,19 @@ ${H.iq('Warm-up: the questions that open loops', [
         q: 'The most common failure in an ML system design round is…',
         options: ['not knowing enough architectures', 'proposing a model before establishing requirements and metrics', 'poor coding', 'weak mathematics'],
         answer: 1,
-        why: 'The requirements conversation *is* the interview. Naming a model in the first two minutes forfeits most of the rubric.'
+        why: 'The requirements conversation *is* the interview, not the preamble to it — scale, latency budget and what "good" means are what every later decision has to be judged against. Naming a model in the first two minutes forfeits most of the rubric, because the interviewer never gets to see you reason about a trade-off; they only see you recall an architecture. Knowing more architectures is tempting to believe is the fix, which is exactly why it is the wrong option here: the round rewards the order you address things in, not the size of your toolbox. Coding and mathematics matter elsewhere in the loop, but this specific round is scored almost entirely on the first ten minutes.'
       },
       {
         q: 'What most determines the level you are hired at?',
         options: ['years of experience', 'the scope and ambiguity you have owned', 'the number of papers published', 'breadth of frameworks known'],
         answer: 1,
-        why: 'Being given a problem, choosing an approach, choosing the problem, or defining what is worth doing — those four map to L3 through L6.'
+        why: 'Being given a task, choosing the approach to it, choosing which problem was worth solving, and defining what an organisation should spend its time on — those four map, in order, to L3 through L6+ (§7.1.3). Years of experience correlates with scope because people are usually trusted with more ambiguity over time, which is exactly why it is the tempting wrong answer: it is a proxy for the real thing, not the thing itself, and a five-year veteran who was never given ambiguous problems will still read as junior. The honest test is whether your best story is describable as "I was handed X" or "I decided X was the thing worth doing".'
       },
       {
         q: 'In a breadth round, "it depends" is…',
         options: ['always the right answer', 'only useful if you immediately say what it depends on', 'a sign of seniority', 'best avoided entirely'],
         answer: 1,
-        why: 'Unqualified hedging reads as not knowing. "It depends on whether the classes are balanced — if they are, X; if not, Y" reads as understanding.'
+        why: 'Unqualified hedging reads as not knowing, because an interviewer taking notes against a rubric cannot score a sentence that commits to nothing. "It depends on whether the classes are balanced — if they are, X; if not, Y" reads as understanding, because it shows you know the variable that flips the answer, which is a stronger signal than either X or Y alone would be. The trap is stopping after "it depends": that half-sentence is indistinguishable from bluffing until the condition is named, so treat it as a promise you must complete in the same breath, never as a complete answer on its own.'
       }
     ],
     cards: [
@@ -169,26 +194,41 @@ ${H.iq('Warm-up: the questions that open loops', [
     lede: 'Rapid-fire fundamentals. Each of these should take you sixty to ninety seconds: the answer, one concrete example, and the trade-off. Practise them out loud — the gap between knowing and saying is the entire difficulty of this round.',
     related: ['interview-depth', 'part2-recall', 'metrics'],
     html: `
+<p>There is a specific, recognisable failure that this round produces, and it has nothing to do with not knowing the material. You ask a candidate to explain bias and variance, and they know it cold — you can see it in their eyes — but what comes out is a four-minute ramble that starts with the decomposition, wanders into double descent, circles back to regularisation, and never quite lands. The interviewer, taking notes against a rubric with a sixty-to-ninety-second box for this question, writes down "vague" and moves on. The candidate leaves certain they nailed it.</p>
+
+<p>The breadth round is not measuring what you know. It is measuring how quickly you can retrieve it in a compressed, structured form under a clock, which is a different skill that has to be trained separately from understanding the material in the first place. Reading the sixty answers below and nodding along will not build that skill, because recognising a good answer and producing one from a blank page under mild social pressure use different machinery. The only fix is saying the answers out loud, against a timer, before you look at them — which is exactly what the drill at the end of this section forces you to do.</p>
+
 ${H.tldr([
       'The format: a crisp answer, a concrete instance, and a stated trade-off. Sixty to ninety seconds. Then stop talking.',
       'Every question below links to the section that derives it. Any question you fumble is a section to re-read — that is how to use this page.',
       'Use the drill at the bottom to test yourself under something resembling real conditions: question first, answer hidden, self-graded.'
     ])}
 
+${H.intuition(`<p>The three-part shape — answer, example, trade-off — is not a formatting preference; it mirrors exactly what a rubric can score. "Answer" proves you know the fact. "Example" proves the fact is not memorised noise, because you can instantiate it on a concrete number. "Trade-off" proves you understand the fact's boundary — the situation where it stops being true or stops being the right choice — which is the difference between reciting a rule and understanding it.</p>
+<p>Once you hold that shape in mind, you can generate it for a question this page never anticipated. Told to explain a technique you have not rehearsed, you can still say what it does, ground it in one number, and name what it costs — and that structure alone will outscore a candidate who knows more facts but delivers them as an unstructured list.</p>`)}
+
+${H.analogy(`<p>Treat each answer the way a trial lawyer treats a closing argument, not the way a student treats an exam essay. A closing argument does not open with a nuanced survey of every possible reading of the evidence; it opens with the verdict it wants, states it plainly, and only then brings in the supporting detail — because the jury's attention is a depleting resource and the most important sentence has to land while it is still full. An interviewer taking rubric notes is that jury. Open with the verdict — the direct answer — and spend the remaining sixty seconds on the evidence and the caveat, never the reverse.</p>`)}
+
+<p><b>What you are looking at.</b> A topic selector above a single question card. The card shows one question at a time from a bank of sixty-three, drawn from nine topics spanning fundamentals through production; a model answer and a link to the full section are hidden until you press reveal. Below the card, a running tally shows your self-graded score, broken out by topic.</p>
+
+<p><b>What to do with it.</b> Pick a topic — or leave it on "everything" for a realistic mixed drill — read the question, and say your answer out loud before you touch anything else. Only then press <b>Reveal answer</b>, compare honestly, and mark yourself <b>✓ I had it</b> or <b>✗ Missed it</b>. Resist the pull to mark a half-remembered answer as a hit; the tally is only useful if it is honest.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Run the drill twice on the same topic, a day apart, and watch which questions you miss the second time. It is rarely the same ones. That instability is the whole point of the exercise: recognising a good answer on the page feels identical to being able to produce it from nothing, and the two are not the same skill. The topic where your tally stays weak across repeated attempts — not the topic that merely feels unfamiliar — is the one to go back and re-read at its source section.</p>
+
 ${H.lab('drill', 'The rapid-fire drill', 'One question at a time, answer hidden. Say your answer out loud <i>before</i> revealing — reading a good answer feels like knowing it, and it is not the same thing. Your score by topic is tracked below.')}
 
-<h2><span class="sn">7.2.1</span> Fundamentals and generalization</h2>
-${H.iq('Bias, variance, overfitting, regularization', [
+<h2><span class="sn">7.2.1</span> Fundamentals and generalisation</h2>
+${H.iq('Bias, variance, overfitting, regularisation', [
       {
         q: 'Explain the bias–variance trade-off, and where it breaks down.',
         level: 'core',
         a: `<p>Expected test error decomposes into $\\text{bias}^2 + \\text{variance} + \\text{irreducible noise}$. Bias is error from wrong assumptions — a linear model on a curved relationship. Variance is sensitivity to the particular training sample — a deep unpruned tree. Capacity trades one for the other, and classically the sum is U-shaped.</p>
 <p><b>Where it breaks down:</b> in the over-parameterised regime the curve descends again — <i>double descent</i> (§2.2). Past the interpolation threshold, adding parameters keeps improving test error because the implicit bias of the optimiser selects a low-norm interpolant among the many that fit. This is why "more parameters means more overfitting" is not a reliable statement about modern networks.</p>`,
-        follow: ['Which does bagging reduce? Which does boosting reduce?', 'Where does regularization sit in this decomposition?', 'Can you have high bias and high variance at once?'],
+        follow: ['Which does bagging reduce? Which does boosting reduce?', 'Where does regularisation sit in this decomposition?', 'Can you have high bias and high variance at once?'],
         red: 'Reciting the decomposition without being able to give a concrete high-bias and high-variance model.'
       },
       {
-        q: 'L1 versus L2 regularization — why does L1 produce exact zeros?',
+        q: 'L1 versus L2 regularisation — why does L1 produce exact zeros?',
         level: 'core',
         a: `<p>L2 adds $\\lambda\\|w\\|_2^2$, whose gradient $2\\lambda w$ shrinks toward zero proportionally and therefore never reaches it. L1 adds $\\lambda\\|w\\|_1$, whose subgradient is $\\lambda\\,\\mathrm{sign}(w)$ — a <b>constant</b> pull regardless of how small $w$ is. Once the data's gradient is smaller than $\\lambda$, the coefficient is pinned at exactly zero.</p>
 <p>Geometrically: the L1 constraint region is a diamond with corners on the axes, and the loss contours touch it at a corner. Bayesian reading: L2 is a Gaussian prior, L1 a Laplace prior whose sharp peak at zero puts mass there (§1.5, §2.3).</p>`,
@@ -207,7 +247,7 @@ ${H.iq('Bias, variance, overfitting, regularization', [
         level: 'core',
         a: `<p>Training error is non-increasing in capacity — an extra feature can always be given zero weight, so the optimum cannot get worse. Test error is a different quantity: each additional feature adds estimation variance ($O(d/n)$ for linear models) and an opportunity to fit noise.</p>
 <p>The clean framing: adding a feature always adds variance and only sometimes reduces bias. It is worth it when the bias reduction exceeds the variance addition — which is exactly what a validation set measures.</p>`,
-        follow: ['How does regularization change that calculation?', 'What about with $n \\gg d$?']
+        follow: ['How does regularisation change that calculation?', 'What about with $n \\gg d$?']
       },
       {
         q: 'What is the curse of dimensionality, concretely?',
@@ -305,7 +345,7 @@ ${H.iq('Networks, transformers, and the modern stack', [
         q: 'What is the KV cache, how big is it, and why does it dominate serving?',
         level: 'core',
         a: `<p>During autoregressive decoding, the keys and values for all previous tokens are needed at every step. Recomputing them is quadratic; caching makes it linear. Size: $2 \\times L \\times n_{kv} \\times d_{head} \\times S \\times B \\times \\text{bytes}$.</p>
-<p>For a 70B model at bf16 with 8 KV heads, 80 layers, head dim 128, 8k context: about 10 GB for a single sequence. That is the memory that limits concurrency — not the weights, which are shared. It is why GQA, MLA and KV quantization exist, and why paged attention was worth a paper (§4.7, §4.14).</p>`,
+<p>For a 70B model at bf16 with 8 KV heads, 80 layers, head dim 128, 8k context: about 10 GB for a single sequence. That is the memory that limits concurrency — not the weights, which are shared. It is why GQA, MLA and KV quantisation exist, and why paged attention was worth a paper (§4.7, §4.14).</p>`,
         follow: ['How does GQA reduce it, and what does it cost?', 'Why does the batch size multiply it but not the weights?']
       },
       {
@@ -530,19 +570,19 @@ ${H.key('If you fumbled more than five of these, do not read them again — say 
         q: 'A good breadth-round answer is structured as…',
         options: ['a full derivation', 'answer, concrete example, trade-off — in about 60–90 seconds', 'a list of every related method', 'a question back to the interviewer'],
         answer: 1,
-        why: 'Interviewers are taking notes against a rubric. Lead with the answer; the nuance lands better once they have it.'
+        why: 'Interviewers are taking notes against a rubric with a fixed time box for this question, so the sentence that arrives first is the one most likely to get written down. Lead with the direct answer and the nuance lands better once they already have something to hang it on — arriving at the answer last, after a survey of everything related to it, risks running out of time before you ever say the thing being graded. A full derivation is the wrong register for a round built around volume and speed; save derivations for §7.3, which exists precisely because breadth and depth are scored differently.'
       },
       {
         q: 'AUC 0.95 with 2% precision at every useful threshold indicates…',
         options: ['a bug in the metric', 'severe class imbalance — use average precision instead', 'overfitting', 'a calibration problem'],
         answer: 1,
-        why: 'The FPR denominator is dominated by the negative class, so many false positives barely register.'
+        why: 'The false-positive rate\'s denominator is the (huge) negative class, so a large absolute number of false positives barely moves it — a model can rank almost perfectly by AUC and still be useless at the threshold anyone would actually operate at. Average precision keeps the positive class in both of its denominators, so it does not hide this the way AUC does. Overfitting and calibration are real failure modes elsewhere, but neither one produces this specific signature of "high ranking quality, unusable precision" — that signature is the fingerprint of imbalance specifically (§2.13).'
       },
       {
         q: 'Naive Bayes is a decent classifier but a poor probability estimator because…',
         options: ['it uses a Gaussian likelihood', 'conditional independence counts correlated evidence repeatedly, so posteriors are over-confident', 'it needs smoothing', 'it has too few parameters'],
         answer: 1,
-        why: 'The argmax often survives the violation; the magnitudes do not. Recalibrate before using the probability for anything.'
+        why: 'Correlated features violate the independence assumption by letting the same underlying evidence be multiplied into the posterior more than once, which drives the predicted probability toward 0 or 1 far faster than the true confidence warrants. The argmax — which class is largest — usually survives this distortion even when the magnitude does not, which is exactly why the classifier keeps working while its probabilities become unusable. Never feed a Naive Bayes score into a downstream expected-value calculation without recalibrating it first (§2.12); the ranking can be trusted long before the number can.'
       }
     ],
     cards: [
@@ -561,15 +601,31 @@ ${H.key('If you fumbled more than five of these, do not read them again — say 
     prereq: ['matrix-calculus'],
     related: ['matrix-calculus', 'backprop', 'attention'],
     html: `
+<p>Here is the depth round's opening move, verbatim, in loop after loop: "Can you show me where the $\\sqrt{d_k}$ in attention comes from?" A candidate who has read this course's §4.3 says, correctly, "it stops the dot products from getting too large and saturating the softmax." That sentence is true. It is also the sentence that ends the interview badly, because the interviewer's next question is "why does the dot product get large, and why does that saturate a softmax, specifically?" — and a candidate who has recited the conclusion, rather than derived it, has nothing left to say. They knew the fact. They did not own the argument that produces it.</p>
+
+<p>That exchange is the entire content of a depth round. It is not a longer, harder version of the breadth round in §7.2 — it is a different test, asking the same five or six questions repeatedly in the form "why is that true?" until it finds the edge of what you can reconstruct from nothing. The only preparation that works is practising derivations, not memorising their endpoints, and the ten below are the ones that recur across nearly every loop that has a depth round at all.</p>
+
 ${H.tldr([
       'Derive, do not recite. An interviewer who asks "where does the $\\sqrt{d_k}$ come from" is checking whether you can reconstruct it, not whether you remember it.',
       'Every derivation below starts from a definition and takes fewer than eight lines. If yours takes twenty, you have memorised the wrong thing.',
       'Narrate while you write. A silent whiteboard scores nothing; the reasoning is the artefact being evaluated.'
     ])}
 
+${H.history(`<p>Asking a candidate to derive something live, on a board, in front of an examiner, is not a Silicon Valley invention — it is a direct descendant of the <i>viva voce</i>, the oral defence that has gated postgraduate degrees in mathematics and the sciences for centuries. A written thesis can be edited, polished and, historically, ghost-written; a viva cannot, because the examiner picks the question and watches the answer being produced in real time. The format survived into technical interviewing for exactly the reason it survived in academia: it is very hard to fake, and it is one of the few formats that distinguishes "can state the result" from "understands why the result holds".</p>
+<p>The specific shift toward derivation-heavy ML interviews tracks a hiring problem companies started hitting around the mid-2010s. As "machine learning engineer" postings multiplied, so did candidates who had completed an online course or a bootcamp and could recite the standard formulas fluently — softmax, cross-entropy, the normal equations — without being able to rebuild any of them from a blank page. A breadth round, built on recall, could not tell these candidates apart from ones who genuinely understood the material, because both groups could produce the same sixty-second answer. The depth round exists specifically to separate them, which is why "why" is nearly always the actual question, however it is phrased on the surface.</p>`)}
+
+<p><b>What you are looking at.</b> A dropdown selecting one of eight classic derivations, followed by a numbered ladder of algebraic steps, each currently hidden except for a faded placeholder. The right-hand column of every revealed step is not the algebra — it is the one-sentence justification for why that step is legal, which is the actual content an interviewer is listening for.</p>
+
+<p><b>What to do with it.</b> Pick a derivation, close this page, and write it on paper from the top with nobody prompting you. Only once you have a finished attempt, reveal the trainer's steps one at a time and check two things separately: did you reach the same line, and — more importantly — could you have stated the justification in the right-hand column before you saw it written down?</p>
+
+<p><b>The thing genuinely worth noticing.</b> The step you could not justify, even when you wrote down the correct algebra for it, is exactly the step an interviewer will stop you on. That is not a coincidence: the right-hand column marks the joints in the argument where a memorised derivation and an understood one diverge, and those are the only places a good interviewer needs to probe to tell the two apart.</p>
+
 ${H.lab('deriv', 'The derivation trainer', 'Pick a derivation, try it on paper, then reveal it one line at a time. The right-hand column is the justification for each step — that column is what interviewers actually probe.')}
 
 <h2><span class="sn">7.3.1</span> How to perform a derivation under pressure</h2>
+
+<p>The five habits below are not about mathematical cleverness. Every derivation this round asks for is, deliberately, no more than about eight lines of algebra from a definition — if the room wanted genuine research-level derivation, it would hand you a paper and an hour, not a whiteboard and ninety seconds. What is actually being tested is whether you can find the <i>right starting line</i> under pressure and narrate your way down without losing the thread, which is a performance skill on top of the mathematics, not a substitute for it.</p>
+
 ${H.steps([
       '<b>State what you are deriving and from what.</b> "I will get the logistic loss from the Bernoulli likelihood." Ten seconds, and it structures everything after.',
       '<b>Write the definition down first.</b> Most derivations are three algebraic moves away from a definition; the failure is usually starting from a half-remembered intermediate step.',
@@ -578,7 +634,22 @@ ${H.steps([
       '<b>Say what it connects to.</b> "…which is why softmax and cross-entropy are fused in every framework." Connection is the senior signal.'
     ])}
 
+${H.analogy(`<p>A good derivation under pressure looks a great deal like a good jazz solo. Nobody is impressed that a jazz musician can play a memorised, note-perfect lick — that is a recording, not a performance, and any listener with an ear can tell when a player has simply reproduced something learned by rote and lost the thread the moment the chord changes unexpectedly. What impresses is a player who knows the underlying scale and the chord tones so completely that they can generate a coherent line in real time, adapt instantly when the band takes an unplanned turn, and land cleanly on the next chord regardless.</p>
+<p>Reciting "cross-entropy is $-\\sum y\\log\\hat y$" is the memorised lick. Being able to start from "$y$ is Bernoulli with parameter $p$" and generate the loss live, then adjust smoothly when the interviewer changes the chord — "now derive it for the multi-class case" — is the improvisation. The interviewer is not grading whether you know the tune. They are grading whether you could still play if the tune changed under you.</p>`)}
+
+<p>To make the five habits concrete, here is one of the ten worked exactly as they should be produced on a whiteboard — every line justified, nothing skipped, starting from the definition rather than the half-remembered conclusion.</p>
+
+${H.deriv('the bias–variance decomposition, produced live', [
+      ['$\\mathbb{E}\\big[(y-\\hat f)^2\\big]$', 'State the quantity being decomposed before touching any algebra: expected squared error of the estimator $\\hat f$, where the expectation is over the random training sample.'],
+      ['$= \\mathbb{E}\\big[(f+\\varepsilon-\\hat f)^2\\big]$', 'Substitute the data-generating model $y=f(x)+\\varepsilon$, with $\\mathbb{E}[\\varepsilon]=0$ and $\\varepsilon$ independent of $\\hat f$.'],
+      ['$= \\mathbb{E}\\big[(f-\\hat f)^2\\big] + \\sigma^2$', 'Expand the square; the cross term $2\\,\\mathbb{E}[(f-\\hat f)\\varepsilon]$ vanishes because $\\varepsilon$ has mean zero and is independent of everything else in it.'],
+      ['$f - \\hat f = (f-\\mathbb{E}[\\hat f]) + (\\mathbb{E}[\\hat f]-\\hat f)$', 'Add and subtract $\\mathbb{E}[\\hat f]$ — a legal move for any quantity, and the single trick the whole derivation turns on.'],
+      ['$= \\underbrace{(f-\\mathbb{E}[\\hat f])^2}_{\\text{bias}^2} + \\underbrace{\\mathbb{E}[(\\hat f-\\mathbb{E}[\\hat f])^2]}_{\\text{variance}} + \\sigma^2$', 'Expand this second square. Its cross term also vanishes, because $\\mathbb{E}[\\mathbb{E}[\\hat f]-\\hat f]=0$ by the definition of $\\mathbb{E}[\\hat f]$ itself.']
+    ], 'Say the sanity check out loud: bias is squared distance from the average fit to the truth, variance is squared spread of the fit around its own average, and both are non-negative, so the decomposition can only ever add error, never remove it. That is why a model cannot buy back variance except by paying for it somewhere else.')}
+
 <h2><span class="sn">7.3.2</span> The ten, with their traps</h2>
+
+<p>The table below is a map, not a script: for each of the ten, it names the definition to start from and the one step candidates most reliably skip. Read it as a checklist of starting lines — if you can write the "start from" column for all ten without hesitation, you have already cleared most of the round.</p>
 ${H.table(['Derivation', 'Start from', 'The step people miss', 'Section'], [
       ['Logistic loss from MLE', 'the Bernoulli likelihood', 'writing it as $p^y(1-p)^{1-y}$ so the log splits into the two-term form', '<a href="#/mle-map">1.5</a>'],
       ['The normal equations', '$\\|Xw-y\\|^2$ as a dot product', 'that the two cross terms are equal because a scalar equals its transpose', '<a href="#/matrix-calculus">0.7</a>'],
@@ -591,6 +662,9 @@ ${H.table(['Derivation', 'Start from', 'The step people miss', 'Section'], [
       ['The XGBoost split gain', 'a second-order Taylor expansion of the loss', 'that the optimal leaf value is $-G/(H+\\lambda)$, so gain is a difference of $G^2/(H+\\lambda)$ terms', '<a href="#/boosting">2.8</a>'],
       ['The ELBO', '$\\log p(x) = \\log\\int p(x,z)dz$', 'multiplying and dividing by $q(z)$ before applying Jensen', '<a href="#/bayesian-inference">1.14</a>']
     ])}
+
+${H.intuition(`<p>Notice what every "start from" cell has in common: none of them is the formula the question is nominally about. Nobody asks you to derive $-y\\log p-(1-y)\\log(1-p)$; the start line is the Bernoulli likelihood, three steps upstream of that formula. This is the pattern worth internalising more than any individual derivation: the standard result is never the starting point of the standard question, because a starting point that close to the answer would not distinguish someone who understands the model from someone who has memorised its consequence. The interviewer already knows you can quote the formula — that is what the breadth round established. The depth round exists to check what is one layer beneath it.</p>
+<p>Once you notice this, the ten rows compress into about four upstream ideas doing all the work: a probability model turned into a likelihood (rows 1, 6, 7), the chain rule applied mechanically (rows 3, 4), a stationarity condition set to zero (rows 5, 8, 9), and Jensen's inequality on a concave function (row 10). Learn those four moves cold and most of the ten derivations become the same short argument wearing a different formula.</p>`)}
 
 ${H.iq('The depth questions that hide a derivation', [
       {
@@ -615,7 +689,7 @@ ${H.iq('The depth questions that hide a derivation', [
         level: 'senior',
         a: `<p>Posterior $\\propto$ likelihood × prior. With $y\\mid x,w \\sim \\mathcal{N}(w^\\top x, \\sigma^2)$ and $w\\sim\\mathcal{N}(0,\\tau^2 I)$:</p>
 <p>$-\\log p(w\\mid D) = \\frac{1}{2\\sigma^2}\\|Xw-y\\|^2 + \\frac{1}{2\\tau^2}\\|w\\|^2 + \\text{const}$.</p>
-<p>Multiply by $2\\sigma^2$: this is $\\|Xw-y\\|^2 + \\lambda\\|w\\|^2$ with $\\lambda = \\sigma^2/\\tau^2$. So <b>the regularization strength is the ratio of noise variance to prior variance</b> — a tighter prior or noisier data means more shrinkage, which is exactly the intuition you would want.</p>
+<p>Multiply by $2\\sigma^2$: this is $\\|Xw-y\\|^2 + \\lambda\\|w\\|^2$ with $\\lambda = \\sigma^2/\\tau^2$. So <b>the regularisation strength is the ratio of noise variance to prior variance</b> — a tighter prior or noisier data means more shrinkage, which is exactly the intuition you would want.</p>
 <p>Swap the Gaussian prior for a Laplace and the same argument gives lasso.</p>`,
         follow: ['What does λ → 0 and λ → ∞ correspond to?', 'Why does the Laplace prior give sparsity and the Gaussian not?', 'Is MAP the same as the posterior mean here?']
       },
@@ -748,31 +822,31 @@ ${H.pitfall('The trap in every one of these is starting too late. If you begin a
         q: 'The cross-entropy loss is best introduced in an interview as…',
         options: ['a standard classification loss', 'the negative log-likelihood of a Bernoulli (or categorical) model', 'the KL divergence to the labels', 'a smooth approximation to 0-1 loss'],
         answer: 1,
-        why: 'Starting from the probability model is the answer to "why is the loss what it is". The other framings are true and are consequences.'
+        why: 'Starting from the probability model is the answer to "why is the loss what it is" — cross-entropy falls out as a two-line consequence of taking logs of the Bernoulli likelihood and negating, so introducing it that way answers the deeper question before it is even asked. The other three options are all true statements about cross-entropy, which is exactly what makes them tempting: it genuinely is a standard classification loss, it genuinely is related to KL divergence, and it genuinely does behave like a smooth surrogate for 0-1 loss. But each of those is a downstream fact about the loss, not the reason it has the form it has, and a depth round is specifically listening for the reason.'
       },
       {
         q: 'In the bias–variance derivation, the cross terms vanish because…',
         options: ['they are small', '$\\mathbb{E}[\\varepsilon]=0$ and $\\mathbb{E}[\\hat f - \\mathbb{E}\\hat f]=0$', 'of independence of features', 'of the law of large numbers'],
         answer: 1,
-        why: 'Both are exactly zero in expectation, so the decomposition is exact, not approximate.'
+        why: 'Both quantities are exactly zero in expectation — the first by the assumption that noise is mean-zero, the second by the very definition of $\\mathbb{E}[\\hat f]$ as the average of $\\hat f$ over training samples — so the decomposition is an identity, not an approximation that merely holds for large samples. "They are small" is the trap answer, because it invites the follow-up "how small, and does the decomposition still hold exactly if they are not zero?", and the honest answer is that it would not: the whole argument depends on those terms being precisely zero, not merely negligible. Feature independence and the law of large numbers are not used anywhere in this particular derivation, which is worth noticing because both are genuinely used elsewhere in this course and it is easy to reach for them out of habit.'
       },
       {
         q: 'PCA’s eigenvector equation $\\Sigma v = \\lambda v$ arises as…',
         options: ['an assumption', 'the stationarity condition of maximising $v^\\top\\Sigma v$ subject to $\\|v\\|=1$', 'a numerical convenience', 'the SVD definition'],
         answer: 1,
-        why: 'The Lagrangian’s gradient gives it directly, and $v^\\top\\Sigma v = \\lambda$ shows the eigenvalue is the variance captured.'
+        why: 'Setting up the Lagrangian $v^\\top\\Sigma v - \\lambda(v^\\top v-1)$ and taking its gradient to zero produces $\\Sigma v = \\lambda v$ directly — the eigenproblem is the output of an optimisation, not an assumption fed into one. That distinction is the entire content of the question: candidates who have only memorised "PCA uses eigenvectors" cannot say where the eigenvectors came from, while a candidate who has derived it once can reconstruct the equation from the objective alone. Left-multiplying the result by $v^\\top$ additionally shows that the eigenvalue $\\lambda$ equals the captured variance $v^\\top\\Sigma v$ — a second fact the derivation gives you for free that the memorised version does not.'
       },
       {
         q: 'The ELBO derivation uses exactly one inequality. Which?',
         options: ['Cauchy–Schwarz', 'Jensen’s inequality on the concave log', 'the triangle inequality', 'Markov’s inequality'],
         answer: 1,
-        why: 'Everything else is an identity; Jensen is what turns the log of an expectation into a bound.'
+        why: 'Every other line in the derivation is an identity — multiplying and dividing by $q(z)$ changes nothing, and recognising an integral as an expectation changes nothing either. Jensen’s inequality is the one place where the argument becomes a genuine inequality rather than a rearrangement, because $\\log$ is concave and Jensen says the log of an average is at least the average of the logs. That single inequality is also exactly what turns an intractable integral into a tractable lower bound you can optimise, which is the entire reason the ELBO is useful: you cannot compute $\\log p(x)$, but you can compute and maximise a quantity that is guaranteed never to exceed it.'
       }
     ],
     cards: [
       { q: 'How to open a derivation', a: 'State what you are deriving and from what, then write the definition. Starting mid-way forfeits the question.' },
       { q: 'The √dₖ argument in one line', a: 'Var(qᵀk) = dₖ at unit variance, so scores have sd √dₖ; that saturates the softmax and kills its gradient.' },
-      { q: 'Ridge as MAP', a: 'Gaussian prior on w gives λ = σ²/τ² — the regularization strength is noise variance over prior variance.' },
+      { q: 'Ridge as MAP', a: 'Gaussian prior on w gives λ = σ²/τ² — the regularisation strength is noise variance over prior variance.' },
       { q: 'XGBoost gain', a: 'Second-order expansion → optimal leaf −G/(H+λ) → gain is the difference of G²/(H+λ) terms, minus γ.' },
       { q: 'The ELBO gap', a: 'log p(x) − ELBO = KL(q‖p(z|x)). The left side is fixed, so raising the ELBO lowers the KL.' }
     ]
@@ -786,11 +860,18 @@ ${H.pitfall('The trap in every one of these is starting too late. If you begin a
     prereq: ['production', 'serving'],
     related: ['mlops', 'serving', 'decision-ladder'],
     html: `
+<p>Give two competent engineers the same forty minutes and the same prompt — "design a system to detect fraudulent transactions" — and watch what happens. The first spends thirty seconds on "OK, fraud detection, I'd use gradient boosting on transaction features, maybe some graph features for rings" and spends the remaining thirty-nine minutes drawing an increasingly elaborate architecture around that opening sentence. The second spends the first eight minutes asking what "fraud" costs in this business, what a false decline costs, how fast a decision has to come back, and where the labels come from — and only then starts naming a model. Both engineers know roughly the same amount of machine learning. Only the second one passes.</p>
+
+<p>This is the round where that gap is starkest, because unlike a coding problem or a breadth question, an ML system design prompt has no single correct answer to converge on — it has a space of defensible designs, and what separates a strong one from a weak one is almost entirely whether it was built on stated requirements or on a reflex. This section gives you the framework that forces the requirements conversation to happen first, the numbers you need memorised to make that conversation quantitative rather than hand-wavy, and six worked designs to calibrate against.</p>
+
 ${H.tldr([
       'Eight steps, always in this order: <b>requirements → metrics → data → baseline → features/model → serving → monitoring → failure modes</b>. Spend the first ten minutes on the first two.',
       'Quantify everything. QPS, storage, latency budget, model size, cost per thousand requests. A design without numbers is a diagram.',
       'The senior signal is <b>naming what you would not do, and why</b>, and saying which decision you would revisit first if a number moved.'
     ])}
+
+${H.history(`<p>The round itself is a fairly recent addition to the loop, and it was added in direct response to a hiring failure companies kept repeating. Through the early 2010s, "ML system design" barely existed as a separate interview format — it was folded into general systems design, with an ML component bolted on as one box in a larger architecture diagram. That worked poorly, because a candidate could ace a conventional systems design round (caches, databases, load balancers) while having no instinct at all for the specifically ML failure modes: label lag, training/serving skew, a feedback loop that quietly degrades the very data the model is trained on next.</p>
+<p>As companies scaled ML from a handful of offline models to hundreds of production pipelines through the mid-to-late 2010s, they started measuring how often a "successfully designed" system failed in its first quarter of real traffic, and the postmortems clustered around the same few causes: nobody had defined what would trigger a rollback, nobody had planned for what happens when a feature pipeline silently starts returning nulls, nobody had asked where the labels come from until after the system shipped. The eight-step framework below is not an arbitrary teaching device — each step corresponds to one of those recurring postmortem causes, in the order that catches them cheapest.</p>`)}
 
 <h2><span class="sn">7.4.1</span> The eight steps</h2>
 ${H.table(['Step', 'Minutes', 'What to produce', 'The question that unlocks it'], [
@@ -805,6 +886,14 @@ ${H.table(['Step', 'Minutes', 'What to produce', 'The question that unlocks it']
     ])}
 ${H.key('The single highest-scoring behaviour: after the requirements, write the numbers on the board — QPS, latency budget, corpus size, cost ceiling — and refer back to them when you make each decision. It converts opinions into consequences, and it is what "senior" looks like in this round.')}
 
+${H.analogy(`<p>Think of the eight steps as a structural engineer's order of operations, not a software engineer's. Nobody asks a structural engineer to pick a beam size before they know the span, the load and the safety margin — the beam is the last decision, entirely determined by the numbers that came before it, and picking it first would just mean picking it twice, once wrong and once right. "What model?" is this round's beam size. It is step five of eight for the same reason: every defensible answer to it is fully determined by the requirements, metrics and data established in the first three, and skipping ahead to it is not efficiency, it is guessing and then hoping the guess survives contact with the numbers.</p>`)}
+
+<p><b>What you are looking at.</b> Eight sliders covering the inputs a real design would need on the whiteboard — daily active users, requests per user, the peak traffic multiplier, model latency, corpus size, embedding dimension, cache hit rate and compute cost per hour. Below them, a table walks the arithmetic step by step: requests per day, average QPS, peak QPS, the concurrency that peak implies, the machine count it needs, storage for the vector index, and a final cost per thousand requests.</p>
+
+<p><b>What to do with it.</b> Set the sliders to whatever product you are designing for — real numbers if you have them, defensible estimates if you do not — and read down the "how it was computed" column rather than just the answer column. That column is the arithmetic you are expected to reproduce on an actual whiteboard, in the same order, without a calculator.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Move the cache-hit-rate slider from 0% to 50% and watch the machine count roughly halve, for zero modelling effort. Then move the model-latency slider down by the same proportion and watch how much smaller the effect on machine count is, because latency only shows up inside the concurrency calculation while the cache discount applies to the traffic the whole system has to serve at all. That asymmetry is a genuine finding, not a quirk of this particular calculator: in most real systems, the cache is the single biggest lever on the board, and a design that spends its first ten minutes discussing model architecture and never mentions caching has usually optimised the wrong variable.</p>
+
 ${H.lab('capacity', 'The capacity calculator', 'The arithmetic you should be doing on the whiteboard. Put in the product numbers and it computes QPS, peak load, storage, GPU count and monthly cost — with each step shown so you can reproduce it by hand.')}
 
 <h2><span class="sn">7.4.2</span> The numbers to know cold</h2>
@@ -818,6 +907,9 @@ ${H.table(['Quantity', 'Rule of thumb'], [
       ['Feature store read', 'single-digit ms for a point lookup; batch it or it will dominate your budget'],
       ['A cache hit', 'sub-millisecond and free. <b>Always ask what fraction of traffic repeats.</b>']
     ])}
+
+${H.intuition(`<p>These eight numbers look like a list of unrelated facts, but they collapse into one repeated move: everything on this page is Little's law — concurrency equals arrival rate times time spent per request — applied to a different stage of the pipeline. QPS times model latency gives you the concurrency your model needs to hold, which gives you machine count. Requests per day times bytes per embedding gives you storage. Tokens per second times bytes per token gives you the memory bandwidth a decode step needs. There is no separate formula to memorise for each row; there is one relationship, applied to whatever the "arrival rate" and "time per item" happen to mean in that row.</p>
+<p>That is also why "design for peak, not average" appears twice in this page and is worth a third mention here: every one of these formulas is linear in the arrival rate, so a system sized for the average silently runs at 2–5× over capacity during the peak it will actually be exposed to, which in Little's law terms means the queue never drains and latency diverges rather than merely rising. A design that names the peak multiplier out loud is demonstrating that it understands this; a design that only ever says "QPS" without saying whether that is average or peak has usually not thought about it at all.</p>`)}
 
 <h2><span class="sn">7.4.3</span> Six designs, in outline</h2>
 ${H.tabs([
@@ -949,25 +1041,25 @@ ${H.iq('Design-round questions and what a strong answer contains', [
         q: 'In an ML system design round, the first ten minutes should be spent on…',
         options: ['the model architecture', 'requirements and metrics', 'the data pipeline', 'the serving stack'],
         answer: 1,
-        why: 'Everything downstream depends on scale, latency and what "good" means. Naming a model early forfeits most of the rubric.'
+        why: 'Every later decision — which features, which model family, how it is served — is only defensible in light of the scale, latency budget and success metric established up front, so establishing them first is not throat-clearing, it is the load-bearing part of the design. Naming a model architecture in the opening minute forfeits most of the rubric because it signals a reflex rather than a reasoned choice, and it commits you to defending a decision you have no requirements to defend it with. The data pipeline and serving stack are real and necessary, but both are themselves downstream of requirements — you cannot size a feature store or a serving fleet before you know the traffic and latency budget they need to support.'
       },
       {
         q: 'With 2M DAU at 12 requests/day and a 3× peak multiplier, peak QPS is roughly…',
         options: ['280', '830', '2,500', '8,300'],
         answer: 1,
-        why: '24M/86,400 ≈ 278 average, × 3 ≈ 833. Do this arithmetic on the board.'
+        why: 'Daily requests are 2,000,000 × 12 = 24,000,000; dividing by the 86,400 seconds in a day gives an average of about 278 requests per second; multiplying by the 3× peak factor gives roughly 833. The arithmetic is meant to be done exactly like that, out loud, on the board — an interviewer is watching whether you reach for daily-active-users-times-actions-divided-by-86,400 automatically, because that chain is the single most repeated piece of arithmetic across every design in this section. Getting the order of operations right (multiply before you divide, or divide before you multiply — both work, but pick one and be consistent) matters less than doing the calculation in view rather than announcing a number from memory.'
       },
       {
         q: 'For an ETA model, the right offline loss is…',
         options: ['MSE', 'quantile (pinball) loss', 'cross-entropy', 'MAE'],
         answer: 1,
-        why: 'You want a high quantile of arrival time, not the mean — under-promising and over-delivering is asymmetrically better.'
+        why: 'The product goal for an ETA is not "get close to the true arrival time on average" — it is "quote a time the customer can actually rely on", which usually means the 80th or 90th percentile of the arrival-time distribution, not its mean. MSE and MAE are both built to estimate a conditional mean or median, so optimising either one gives you the wrong statistic entirely, however small the resulting loss number looks. Quantile (pinball) loss is asymmetric by construction — it penalises being late by more than it penalises being early — which is exactly the asymmetry the business actually cares about, and that asymmetry is precisely why cross-entropy, built for classification, is not even a candidate here.'
       },
       {
         q: 'For a RAG system with per-document permissions, filtering must happen…',
         options: ['after retrieval', 'inside retrieval, as part of the index traversal', 'in the LLM prompt', 'at the UI layer'],
         answer: 1,
-        why: 'Post-filtering can empty the result set, and a missing filter is a data breach. Filtered traversal is the correct mechanism (§5.10).'
+        why: 'Filtering after retrieval can silently empty the result set — if the top 50 nearest neighbours all happen to belong to documents the user cannot see, a post-filter returns nothing useful even though relevant permitted documents exist further down the ranking. Filtering as part of the index traversal (a filtered ANN search) avoids this because the permission check happens while the search is still exploring, not after it has already committed to a fixed candidate set. Filtering in the prompt or at the UI layer is worse than merely inefficient: content the user is not authorised to see has already reached a system component before being hidden, which is a data breach the moment logging, caching or a debugging tool touches that intermediate state.'
       }
     ],
     cards: [

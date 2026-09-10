@@ -13,11 +13,20 @@
     prereq: ['python-toolkit'],
     related: ['metrics', 'attention', 'unsupervised'],
     html: `
+<p>There are two entirely different rounds hiding under the same name, "coding interview", and conflating them is the single most common ML-specific mistake candidates make in preparation. One is the round you already know how to study for: arrays, hash maps, two pointers, the patterns any software engineering candidate drills. The other asks you to implement a piece of machine learning itself, from nothing — a softmax, an AUC calculation, one step of k-means — with no library to lean on, and it is where ML candidates lose points they never realised were available, because the failure is rarely "I could not solve it" and almost always "I solved it in a way that would silently misbehave on real data".</p>
+
+<p>Write a softmax that looks correct on the whiteboard and works perfectly on every example the interviewer types in, and you can still fail this round, because the version you wrote overflows the moment the logits get into the hundreds — which real logits from an untrained or a confidently-wrong network do constantly. That is not a trick question. It is the actual daily failure mode of numerical code, compressed into forty minutes so an interviewer can watch you either fall into it or sidestep it. This section covers both halves of the round — the ritual that scores regardless of what you are asked to build, and the six from-scratch classics that come up more than everything else combined.</p>
+
 ${H.tldr([
       'The ritual that scores: <b>clarify → state the approach → state the complexity → write it → test it out loud</b>. Skipping the last two is the most common avoidable loss.',
       'The from-scratch classics: <b>softmax (stably), AUC, IoU + NMS, one k-means step, scaled dot-product attention, and a gradient-descent loop</b>. All six are below, with tests.',
       'Numerical stability is a scored dimension. A softmax that overflows, or a variance that can go negative, is a wrong answer even when the algebra is right (§1.15).'
     ])}
+
+${H.history(`<p>"Implement it from scratch" is a newer demand than the general coding round it sits alongside. Through most of the 2010s, an ML coding interview at many companies genuinely was indistinguishable from a generic software interview — reverse a linked list, find the kth largest element — on the theory that a data scientist who could reason well about algorithms would pick up the ML-specific implementation details on the job. That theory held up poorly. Teams kept hiring candidates who could recite the softmax formula fluently in a breadth round and then, handed a blank editor, produce code that overflowed on the first batch of real logits, or a k-means step that emitted <code>NaN</code> the first time a cluster happened to lose all its points.</p>
+<p>The from-scratch drill format spread as the fix, precisely because it closes a gap the generic coding round cannot see: it is the only part of the loop that checks whether "I know the formula" and "I can turn the formula into code that survives contact with real numbers" are actually the same skill for you. They frequently are not, even for strong candidates, which is why every drill below is built around a numerically nasty case — an overflowing softmax, a tied AUC score, an empty k-means cluster — rather than only a clean textbook input.</p>`)}
+
+${H.analogy(`<p>Numerical stability is the seatbelt of this round: invisible on every trip that goes fine, and the entire reason you survive the one that does not. A softmax implemented as <code>exp(z) / sum(exp(z))</code> is mathematically exact and will pass every test you would naturally think to write, because a naturally-chosen test input — small logits, a handful of classes — never drives the exponential anywhere near its overflow point. The version that subtracts the row maximum first is identical in exact arithmetic and different in floating-point arithmetic only in the one case that actually matters: when a real, untrained, or adversarially-crafted network hands it logits in the hundreds. You do not notice the seatbelt is missing until the one trip where you needed it, and an interviewer who asks "does this handle large inputs?" is checking whether you put it on before being asked.</p>`)}
 
 <h2><span class="sn">7.5.1</span> The five minutes before you write anything</h2>
 ${H.steps([
@@ -29,8 +38,16 @@ ${H.steps([
     ])}
 ${H.key('The complexity statement is not a formality. Half of ML coding rounds have a follow-up of the form "now it has to handle a hundred million rows" — and that conversation is impossible if you never established the current cost.')}
 
+${H.intuition(`<p>Notice that four of the five steps above happen before or after the code, not during it — and that is deliberate, not padding. A candidate silently typing for eight minutes and then saying "done" has given the interviewer exactly one data point: whether the final artefact works. A candidate who narrates the approach, states the complexity, writes while talking, and then deliberately tests an edge case has given the interviewer five data points, four of which are visible even if the code itself has a bug in it. Since most candidates who are strong enough to reach this round <i>do</i> write mostly-correct code, the round rarely turns on whether the code works — it turns on how much signal you generated around it while you did.</p>`)}
+
 <h2><span class="sn">7.5.2</span> Six drills, with tests that run</h2>
 <p class="small">Each editor holds a JavaScript function expression. Write the body, press <b>Run tests</b>, and the hidden cases execute against it. The algorithms are identical to their NumPy equivalents — the point is the reasoning, not the language.</p>
+
+<p><b>What you are looking at.</b> Six small code editors, each pre-loaded with a function signature and a one-line brief. A <b>Run tests</b> button executes a hidden suite against whatever you write — five or six cases per drill, ranging from an obvious sanity check to the specific numerically nasty input that the follow-up questions in §7.5.3 are built around.</p>
+
+<p><b>What to do with it.</b> Read the brief, write the approach on paper first if you want the full interview simulation, then implement it directly in the editor. Run the tests before you feel finished, not after — watching which case fails is more informative than staring at your own code looking for the bug, and it is exactly the workflow a real interview rewards when you narrate "let me check the edge case" out loud.</p>
+
+<p><b>The thing genuinely worth noticing.</b> In every one of the six drills, at least one hidden test exists purely to catch the numerically nasty case described in this section's opening — an overflowing softmax, a tied AUC, an empty k-means cluster, an unscaled attention score. Passing the obvious cases and failing that one test is not a minor deduction; it is the precise gap this whole section exists to close, and it is worth treating a failure there as more informative than passing everything else.</p>
 
 ${H.drill('d1', 'Numerically stable softmax')}
 ${H.drill('d2', 'ROC-AUC from scratch')}
@@ -51,6 +68,9 @@ ${H.table(['Drill', 'Follow-up you should expect', 'The answer'], [
     ])}
 
 <h2><span class="sn">7.5.4</span> The standard-algorithms half</h2>
+
+<p>The other half of most coding rounds is the general software-engineering kind, and it rewards a completely different form of practice: not understanding — you already have that, if you can pass the breadth round — but pattern recognition fast enough that recognising the shape of a new problem takes seconds, not minutes. The eight rows below cover the overwhelming majority of what actually gets asked; the third column names the specific sub-skill inside each pattern where most bugs live, because "I know sliding window" and "I can implement sliding window without an off-by-one at the boundary" are, again, different skills that only the second one is being scored on.</p>
+
 ${H.table(['Pattern', 'Shows up as', 'Practise until automatic'], [
       'Hash map counting|"top-k frequent", "first unique", dedupe|building the map and the heap in one pass'.split('|'),
       'Two pointers / sliding window|"longest window with at most k", "max sum subarray"|shrinking from the left correctly'.split('|'),
@@ -85,7 +105,9 @@ ${H.iq('Coding-round questions that are really design questions', [
 <p>Then the extension: parallel chunks can be combined with the pairwise merge formula for mean and $M_2$, which is how distributed frameworks implement it.</p>`,
         follow: ['How would you compute a median under the same constraint?', 'What about a quantile?', 'How would you parallelise it?']
       }
-    ])}`,
+    ])}
+
+<p>Notice the shape shared by all three questions above: each one looks, on the surface, like a request for code, and each one is actually a request for an invariant stated in words before any code appears — "no row's features may use data from after its own timestamp", "every row for one customer sits on one side of the split", "one pass, bounded memory, no catastrophic cancellation". That is the coding round's real overlap with the case round in §7.6: both are testing whether you can articulate the property your solution must preserve before you start optimising for anything else. Say the invariant out loud first, and the code that follows is usually the easy part.</p>`,
     labs: {
       d1: function (host) {
         Labs.codeDrill(host, {
@@ -362,25 +384,25 @@ ${H.iq('Coding-round questions that are really design questions', [
         q: 'In a coding round, the step most often skipped and most heavily weighted is…',
         options: ['writing comments', 'stating the complexity and testing your own code out loud', 'using the optimal data structure', 'finishing quickly'],
         answer: 1,
-        why: 'Both are cheap and both are explicitly on the rubric. Finding your own bug is a positive signal.'
+        why: 'Both are cheap to do and explicitly on the rubric, and both are precisely the steps a silently-typing candidate skips under time pressure — which is exactly why they are the ones worth deliberately over-practising. Stating the complexity converts an implicit claim into a checkable one and sets up the "now scale it" follow-up that arrives in roughly half of these rounds. Testing your own code out loud, and finding your own bug in the process, is read as a strongly positive signal rather than a negative one, because it is the closest an interviewer gets to watching how you actually work rather than watching a finished product. Using the optimal data structure matters, but a correct solution with a suboptimal structure that you can name and improve scores better than a silent one with the "right" structure.'
       },
       {
         q: 'The stable softmax subtracts the max because…',
         options: ['it makes the result sum to 1', '$e^z$ overflows for $z \\gtrsim 709$, and the shift leaves the ratio unchanged', 'it centres the distribution', 'it is faster'],
         answer: 1,
-        why: 'Softmax already sums to 1 without the shift. The shift is purely about representable range.'
+        why: 'A 64-bit float overflows to infinity once its exponent passes roughly 709, and real logits — especially from an untrained or confidently wrong network — reach the hundreds far more often than a hand-picked test case would suggest. Subtracting the row maximum before exponentiating caps the largest exponent at exactly zero, which keeps every term finite, and because every term in both the numerator and the denominator gets multiplied by the same constant $e^{-\\max(z)}$, the ratio — and therefore the output — is completely unchanged. Softmax already sums to 1 without any shift at all, so "it makes the result sum to 1" describes something the shift has no effect on; the shift is purely about keeping the intermediate arithmetic inside a representable range.'
       },
       {
         q: 'Naive NMS over $n$ boxes costs…',
         options: ['$O(n)$', '$O(n\\log n)$', '$O(n^2)$ in the worst case', '$O(n^3)$'],
         answer: 2,
-        why: 'Every kept box is compared against every remaining one. Spatial indexing or a GPU kernel is what production detectors use.'
+        why: 'The naive algorithm walks the boxes in score order and, for every box it considers keeping, compares it against every box already kept — and in the worst case, where few boxes overlap enough to be suppressed, that means comparing every box against almost every other one, which is quadratic. The initial sort only costs $O(n\\log n)$ and is not the bottleneck; the pairwise IoU comparisons are. Production object detectors at real scale replace the naive sweep with a spatial index — a grid or a tree that only compares nearby boxes — or move the whole computation onto a GPU kernel, precisely because $O(n^2)$ stops being acceptable once $n$ reaches the tens of thousands of proposals a modern detector can generate per image.'
       },
       {
         q: 'Splitting train/test randomly on a dataset with many rows per customer causes…',
         options: ['class imbalance', 'group leakage — the same customer appears in both sets', 'temporal leakage', 'nothing, if you stratify'],
         answer: 1,
-        why: 'The model memorises the entity. Split on unique IDs, then select rows by membership.'
+        why: 'A random row-level split has no way to know that several rows share a customer, so it routinely places some of that customer\'s rows in training and others in the test set. The model can then partly solve the test set by memorising customer-specific quirks it saw during training, rather than by learning the general relationship the task is meant to measure — which inflates the reported metric in a way that will not survive contact with a genuinely new customer in production. Stratifying on the label does nothing to fix this, because stratification controls the class balance of the split, not which entities land in which side of it; the actual fix is splitting on unique customer IDs first and then assigning every row for a given customer to the same side.'
       }
     ],
     cards: [
@@ -400,13 +422,29 @@ ${H.iq('Coding-round questions that are really design questions', [
     prereq: ['production'],
     related: ['production', 'experimentation', 'metrics'],
     html: `
+<p>Every other round in this loop has a form you can drill in advance. A coding round wants a known set of patterns; a breadth round wants a rehearsed sixty-second answer; a system design round wants an eight-step framework applied in order. The case round refuses that treatment, and refusing it is the entire point. You are handed a genuinely ambiguous situation — a metric fell overnight, design a way to score a feature nobody has scored before, how many GPUs would this take — and watched as you build the structure live, because a structure you can produce on the spot is a stronger signal of real understanding than one you memorised the shape of in advance.</p>
+
+<p>This makes the round feel unlike the others in one specific, disorienting way: there is very often no single correct answer, and candidates who go in expecting one flounder when the interviewer keeps saying "what else might explain that?" after they have already found something plausible. What is actually being scored is not whether you land on the true cause of the incident, the perfect metric, or the exact number of GPUs. It is whether your reasoning is <i>ordered</i> — cheap checks before expensive ones, likely causes before exotic ones, stated assumptions before a confident number — because that ordering is precisely what a colleague debugging a real incident with you at 2am would need you to have.</p>
+
 ${H.tldr([
       'Debugging cases are scored on <b>the order of your hypotheses</b>, not on getting the answer. Cheapest and most likely first; state what you would check and what each outcome would rule out.',
       'Metric-design cases are scored on whether you can name what the metric would <b>reward perversely</b>, and pair it with a guardrail.',
       'Estimation cases are scored on decomposition and on stating assumptions aloud. The number does not matter; the structure does.'
     ])}
 
+${H.history(`<p>The format is a direct import from a much older interviewing tradition: the management-consulting case interview, which McKinsey pioneered in the 1930s and which the rest of the consulting industry standardised through the following decades. A consulting case hands a candidate an underspecified business problem — should this airline enter this market? — precisely because the actual job is advising on underspecified business problems, and a candidate who has memorised "the five forces" but cannot apply structure to a genuinely new situation will fail on the client's first real question just as surely as in the interview room.</p>
+<p>ML case rounds are that same bet, transplanted. A production incident, a metric with no obvious right answer, a back-of-envelope capacity question — none of them can be fully rehearsed, because the specific incident, the specific product, and the specific scale are new every time. What can be rehearsed, and what this section actually drills, is the <i>order of operations</i>: which category of hypothesis to reach for first, how to structure a metric proposal so its failure mode is visible before it ships, and how to decompose a number nobody can look up. Those three structures transfer even when the specific numbers never will.</p>`)}
+
 <h2><span class="sn">7.6.1</span> The debugging case</h2>
+
+${H.analogy(`<p>Run the ordering below the way an emergency-room doctor runs triage, not the way a specialist runs a full diagnostic workup. A doctor seeing a patient with sudden chest pain does not begin by ordering the rarest, most specific test that could explain it; they check vital signs, rule out the common and dangerous causes first, and narrow from there, because the common cause is both more likely to be right and cheaper to check, and ruling it out first is what makes every subsequent step more informative. Reaching straight for "let's sequence the genome" before checking blood pressure is not thoroughness — it is a failure to prioritise, and it reads exactly the same way in an interview when a candidate's first hypothesis for an overnight metric drop is "the world fundamentally changed" rather than "did someone deploy something".</p>`)}
+
+<p><b>What you are looking at.</b> A single incident brief — a fraud model's precision has fallen overnight — followed by a menu of investigative actions, each carrying a time cost in hours. Choosing an action reveals what it finds, appended to a running log above the menu, and a readout tracks hours spent, whether the root cause has been found, and a running investigation-quality score.</p>
+
+<p><b>What to do with it.</b> Before clicking anything, decide out loud what you would check first and why, exactly as you would in the room. Then work through the menu, reading each finding before choosing the next action — some findings rule things out, some point you somewhere specific, and a few are expensive dead ends that exist because they are exactly the tempting-but-wrong moves real candidates make under pressure.</p>
+
+<p><b>The thing genuinely worth noticing.</b> The efficient path to the root cause takes about four actions and six hours; the two most tempting wrong turns — retraining on fresh data, and simply lowering the alert threshold — both cost far more time than that and leave the actual problem untouched, because neither one investigates <i>why</i> the drop happened before acting as though the answer were already known. Notice which of the two you were drawn to try first, if either: that instinct, more than the final score, is the thing worth correcting before a real incident.</p>
+
 ${H.lab('debug', 'A live debugging case', 'The setup is real: a fraud model’s precision fell overnight. Choose what to investigate. Each action costs time and returns real information; the panel tracks what you have ruled out. There is a correct root cause and several plausible wrong turns.')}
 
 ${H.steps([
@@ -454,6 +492,11 @@ ${H.iq('Debugging cases, with the reasoning that scores', [
     ])}
 
 <h2><span class="sn">7.6.2</span> Metric design</h2>
+
+<p>Every prompt in this half of the round has the same trap built into it, and the trap has a name: Goodhart's law, usually stated as "when a measure becomes a target, it ceases to be a good measure". The naive answer to "how would you measure a search engine" is click-through rate, and CTR is a perfectly good <i>measurement</i> of what people click. The instant you optimise a ranking model against it, it stops measuring quality and starts measuring "does the result look clickable", and a search engine that reliably learns to serve clickbait has not failed to hit its metric — it has hit its metric exactly, which is the actual disaster.</p>
+
+${H.intuition(`<p>The reframe that makes metric-design cases tractable: stop asking "what should I measure?" and start asking "what is the cheapest way for a model to make this number go up without making the product better?". Answering that second question first tells you exactly where the naive metric will be gamed, and the guardrail you add is simply whatever makes that cheap route expensive again. This is also why a single metric almost never survives a good case round — a number that cannot be gamed by any cheap route usually turns out to be a bundle of two or three numbers moving together, which is precisely the primary-metric-plus-guardrails structure the checklist below asks for.</p>`)}
+
 ${H.table(['Prompt', 'The naive answer', 'What it rewards perversely', 'The pairing that fixes it'], [
       ['Measure a search engine', 'click-through rate', 'clickbait; a bad result clicked and abandoned counts as a success', 'CTR + dwell time + query reformulation rate'],
       ['Measure a feed', 'time spent', 'outrage and doom-scrolling; the metric rises as the product worsens', 'time spent + next-week retention + a user-reported satisfaction survey'],
@@ -472,6 +515,10 @@ ${H.checklist([
     ])}
 
 <h2><span class="sn">7.6.3</span> Estimation</h2>
+
+${H.history(`<p>This style of question is named after Enrico Fermi, the physicist famous for estimating quantities from almost nothing — most memorably, asking his students how many piano tuners work in Chicago and building an answer from population, households, pianos per household, tunings per year and minutes per tuning, with no reference material at all. The technique is not really about pianos; it is about refusing to let "I don't know the exact number" stop you from reasoning about the order of magnitude, by breaking an unknowable quantity into a chain of knowable-ish ones.</p>
+<p>The method's most consequential real use was even higher-stakes than a hiring decision: at the Trinity test in 1945, Fermi famously estimated the explosive yield of the first nuclear detonation by dropping torn scraps of paper and watching how far the shockwave blew them, then working backwards through a chain of physical reasoning to a number that landed within a factor of two of the true value, computed from a handful of falling paper scraps rather than an instrument. An interviewer running an estimation case is asking for a miniature version of exactly that: not the true number, which nobody in the room can check anyway, but a chain of reasoning solid enough that a wildly wrong final answer would still represent real understanding of the problem's structure.</p>`)}
+
 ${H.worked('"How many GPUs to serve ChatGPT-scale traffic?" — the structure, not the answer', `
 <p>Decompose, state assumptions aloud, and keep the arithmetic round.</p>
 <ol>
@@ -489,11 +536,15 @@ ${H.table(['Estimation prompt', 'The decomposition that works'], [
       ['Storage for a year of logs', 'events/day × bytes/event × 365 × replication factor, then the retention policy that makes it affordable']
     ])}
 
+${H.pitfall(`<p>The most common way to lose points on an estimation question is not a wrong number — it is silence while you compute one. If you go quiet to multiply two large figures in your head, the interviewer loses the one thing they came to observe: the chain of reasoning connecting your assumptions to your answer. Round aggressively so the arithmetic can be done in your head while you keep talking — 200 million rather than 187 million, three times rather than 2.8 times — and say the rounding out loud ("I'll call that roughly 200M to keep the maths clean"). A number that is defensibly within a factor of two of reality, produced while narrating every step, beats a more precise number produced in silence, because the round is scoring the chain, not the last digit.</p>`)}
+
 ${H.probe([
       ['A metric moved. What do you check first?', 'Whether the metric is broken — instrumentation, logging, the dashboard’s own query. Then what changed at that timestamp. Model degradation is rarely the fastest explanation for an overnight step.'],
       ['You are asked to design a metric for a summarisation feature. What is your first move?', 'Ask what decision it informs. Then propose the metric, say how I would game it, and pair it with a guardrail — that sequence is the answer being looked for.'],
       ['How do you approach an estimation question?', 'Decompose into factors I can defend, state every assumption out loud, keep the arithmetic round, and finish by naming which assumption the answer is most sensitive to.']
-    ])}`,
+    ])}
+
+<p>Step back from the three sub-rounds and one habit runs through all of them: in a debugging case, an interviewer wants to hear what each check would rule <i>out</i>, not just what it might find. In a metric-design case, they want to hear the failure mode before it ships, not after. In an estimation case, they want to hear which assumption the answer would collapse under, not the answer alone. All three are the same request in different clothes — show your working, not just your conclusion — which is also, not coincidentally, the request behind the derivation round in §7.3 and the requirements-first framework in §7.4. The case round is where that habit gets tested on situations nobody could have prepared a script for, which is exactly why it rewards the habit itself rather than any specific memorised answer.</p>`,
     labs: {
       debug: function (host) {
         const el = ML.el;
@@ -601,25 +652,25 @@ ${H.probe([
         q: 'A metric dropped sharply overnight. The least likely explanation is…',
         options: ['an upstream schema change', 'a deployment', 'genuine concept drift', 'a logging or instrumentation change'],
         answer: 2,
-        why: 'Concept drift is real but gradual. Overnight step changes are nearly always data or deployment events.'
+        why: 'Concept drift — the real world genuinely changing what the model needs to predict — is a real phenomenon, but it accumulates gradually over days, weeks or seasons, not between yesterday and this morning. A sharp, discrete overnight step almost always has a sharp, discrete overnight cause: a deployment, an upstream schema or encoding change, or a logging pipeline that started dropping or miscounting events. Treating "the world changed" as the leading hypothesis for a step function is the single most common wrong turn in a debugging case, because it is expensive to investigate, slow to confirm, and — as the pattern in this question implies — usually not what happened.'
       },
       {
         q: 'In a metric-design case, the highest-scoring move after proposing a metric is…',
         options: ['computing its confidence interval', 'saying how you would game it, then adding the guardrail that prevents it', 'listing alternatives', 'estimating the sample size'],
         answer: 1,
-        why: 'It demonstrates that you treat a metric as an incentive rather than a measurement — which is what the case is testing.'
+        why: 'Naming your own metric\'s exploit before the interviewer finds it demonstrates the thing the whole case is actually testing: that you treat a metric as an incentive a system will optimise against, not a neutral measurement that simply reports the truth. This is Goodhart\'s law made concrete and specific to the product at hand, and pairing the exploit with a guardrail closes the loop — it shows you would not just anticipate the failure but design against it before shipping. A confidence interval and a sample size are real statistical concerns, but they belong to a later stage of the conversation, after the metric itself has been shown to measure the right thing.'
       },
       {
         q: 'Precision stable, recall halved. This pattern most suggests…',
         options: ['the model overfitting', 'fewer things being alerted — a threshold, a capacity cap, upstream filtering, or a new unseen positive pattern', 'label noise', 'a calibration problem only'],
         answer: 1,
-        why: 'What is alerted is still right, so ranking quality is intact. The volume of positives reaching the alert is what changed.'
+        why: 'Precision tells you whether what got alerted is correct, and it did not move, so the model\'s ranking of the cases it actually sees is still working as well as before. Recall tells you what fraction of the true positives were caught, and that fell by half, which can only happen if positives are failing to reach the alert at all — a raised threshold, a capacity cap truncating the queue, an upstream filter removing candidates before scoring, or a genuinely new pattern the model was never trained to recognise. Overfitting and label noise would both tend to degrade precision and recall together, or in less clean-looking ways, rather than leaving one of them exactly where it was.'
       },
       {
         q: 'In an estimation question, the thing that actually scores is…',
         options: ['landing near the true number', 'the decomposition, the stated assumptions, and naming which assumption dominates', 'speed', 'using exact figures'],
         answer: 1,
-        why: 'Nobody checks your number. They check whether you know which factor the answer is most sensitive to.'
+        why: 'Nobody in the room can check your final number against reality, and everybody in the room knows that, so a number that happens to land close to the truth by luck scores no differently from one that does not. What is genuinely checkable, in real time, is whether your decomposition is sound, whether you stated each assumption rather than smuggling it in silently, and whether you can say which one or two of those assumptions the final answer is most sensitive to — because that last move is what proves you understand the structure of the problem rather than having simply produced a plausible-sounding number.'
       }
     ],
     cards: [
@@ -637,13 +688,22 @@ ${H.probe([
     lede: 'The round people prepare for last and lose on most often. It is not a personality test — it is a structured check on whether you own outcomes, work with people who disagree with you, and can describe a failure honestly.',
     related: ['interview-map', 'interview-breadth', 'ml-system-design'],
     html: `
+<p>Ask most candidates which round they are least worried about, and a striking number say the behavioural one — they have been talking about their own work for years, after all, and it does not require a whiteboard. Ask which round they actually did worst in, and the answer flips: the behavioural round is where technically strong candidates most often lose an offer, because they treat it as a formality to get through rather than a round with a rubric of its own, and they walk in with stories that sound good in their own head and collapse the moment an interviewer asks "and what number did that move?"</p>
+
+<p>The round is not a personality test, and it is not really asking whether you are likeable. It is a structured check on three things a resume cannot show: whether you own outcomes rather than merely participating in them, whether you can work with — and sometimes be corrected by — people who disagree with you, and whether you can describe a failure honestly instead of narrating around it. Every question below maps back to one of those three, however differently it is phrased on the surface, and preparing for it means building a small number of stories that answer all three convincingly, not memorising answers to every possible phrasing.</p>
+
 ${H.tldr([
       'Use <b>STAR with a number</b>: Situation, Task, Action, Result — and the Result must be quantified. "Improved things" is not a result.',
       'Prepare <b>four stories</b>, not twenty: a hard technical problem, a conflict, a failure you owned, and a time you changed your mind. Almost every behavioural question maps to one of these.',
       'The questions <i>you</i> ask are scored. Ask about how decisions get made and what failure looks like on the team — not about the technology stack, which you can read.'
     ])}
 
+${H.history(`<p>STAR did not originate in tech hiring at all. The structure — Situation, Task, Action, Result — traces to behavioural-event interviewing techniques developed in industrial and organisational psychology from the 1970s onward, built on a simple, well-evidenced premise: the best predictor of how someone will behave in a future situation is a detailed, specific account of how they actually behaved in a comparable past one, not a hypothetical answer about how they <i>would</i> behave. A candidate asked "how would you handle a disagreement with a colleague?" can construct any answer that sounds reasonable; a candidate asked to walk through one that actually happened has far less room to invent, because the interviewer can keep asking "and then what happened?" until the account either holds together or does not.</p>
+<p>That is also precisely why the follow-up questions in this section's answers matter as much as the framework itself. STAR without follow-ups is easy to game with a rehearsed, slightly fictionalised story; STAR with genuine follow-ups — "what would you have done if the decision had gone the other way?", "did it happen again?" — is close to impossible to fake convincingly for more than two or three exchanges, which is exactly why interviewers are trained to keep asking.</p>`)}
+
 <h2><span class="sn">7.7.1</span> STAR, adapted for machine learning</h2>
+
+${H.analogy(`<p>Treat the Result the way a scientific paper treats its abstract's final sentence, not the way a diary entry treats an ending. A diary entry can end "…and it was a really valuable experience" and nobody minds, because nobody is trying to decide anything from it. A paper's abstract has to end with the actual finding, in numbers, because a reader deciding whether to invest the next twenty minutes reading the full paper needs the quantified claim, not the general sentiment. "We improved the model" is the diary-entry ending. "Precision at the fixed alert budget went from 31% to 44%, verified in a two-week A/B test" is the abstract ending — and an interviewer deciding whether to extend an offer is reading for the abstract, not the diary.</p>`)}
 ${H.table(['Element', 'Generic advice', 'What it means for an ML story'], [
       ['<b>Situation</b>', 'set the context', 'the business problem and why it mattered — <b>not</b> the dataset'],
       ['<b>Task</b>', 'your responsibility', 'be precise about what was yours versus your team’s; interviewers probe this'],
@@ -712,6 +772,8 @@ ${H.table(['Ask', 'What it tells you', 'What a bad answer sounds like'], [
     ])}
 ${H.note('Ask two or three, not seven. Ask them of everyone in the loop and compare — divergent answers about how decisions get made are far more informative than any single answer.')}
 
+${H.intuition(`<p>Every question in that table shares a design principle: it asks for a specific instance, not a general claim. "Is monitoring good here?" invites a confident "yes" from anyone, regardless of whether it is true, because it costs nothing to say and nobody has to produce evidence for it. "What is the last model that was rolled back, and why?" forces a specific memory to the surface, and a specific memory is far harder to fabricate convincingly on the spot than a general assurance — which is exactly the same STAR logic §7.7.1 uses on you, aimed back at the company. If you take one habit from this table, take the shape of the question, not the seven examples: turn any vague thing you want to know about a team into "tell me about the last specific time X happened".</p>`)}
+
 <h2><span class="sn">7.7.3</span> The offer conversation</h2>
 ${H.checklist([
       '<b>Do not give a number first</b> if you can avoid it. "I would rather understand the role and the level first — what range is budgeted for this position?" is normal and expected.',
@@ -721,6 +783,12 @@ ${H.checklist([
       '<b>Be straightforward about competing offers</b>, and never invent one — it is checkable more often than people think, and the downside is total.',
       '<b>Get it in writing</b> before resigning anything.'
     ])}
+
+<p><b>What you are looking at.</b> Three controls — target role, weeks available, and hours per week — feeding a week-by-week schedule. Each week shows one or more blocks (coding drills, breadth, derivations, system design, applied AI, statistics, stories and mocks) with an hour allocation and direct links to the sections that cover it, followed by a short list of the habits that make the schedule actually work.</p>
+
+<p><b>What to do with it.</b> Pick the role closest to what you are interviewing for — the underlying weighting mix genuinely differs, an LLM-engineering loop and a research-scientist loop barely resemble each other — set your real weeks and hours, and read the resulting plan as a starting allocation to adjust against your own self-assessment from §7.1, not as a fixed prescription.</p>
+
+<p><b>The thing genuinely worth noticing.</b> Change the role from "ML engineer" to "research scientist" and watch the derivations block roughly quadruple while system design nearly disappears; change it to "senior / staff" and watch behavioural stories and system design both grow at the expense of coding drills. The schedule is not randomly reshuffled between roles — it is the same eight-round map from §7.1 read out as hours, and the biggest planning mistake this tool is built to prevent is running one generic study plan regardless of which role you are actually walking into.</p>
 
 ${H.lab('plan', 'Your preparation plan', 'Set your target role, the weeks available and the hours you can give it. The output is a week-by-week schedule against the actual sections of this site, weighted for the role you named.')}
 
@@ -810,25 +878,25 @@ ${H.key('The one habit worth more than any of the above: <b>practise out loud, a
         q: 'The weakest part of most STAR answers is…',
         options: ['the situation', 'the result — unquantified and unverified', 'the task', 'the length'],
         answer: 1,
-        why: '"We improved the model" is unscoreable. A number with a unit, plus how you knew it was real, is the whole difference.'
+        why: '"We improved the model" gives an interviewer nothing to write on a scorecard, because it cannot be compared against any other candidate\'s answer or checked against anything real — it is a claim, not evidence. A number with a unit, and a sentence on how you knew the change was real rather than noise, is the whole difference between a claim and evidence, and it is the same discipline the experimentation content in §2.25 asks of any result. The Situation, Task and Action are usually fine in most candidates\' answers, because people are naturally fluent describing context and what they did; it is specifically the outcome that gets left vague, often because the candidate never actually measured it rigorously in the first place.'
       },
       {
         q: 'A strong "tell me about a failure" answer centres on…',
         options: ['a failure that was not your fault', 'how you found out, what you fixed, and what you changed so it could not recur', 'a very small failure', 'how you avoided blame'],
         answer: 1,
-        why: 'The detection and the systemic fix are the parts that reveal maturity. Deflection reads as evasion.'
+        why: 'How you found out reveals whether you have real monitoring instincts or got lucky and were told by an angry user; what you changed so the class of failure cannot recur reveals whether you treat an incident as a one-off annoyance or as information about a gap in the system. Both of those are durable, transferable signals about how you will behave the next time something breaks on this team, which is what the question is actually trying to predict. A failure that was not your fault, or one trivial enough to be an obvious dodge, answers a different and much less interesting question — "can you avoid picking an example that makes you look bad" — and experienced interviewers notice the dodge immediately and often push past it with a follow-up.'
       },
       {
         q: 'In an offer conversation, the most pivotal term to negotiate is usually…',
         options: ['sign-on bonus', 'the level, because it sets the band and the scope', 'base salary', 'start date'],
         answer: 1,
-        why: 'Level determines the compensation band, the work you get, and how soon the next promotion is plausible.'
+        why: 'Level is not one line item among several — it is the variable that determines the compensation band every other number is drawn from, the scope of work you will actually be given, and how many promotion cycles stand between you and the next one, so negotiating it well changes the shape of the next several years rather than the size of one paycheque. A sign-on bonus or a one-off base bump is a single, non-repeating adjustment; a level negotiated one notch higher compounds through every subsequent raise and promotion built on top of it, which is exactly why experienced negotiators spend their effort there first.'
       },
       {
         q: 'Four stories are enough for a behavioural round because…',
         options: ['interviewers only ask four questions', 'almost every question maps to hard problem / conflict / owned failure / changed your mind', 'they are easier to memorise', 'longer answers score better'],
         answer: 1,
-        why: 'Prepare four deeply and adapt them, rather than twenty shallowly.'
+        why: 'The apparent variety of behavioural questions — "tell me about a conflict", "tell me about a time you failed", "tell me about your hardest project" — collapses onto a small number of underlying things an interviewer is trying to learn about you, and four well-chosen, deeply-known stories can be adapted on the fly to answer almost any specific phrasing that arrives. Twenty shallow stories, by contrast, leave you unable to survive the follow-up questions §7.7.1 describes, because you never went deep enough on any single one to answer "and then what happened?" three times in a row without the account thinning out into vagueness.'
       }
     ],
     cards: [
