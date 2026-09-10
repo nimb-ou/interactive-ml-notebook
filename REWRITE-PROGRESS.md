@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**80 / 116 sections complete.**
+**97 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -83,10 +83,10 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 | x | 3.7 | `cnn` | 41-deep-b.js | 527 |
 | x | 3.8 | `rnn` | 41-deep-b.js | 478 |
 | x | 3.9 | `embeddings` | 41-deep-b.js | 474 |
-|   | 3.11 | `autodiff` | 42-deep-c.js | 1016 |
-|   | 3.12 | `training-dynamics` | 42-deep-c.js | 969 |
-|   | 3.13 | `compression` | 42-deep-c.js | 1029 |
-|   | 3.14 | `robustness` | 42-deep-c.js | 926 |
+| x | 3.11 | `autodiff` | 42-deep-c.js | 1016 |
+| x | 3.12 | `training-dynamics` | 42-deep-c.js | 969 |
+| x | 3.13 | `compression` | 42-deep-c.js | 1029 |
+| x | 3.14 | `robustness` | 42-deep-c.js | 926 |
 |   | 3.15 | `part3-recall` | 41-deep-b.js | 158 |
 
 ## Part 4 — LLMs & transformers
@@ -137,14 +137,14 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | 6.1 | `rl` | 70-frontier.js | 397 |
-|   | 6.2 | `diffusion` | 70-frontier.js | 354 |
-|   | 6.3 | `vae-gan` | 70-frontier.js | 419 |
-|   | 6.4 | `gnn` | 70-frontier.js | 478 |
-|   | 6.6 | `bandits` | 71-frontier-b.js | 1034 |
-|   | 6.7 | `vision-tasks` | 71-frontier-b.js | 911 |
-|   | 6.8 | `privacy` | 71-frontier-b.js | 1115 |
-|   | 6.9 | `exclusions` | 70-frontier.js | 637 |
+| x | 6.1 | `rl` | 70-frontier.js | 397 |
+| x | 6.2 | `diffusion` | 70-frontier.js | 354 |
+| x | 6.3 | `vae-gan` | 70-frontier.js | 419 |
+| x | 6.4 | `gnn` | 70-frontier.js | 478 |
+| x | 6.6 | `bandits` | 71-frontier-b.js | 1034 |
+| x | 6.7 | `vision-tasks` | 71-frontier-b.js | 911 |
+| x | 6.8 | `privacy` | 71-frontier-b.js | 1115 |
+| x | 6.9 | `exclusions` | 70-frontier.js | 637 |
 
 ## Part 7 — The ML interview
 
@@ -162,9 +162,9 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | R.1 | `numbers` | 90-reference.js | 514 |
-|   | R.2 | `formulas` | 90-reference.js | 295 |
-|   | R.3 | `glossary` | 90-reference.js | 77 |
-|   | R.4 | `sources` | 90-reference.js | 781 |
-|   | R.5 | `drill` | 90-reference.js | 62 |
+| x | R.1 | `numbers` | 90-reference.js | 514 |
+| x | R.2 | `formulas` | 90-reference.js | 295 |
+| x | R.3 | `glossary` | 90-reference.js | 77 |
+| x | R.4 | `sources` | 90-reference.js | 781 |
+| x | R.5 | `drill` | 90-reference.js | 62 |
 

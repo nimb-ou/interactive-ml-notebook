@@ -10,6 +10,7 @@
     title: 'Numbers to have cold',
     lede: 'Everything on this site that is a number, in one place. If you memorise one page, memorise this one — these are the quantities that turn a plausible answer into a checkable one.',
     html: `
+<p>Each box below groups the constants from one corner of the site — memory arithmetic, scaling laws, retrieval, and so on — so you can drill a whole topic at once; the search lab below flattens all of them into one filterable list when you only need to find a single number fast. Every value here was derived, not guessed, somewhere else on this site, and the search results link straight back to that derivation.</p>
 ${H.lab('numsearch', 'Search the numbers', 'Type to filter. Every entry links back to the section that derives it.')}
 
 <div class="grid2">
@@ -188,7 +189,9 @@ ${H.box('retrieval, ranking &amp; privacy', `
     title: 'The formula sheet',
     lede: 'Every formula this site derives, with the section that derives it. Cover the right column and reproduce them.',
     html: `
+<p>One line per formula, the section that derives it, and nothing else — cover the middle column and see if you can rebuild it from the name alone. Grouped roughly in the order this site introduces them, so a whole part's worth of maths is one scroll away.</p>
 <h2>Foundations</h2>
+<p class="small">Probability, calculus and linear algebra — the vocabulary everything after Part 0 is written in.</p>
 ${H.table(['Name', 'Formula', '§'], [
       ['Bayes (odds form)', 'posterior odds = LR × prior odds', '<a href="#/bayes">1.1</a>'],
       ['Variance of a sum', '$\\mathrm{Var}(X+Y)=\\mathrm{Var}X+\\mathrm{Var}Y+2\\mathrm{Cov}(X,Y)$', '<a href="#/expectation">1.3</a>'],
@@ -204,6 +207,7 @@ ${H.table(['Name', 'Formula', '§'], [
     ])}
 
 <h2>Classical ML</h2>
+<p class="small">Linear models through trees to calibration — the machinery behind most production scoring systems.</p>
 ${H.table(['Name', 'Formula', '§'], [
       ['Bias–variance', '$\\mathbb{E}[(y-\\hat f)^2]=\\text{bias}^2+\\text{variance}+\\sigma^2$', '<a href="#/bias-variance">2.2</a>'],
       ['Soft threshold (lasso)', '$\\mathcal{S}_\\lambda(\\rho)=\\mathrm{sign}(\\rho)\\max(0,|\\rho|-\\lambda)$', '<a href="#/regularization">2.3</a>'],
@@ -224,6 +228,7 @@ ${H.table(['Name', 'Formula', '§'], [
     ])}
 
 <h2>Deep learning and transformers</h2>
+<p class="small">Backprop through the modern LLM stack — attention, position encoding, alignment and the memory arithmetic that runs them.</p>
 ${H.table(['Name', 'Formula', '§'], [
       ['Backprop', '$\\delta^{(l)}=(W^{(l+1)\\mathsf{T}}\\delta^{(l+1)})\\odot\\phi\'(z^{(l)})$; $\\partial L/\\partial W^{(l)}=\\delta^{(l)}a^{(l-1)\\mathsf{T}}$', '<a href="#/backprop">3.2</a>'],
       ['He init', '$\\mathrm{Var}(w)=2/n_{in}$', '<a href="#/initialisation">3.4</a>'],
@@ -242,6 +247,7 @@ ${H.table(['Name', 'Formula', '§'], [
     ])}
 
 <h2>Applied and frontier</h2>
+<p class="small">RAG, safety, reinforcement learning and generative models — Parts 5 and 6.</p>
 ${H.table(['Name', 'Formula', '§'], [
       ['RRF', '$\\sum_r 1/(k+\\mathrm{rank}_r(d))$, k = 60', '<a href="#/rag">5.1</a>'],
       ['Refusal under retries', '$1-(1-\\epsilon)^n$', '<a href="#/safety">4.17</a>'],
@@ -254,6 +260,7 @@ ${H.table(['Name', 'Formula', '§'], [
     ])}
 
 <h2>Optimisation, matrix calculus, numerics</h2>
+<p class="small">The machine-room formulas: convergence rates, sampling, Bayesian updating, floating point — what makes the rest actually run.</p>
 ${H.table(['Name', 'Formula', '§'], [
       ['Gradient of least squares', '$\\nabla_w\\|Xw-y\\|^2 = 2X^\\mathsf{T}(Xw-y)$', '<a href="#/matrix-calculus">0.7</a>'],
       ['Quadratic form', '$\\nabla_w\\,w^\\mathsf{T}Aw = (A+A^\\mathsf{T})w$, and $2Aw$ if $A$ symmetric', '<a href="#/matrix-calculus">0.7</a>'],
@@ -272,6 +279,7 @@ ${H.table(['Name', 'Formula', '§'], [
     ])}
 
 <h2>Evaluation, ranking, experiments, ensembles</h2>
+<p class="small">How you know a model, a ranking or an A/B result is actually good — plus the compression and robustness formulas of §3.11–3.14.</p>
 ${H.table(['Name', 'Formula', '§'], [
       ['Ensemble variance', '$\\rho\\sigma^2+\\frac{1-\\rho}{M}\\sigma^2$ — the floor is $\\rho\\sigma^2$', '<a href="#/ensembles">2.16</a>'],
       ['GP posterior', '$\\mu_*=k_*^\\mathsf{T}(K+\\sigma_n^2I)^{-1}y$; $\\sigma_*^2=k_{**}-k_*^\\mathsf{T}(K+\\sigma_n^2I)^{-1}k_*$', '<a href="#/gp-bayesopt">2.21</a>'],
@@ -297,7 +305,7 @@ ${H.table(['Name', 'Formula', '§'], [
     id: 'glossary', track: 'reference', num: 'R.3',
     title: 'Glossary and index of terms',
     lede: 'Each entry gives the one-sentence definition you would say out loud, and the section that derives it. Use it as an index: if you cannot produce the definition from memory, go back to the section.',
-    html: `${H.lab('gloss', 'Search the glossary', 'Filter by term or by definition — the second is often more useful, because it finds the concept when you have forgotten the name.')}`,
+    html: `<p>Over a hundred terms, alphabetised, each tagged with the section that derives it in full. A ⚑ inside a definition marks a genuinely contested convention rather than a settled result — see <a href="#/sources">R.4</a> for which three claims on this site carry that flag most often.</p>${H.lab('gloss', 'Search the glossary', 'Filter by term or by definition — the second is often more useful, because it finds the concept when you have forgotten the name.')}`,
     labs: {
       gloss: function (host) {
         const G = [
@@ -539,7 +547,7 @@ ${H.note('Three claims are genuinely contested and should be flagged every singl
     id: 'drill', track: 'reference', num: 'R.5',
     title: 'The drill room',
     lede: 'Every recall card from every section, shuffled. Say the answer out loud before flipping — retrieval failure is what trains recall, and rereading is what feels like learning without being it.',
-    html: `${H.lab('bigdrill', 'The whole curriculum, shuffled', 'Filter by track, shuffle, and keep score. Progress is stored in this browser only.')}`,
+    html: `<p>Click the card to flip it, then be honest about <b>✓ knew it</b> versus <b>✗ missed</b> — the running score only means something if you score the attempt before you saw the answer, not after.</p>${H.lab('bigdrill', 'The whole curriculum, shuffled', 'Filter by track, shuffle, and keep score. Progress is stored in this browser only.')}`,
     labs: {
       bigdrill: function (host) {
         const all = [];
