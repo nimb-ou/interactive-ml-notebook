@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**61 / 116 sections complete.**
+**73 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -120,18 +120,18 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | 5.1 | `rag` | 60-applied.js | 1499 |
-|   | 5.2 | `rag-vs-ft` | 60-applied.js | 239 |
-|   | 5.3 | `agents` | 60-applied.js | 876 |
-|   | 5.4 | `multi-agent` | 60-applied.js | 442 |
-|   | 5.5 | `mcp` | 60-applied.js | 692 |
-|   | 5.6 | `frameworks` | 60-applied.js | 557 |
-|   | 5.7 | `production-ai` | 60-applied.js | 1174 |
-|   | 5.9 | `chunking` | 61-applied-b.js | 928 |
-|   | 5.10 | `vector-search` | 61-applied-b.js | 953 |
-|   | 5.11 | `evals` | 61-applied-b.js | 965 |
-|   | 5.12 | `mlops` | 61-applied-b.js | 815 |
-|   | 5.13 | `decision-ladder` | 60-applied.js | 325 |
+| x | 5.1 | `rag` | 60-applied.js | 1499 |
+| x | 5.2 | `rag-vs-ft` | 60-applied.js | 239 |
+| x | 5.3 | `agents` | 60-applied.js | 876 |
+| x | 5.4 | `multi-agent` | 60-applied.js | 442 |
+| x | 5.5 | `mcp` | 60-applied.js | 692 |
+| x | 5.6 | `frameworks` | 60-applied.js | 557 |
+| x | 5.7 | `production-ai` | 60-applied.js | 1174 |
+| x | 5.9 | `chunking` | 61-applied-b.js | 928 |
+| x | 5.10 | `vector-search` | 61-applied-b.js | 953 |
+| x | 5.11 | `evals` | 61-applied-b.js | 965 |
+| x | 5.12 | `mlops` | 61-applied-b.js | 815 |
+| x | 5.13 | `decision-ladder` | 60-applied.js | 325 |
 
 ## Part 6 — Beyond the notebook
 
