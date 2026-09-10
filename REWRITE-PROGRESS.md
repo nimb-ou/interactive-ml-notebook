@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**22 / 116 sections complete.**
+**28 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -44,12 +44,12 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 
 | | § | Section | File | Baseline words |
 |---|---|---|---|---|
-|   | 2.1 | `supervised-setup` | 30-classical-a.js | 445 |
-|   | 2.2 | `bias-variance` | 30-classical-a.js | 413 |
-|   | 2.3 | `regularization` | 30-classical-a.js | 521 |
-|   | 2.4 | `linear-logistic` | 30-classical-a.js | 468 |
-|   | 2.5 | `knn-nb` | 30-classical-a.js | 479 |
-|   | 2.6 | `svm` | 30-classical-a.js | 419 |
+| x | 2.1 | `supervised-setup` | 30-classical-a.js | 445 |
+| x | 2.2 | `bias-variance` | 30-classical-a.js | 413 |
+| x | 2.3 | `regularization` | 30-classical-a.js | 521 |
+| x | 2.4 | `linear-logistic` | 30-classical-a.js | 468 |
+| x | 2.5 | `knn-nb` | 30-classical-a.js | 479 |
+| x | 2.6 | `svm` | 30-classical-a.js | 419 |
 | x | 2.7 | `trees` | 31-classical-b.js | 424 |
 | x | 2.8 | `boosting` | 31-classical-b.js | 844 |
 | x | 2.9 | `unsupervised` | 31-classical-b.js | 774 |
