@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**41 / 116 sections complete.**
+**45 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -34,10 +34,10 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 | x | 1.8 | `linear-algebra` | 21-foundations-b.js | 406 |
 | x | 1.9 | `calculus-ml` | 21-foundations-b.js | 457 |
 | x | 1.10 | `information` | 21-foundations-b.js | 500 |
-|   | 1.12 | `optimization` | 22-foundations-c.js | 1287 |
-|   | 1.13 | `sampling` | 22-foundations-c.js | 858 |
-|   | 1.14 | `bayesian-inference` | 22-foundations-c.js | 1011 |
-|   | 1.15 | `numerics` | 22-foundations-c.js | 1075 |
+| x | 1.12 | `optimization` | 22-foundations-c.js | 1287 |
+| x | 1.13 | `sampling` | 22-foundations-c.js | 858 |
+| x | 1.14 | `bayesian-inference` | 22-foundations-c.js | 1011 |
+| x | 1.15 | `numerics` | 22-foundations-c.js | 1075 |
 |   | 1.16 | `part1-recall` | 21-foundations-b.js | 239 |
 
 ## Part 2 — Core & classical machine learning
