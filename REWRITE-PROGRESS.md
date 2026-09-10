@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**54 / 116 sections complete.**
+**61 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -99,19 +99,19 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 |   | 4.4 | `rope` | 50-transformers-a.js | 680 |
 |   | 4.5 | `block` | 50-transformers-a.js | 425 |
 |   | 4.6 | `architectures` | 50-transformers-a.js | 380 |
-|   | 4.7 | `kv-cache` | 50-transformers-a.js | 590 |
-|   | 4.8 | `moe` | 50-transformers-a.js | 343 |
+| x | 4.7 | `kv-cache` | 50-transformers-a.js | 590 |
+| x | 4.8 | `moe` | 50-transformers-a.js | 343 |
 |   | 4.9 | `pretraining` | 51-transformers-b.js | 498 |
 |   | 4.10 | `scaling-laws` | 51-transformers-b.js | 369 |
 |   | 4.11 | `distributed` | 51-transformers-b.js | 649 |
-|   | 4.12 | `post-training` | 51-transformers-b.js | 882 |
-|   | 4.13 | `lora` | 51-transformers-b.js | 666 |
+| x | 4.12 | `post-training` | 51-transformers-b.js | 882 |
+| x | 4.13 | `lora` | 51-transformers-b.js | 666 |
 |   | 4.14 | `serving` | 51-transformers-b.js | 790 |
-|   | 4.15 | `decoding` | 51-transformers-b.js | 447 |
+| x | 4.15 | `decoding` | 51-transformers-b.js | 447 |
 |   | 4.16 | `llm-eval` | 51-transformers-b.js | 574 |
-|   | 4.17 | `safety` | 51-transformers-b.js | 695 |
+| x | 4.17 | `safety` | 51-transformers-b.js | 695 |
 |   | 4.19 | `multimodal` | 52-transformers-c.js | 945 |
-|   | 4.20 | `reasoning` | 52-transformers-c.js | 889 |
+| x | 4.20 | `reasoning` | 52-transformers-c.js | 889 |
 |   | 4.21 | `structured-output` | 52-transformers-c.js | 1004 |
 |   | 4.22 | `speculative` | 52-transformers-c.js | 936 |
 |   | 4.23 | `part4-recall` | 51-transformers-b.js | 187 |

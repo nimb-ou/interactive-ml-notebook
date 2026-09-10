@@ -14,6 +14,7 @@
     prereq: ['attention', 'self-supervised'],
     related: ['self-supervised', 'attention', 'rag'],
     html: `
+<p>Every transformer built so far in this part has been fed a sequence of vectors and has never once asked where those vectors came from — §4.3's attention operation is defined purely in terms of dot products between queries and keys, with no clause anywhere that requires the input to have started life as text. That genericity is the whole story of this section: if an image, or a second of audio, or a video frame, can be turned into a sequence of vectors the same shape as a token embedding, the identical transformer block from §4.5 processes it with no architectural change at all. The interesting engineering is entirely upstream of the transformer — how you cut a non-text modality into vector-shaped pieces, and how you get two different modalities' vectors to live in a space where "similar" means the same thing for both.</p>
 ${H.tldr([
       'A ViT cuts an image into 16×16 patches, projects each to a vector, adds a position embedding, and runs a standard transformer. A 224×224 image becomes 196 tokens.',
       'CLIP trains an image encoder and a text encoder with InfoNCE (§2.22) over a batch of pairs, so that matching image and caption land near each other. That shared space is what makes zero-shot classification possible.',
@@ -66,7 +67,12 @@ ${H.table(['Design point', 'Choice', 'Consequence'], [
 ${H.key('A ViT trained on ImageNet-1k alone loses to a ResNet. Trained on 300M images it wins comfortably. That crossover is the clearest demonstration in the field of the trade between inductive bias and data: bias substitutes for data, and stops paying once you have enough.')}
 
 <h2><span class="sn">4.19.2</span> CLIP: one embedding space for two modalities</h2>
-<p>Encode $N$ images and their $N$ captions, L2-normalise, and compute the $N\\times N$ matrix of cosine similarities divided by a learned temperature. Train with cross-entropy in both directions — image→text and text→image — against the identity matrix. That is the whole objective (§2.22).</p>
+<p>Encode $N$ images and their $N$ captions, L2-normalise, and compute the $N\\times N$ matrix of cosine similarities divided by a learned temperature. Train with cross-entropy in both directions — image→text and text→image — against the identity matrix. That is the whole objective (§2.22), and the cosine similarity underneath it is nothing more exotic than §0.2's dot-product-of-normalised-vectors, computed here between an image encoder's output and a text encoder's output rather than between two rows of the same dataset.</p>
+
+<p><b>What you are looking at.</b> Two small encoders — one over "image" feature vectors, one over "caption" feature vectors, both genuinely trained rather than illustrated — and the live $N\\times N$ similarity matrix between every encoded image and every encoded caption in the batch, rendered as a heatmap. The diagonal is the correct pairing: image $i$ with caption $i$.</p>
+<p><b>What to do with it.</b> Press train and watch the heatmap evolve. At step zero the two encoders are random projections with no relationship to each other, so the matrix is an undifferentiated fog. Keep training and watch brightness concentrate onto the diagonal.</p>
+<p><b>The thing genuinely worth noticing.</b> Nothing in the training loop ever tells either encoder what an "image" or a "caption" is — InfoNCE only ever sees two batches of vectors and pushes matched pairs together, unmatched pairs apart. The diagonal emerging is the entire content of "a shared embedding space" made visible, and it is exactly the same loss and the same mechanism whether the two towers encode images and text, audio and text, or two different languages.</p>
+
 ${H.lab('clip', 'A CLIP-style contrastive space, trained here', 'Two small encoders, one for "images" (feature vectors) and one for "captions", trained with a real InfoNCE objective until the diagonal lights up. Step through training and watch the similarity matrix become diagonal.')}
 ${H.table(['Property', 'Why it follows', 'Practical use'], [
       ['<b>Zero-shot classification</b>', 'encode "a photo of a {class}" for every class, take the nearest', 'no labelled training data for the new task at all'],
@@ -244,6 +250,10 @@ ${H.table(['Method', 'How', 'Cost', 'When it helps'], [
       ['<b>Long RL-trained reasoning</b>', 'the model learns to produce long traces with backtracking', 'built in at training time', 'o-series, R1-style models; the current frontier'],
       ['Self-refine / critique', 'generate, critique, revise', '2–3×', 'writing and code; <b>weak without an external signal</b>']
     ])}
+<p><b>What you are looking at.</b> Accuracy plotted against samples drawn, computed from a genuine binomial/multinomial simulation rather than the closed-form curve alone — the single dashed line is one sample's accuracy, the solid curve is majority-vote accuracy at each sample count $k$.</p>
+<p><b>What to do with it.</b> Set a low per-sample accuracy and a wide answer space, then watch the curve climb well above the single-sample line as $k$ grows — confirming the plurality argument below directly. Then drag the error-correlation slider up from zero.</p>
+<p><b>The thing genuinely worth noticing.</b> As correlation rises, the climbing curve flattens back toward the single-sample line regardless of how large $k$ gets — extra samples stop buying anything once the model's errors stop being independent draws. That is the whole content of the derivation below, seen before it is proven.</p>
+
 ${H.lab('selfcons', 'Self-consistency: when majority voting works, and when it cannot', 'Real binomial and multinomial simulation. Set the per-sample accuracy and the diversity of the errors, and see what majority voting over $k$ samples actually buys. The failure case is the important one.')}
 
 ${H.deriv('why majority voting helps, and the condition it needs', [
@@ -255,6 +265,9 @@ ${H.deriv('why majority voting helps, and the condition it needs', [
 ${H.pitfall('Self-consistency needs an answer you can compare for equality. It works on arithmetic and multiple choice; it does not work on essays, and "majority vote over generated prose" is not a thing. For open-ended output the analogue is best-of-$n$ with a verifier — and then you have moved the whole problem into the quality of the verifier.')}
 
 <h2><span class="sn">4.20.3</span> The test-time scaling curve</h2>
+<p><b>What you are looking at.</b> Two accuracy-versus-compute curves on the same axes: a small model spending increasing inference compute on thinking tokens, and a larger model doing the same, both computed from the log-linear shape published test-time scaling results actually show. The dashed line marks the large model's single-pass (no extra thinking) accuracy.</p>
+<p><b>What to do with it.</b> Read the cost readout at a moderate thinking budget: the small model plus thinking tokens lands within a few points of the large model's accuracy at a fraction of the per-request cost.</p>
+<p><b>The thing genuinely worth noticing.</b> Push the thinking budget far enough and the small model's curve stops being the cheaper option — there is a genuine crossover, not a one-directional win, which is exactly why production systems route by difficulty rather than fixing one strategy for every request.</p>
 ${H.lab('ttc', 'Trading training compute for inference compute', 'The same accuracy target reached two ways. The crossover point is a real business decision: a bigger model costs once and is paid on every request; more thinking tokens cost nothing up front and are paid on every request too — but only on the hard ones.')}
 ${H.flag('The honest state of the evidence in 2026: test-time scaling gives large, reproducible gains on <b>verifiable</b> tasks — competition mathematics, code with tests, formal logic. Gains on open-ended tasks with no automatic checker are much smaller and much harder to measure, because the evaluation is itself a model. Be precise about which kind of task you mean; conflating them is the most common overclaim in the area.')}
 ${H.table(['Consequence', 'Detail'], [
@@ -435,6 +448,10 @@ ${H.table(['Approach', 'Guarantee', 'Cost', 'When'], [
     ])}
 ${H.key('Retry-until-it-parses has an unbounded tail and costs the most exactly when the model is struggling. Masking the logits removes the failure mode entirely and costs a lookup.')}
 
+<p><b>What you are looking at.</b> A genuine finite-state machine for a small JSON schema, generating one token at a time. The bar chart is the model's raw, schema-unaware preferences over a small vocabulary at the current position; bars are coloured by whether the automaton's current state permits that token at all.</p>
+<p><b>What to do with it.</b> Step through generation and read the automaton-state line under the chart at each position — it names exactly what is legal next and why. Switch decoding to "unconstrained" and watch what the model would have emitted left to its own raw preferences instead.</p>
+<p><b>The thing genuinely worth noticing.</b> In unconstrained mode the model regularly assigns real probability mass to tokens that would break the schema outright — that stray mass is precisely where a production system's JSON-parsing failures come from. Count the positions flagged "jump ahead": a meaningful fraction of the schema's structure is fully determined by the grammar alone, needing no model call at all.</p>
+
 ${H.lab('constrained', 'Watch a grammar mask the logits, token by token', 'A real finite-state machine for a small JSON schema. Step through generation: at each position you can see the automaton state, which tokens it permits, and the model’s raw preferences being overruled.')}
 
 <h2><span class="sn">4.21.2</span> How it is implemented</h2>
@@ -611,6 +628,10 @@ ${H.steps([
       '<b>Bonus token.</b> If all $k$ are accepted, the verification pass already gave you the distribution for position $k+1$ — sample it free. So one pass yields between 1 and $k+1$ tokens.'
     ])}
 ${H.key('The accept/reject rule is exactly the rejection-sampling construction that makes the composite process sample from $p$. The output distribution is identical to running the large model alone — this is a theorem, not an approximation. Speculative decoding is a pure latency optimisation with zero quality cost, which is why it is on by default nearly everywhere.')}
+
+<p><b>What you are looking at.</b> The top panel is the closed-form speedup curve against draft length $k$, for several acceptance rates $\\alpha$ at once — your current $\\alpha$ highlighted. Below it, a strip of coloured cells is a genuine simulated run: green for an accepted draft token, blue for the free bonus token, red for the rejection that ends a batch, grey for whatever was then discarded.</p>
+<p><b>What to do with it.</b> Read the strip left to right, batch by batch, and compare the simulated tokens-per-pass readout against the theoretical curve's value at your chosen $k$.</p>
+<p><b>The thing genuinely worth noticing.</b> The two numbers converge as more batches run, confirming the closed form is not merely a model of the process but its exact expectation. Now drag $k$ past the marked optimum and watch the theoretical curve turn over — every extra drafted token costs a draft pass but is reached with only $\\alpha^k$ probability, so past some point adding more speculation makes things slower, not faster.</p>
 
 ${H.lab('spec', 'Speculative decoding, simulated token by token', 'Real acceptance sampling: watch drafts get accepted and rejected, and see the running speedup. The upper panel is the theory — expected tokens per pass — and the simulation converges to it.')}
 
