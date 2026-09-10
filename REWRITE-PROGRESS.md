@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**28 / 116 sections complete.**
+**36 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -55,20 +55,20 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 | x | 2.9 | `unsupervised` | 31-classical-b.js | 774 |
 | x | 2.10 | `pca` | 31-classical-b.js | 411 |
 | x | 2.11 | `features` | 31-classical-b.js | 643 |
-|   | 2.12 | `calibration` | 32-classical-c.js | 737 |
-|   | 2.13 | `metrics` | 32-classical-c.js | 780 |
-|   | 2.14 | `validation` | 32-classical-c.js | 349 |
-|   | 2.15 | `hyperparameters` | 32-classical-c.js | 412 |
+| x | 2.12 | `calibration` | 32-classical-c.js | 737 |
+| x | 2.13 | `metrics` | 32-classical-c.js | 780 |
+| x | 2.14 | `validation` | 32-classical-c.js | 349 |
+| x | 2.15 | `hyperparameters` | 32-classical-c.js | 412 |
 |   | 2.16 | `ensembles` | 33-classical-d.js | 848 |
-|   | 2.17 | `interpretability` | 32-classical-c.js | 601 |
-|   | 2.18 | `production` | 32-classical-c.js | 1022 |
-|   | 2.19 | `fairness` | 32-classical-c.js | 861 |
+| x | 2.17 | `interpretability` | 32-classical-c.js | 601 |
+| x | 2.18 | `production` | 32-classical-c.js | 1022 |
+| x | 2.19 | `fairness` | 32-classical-c.js | 861 |
 |   | 2.21 | `gp-bayesopt` | 33-classical-d.js | 820 |
 |   | 2.22 | `self-supervised` | 33-classical-d.js | 937 |
 |   | 2.23 | `active-transfer` | 33-classical-d.js | 847 |
 |   | 2.24 | `ranking` | 33-classical-d.js | 892 |
 |   | 2.25 | `experimentation` | 33-classical-d.js | 977 |
-|   | 2.26 | `part2-recall` | 32-classical-c.js | 177 |
+| x | 2.26 | `part2-recall` | 32-classical-c.js | 177 |
 
 ## Part 3 — Neural networks & deep learning
 
