@@ -1,6 +1,6 @@
 # Rewrite progress
 
-**17 / 116 sections complete.**
+**22 / 116 sections complete.**
 
 Tracking the expansion of every section to the standard in [AUTHORING.md](AUTHORING.md).
 
@@ -50,11 +50,11 @@ only when it meets the standard *and* `node test/smoke.js` reports `errors : 0`.
 |   | 2.4 | `linear-logistic` | 30-classical-a.js | 468 |
 |   | 2.5 | `knn-nb` | 30-classical-a.js | 479 |
 |   | 2.6 | `svm` | 30-classical-a.js | 419 |
-|   | 2.7 | `trees` | 31-classical-b.js | 424 |
-|   | 2.8 | `boosting` | 31-classical-b.js | 844 |
-|   | 2.9 | `unsupervised` | 31-classical-b.js | 774 |
-|   | 2.10 | `pca` | 31-classical-b.js | 411 |
-|   | 2.11 | `features` | 31-classical-b.js | 643 |
+| x | 2.7 | `trees` | 31-classical-b.js | 424 |
+| x | 2.8 | `boosting` | 31-classical-b.js | 844 |
+| x | 2.9 | `unsupervised` | 31-classical-b.js | 774 |
+| x | 2.10 | `pca` | 31-classical-b.js | 411 |
+| x | 2.11 | `features` | 31-classical-b.js | 643 |
 |   | 2.12 | `calibration` | 32-classical-c.js | 737 |
 |   | 2.13 | `metrics` | 32-classical-c.js | 780 |
 |   | 2.14 | `validation` | 32-classical-c.js | 349 |
