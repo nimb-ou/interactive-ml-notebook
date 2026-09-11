@@ -60,13 +60,13 @@ ${H.deriv('the exact log-odds shift that resampling introduces', [
 
 <p>That derivation earns its keep twice over. First, it explains the JAMIA finding mechanically rather than by appeal to authority: oversampling to 50/50 on a 5%-base-rate book does not corrupt the model's judgement about who is risky, it adds a fixed +2.944 to every logit, which is precisely a monotone transform and precisely why AUC barely moves while every reported probability becomes fiction. Second, it tells you the fix in advance: a shift that is <i>exactly</i> additive in log-odds is exactly what a two-parameter Platt scaler is built to undo (§2.12.3) — which is why "resample, then recalibrate" is a coherent recipe rather than two unrelated pieces of advice bolted together. In practice the shift is rarely as clean as the idealised derivation, because the resampling method itself (SMOTE's synthetic points, undersampling's information loss) also nudges the class-conditional evidence term you were hoping to hold fixed — which is exactly why the empirical result is "poorly calibrated," not "calibrated up to a single known constant."</p>
 
-${H.lab('resample', 'What resampling does to your probabilities', 'A logistic model trained here on imbalanced data, then retrained on a resampled version. The ranking barely moves; the reliability curve leaves the diagonal immediately. Both effects are computed, not asserted.')}
-
 <p><b>What you are looking at.</b> Score histograms for the positive and negative class sit behind a reliability curve: predicted probability along the bottom, the observed frequency of positives in that predicted-probability bin up the side, with the dashed diagonal marking perfect calibration. The line and dots trace the model's actual reliability curve for whichever treatment is selected.</p>
 
 <p><b>What to do with it.</b> Set the treatment to "none" and note the AUC reported alongside. Switch to "oversample to 50/50" and watch two numbers at once: AUC, which moves in the third or fourth decimal place at most, and the mean predicted probability, which jumps from something close to the true base rate to something far higher — the empirical shadow of the $\\Delta$ derived above. Then try "class weights," which reweights the loss rather than duplicating or discarding rows, and compare where its curve sits.</p>
 
 <p><b>The thing genuinely worth noticing.</b> The reliability curve for "oversample" or "undersample" leaves the diagonal almost immediately and stays off it, while the curve for "none" or "class weights" hugs it far more closely. That gap, with the AUC readout barely moving throughout, is the JAMIA result reproduced in your browser: resampling bought you nothing on the ranking metric and cost you the probabilities.</p>
+
+${H.lab('resample', 'What resampling does to your probabilities', 'A logistic model trained here on imbalanced data, then retrained on a resampled version. The ranking barely moves; the reliability curve leaves the diagonal immediately. Both effects are computed, not asserted.')}
 
 <h3>The practical stance, stated conditionally</h3>
 
@@ -87,13 +87,13 @@ ${H.table(['Method', 'What it fits', 'Use when'], [
 
 <p><b>Isotonic regression</b> drops the parametric assumption entirely and fits the best-fitting <i>monotone step function</i> through the held-out data — free to bend however the data demands, constrained only to never decrease. That flexibility is exactly what a non-sigmoidal distortion needs, and exactly what makes it hungry for data: with only a few hundred held-out rows, isotonic will happily fit noise into a staircase of spurious little steps, each one confidently wrong. As a rule of thumb, isotonic wants thousands of held-out rows before its extra flexibility earns its keep over Platt's two parameters.</p>
 
-${H.lab('calib', 'Reliability diagrams and two calibrators', 'A deliberately miscalibrated model, then Platt and isotonic fitted on a held-out split. Watch the Brier score decompose and the curve return to the diagonal — and watch isotonic overfit when you shrink the calibration set.')}
-
 <p><b>What you are looking at.</b> The faint red curve is the raw, miscalibrated model's reliability curve — its distortion is controlled by the "model miscalibration" slider, which raises scores to that power exactly as in the worked example above. The green curve is the same model after whichever calibrator you select is fitted on a held-out calibration split of the size you choose, then evaluated on a fresh 1,500-row test set the calibrator never saw.</p>
 
 <p><b>What to do with it.</b> With the calibrator set to "none," push the miscalibration slider away from 1 and watch the red curve peel off the diagonal — this is the worked example from §2.12.1, running live. Switch to "Platt" and watch the curve snap back close to the diagonal with only a couple hundred calibration rows. Now switch to "isotonic" with the same small calibration set and look at the readout: the curve visually returns to the diagonal too, but the expected calibration error often does not improve as cleanly, because isotonic is fitting a staircase to sparse data.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Drag "calibration rows" down to 50 with isotonic selected. The reliability curve stops looking like a curve at all and starts looking like a jagged, overconfident staircase — a direct picture of overfitting a monotone map to noise. Switch to Platt at the same 50 rows and the line stays smooth, because two parameters simply cannot chase individual data points the way an unconstrained step function can. Notice also the "AUC (unchanged by monotone maps)" readout: it barely moves across every setting, which is the §2.12.1 derivation confirming itself on live data — calibration is doing real work that the ranking metric was structurally blind to.</p>
+
+${H.lab('calib', 'Reliability diagrams and two calibrators', 'A deliberately miscalibrated model, then Platt and isotonic fitted on a held-out split. Watch the Brier score decompose and the curve return to the diagonal — and watch isotonic overfit when you shrink the calibration set.')}
 
 <p>Measure the result with three complementary tools, not one. A <b>reliability diagram</b> — predicted probability on one axis, observed frequency in that bin on the other — is the visual the labs above draw; read it by eye first. The <b>Brier score</b>, the mean squared error between predicted probability and outcome, is the single number, and it decomposes cleanly into a calibration term (how far predictions sit from the diagonal) and a refinement term (how much the predictions vary at all — a model that always predicts the base rate is perfectly calibrated and completely useless, scoring badly on refinement while scoring perfectly on calibration). <b>Expected calibration error</b> averages the gap between predicted and observed frequency across bins, weighted by how many examples land in each. Always fit the calibrator on a split the model never trained on — fitting it on the training fold reintroduces exactly the optimism §2.1's train/validation/test discipline exists to prevent, and the calibrator will report a diagonal that vanishes the moment fresh data arrives.</p>
 
@@ -119,13 +119,13 @@ ${H.worked('worked conformal interval', `
 
 <p>Why does taking the $\\lceil(n+1)(1-\\alpha)\\rceil$-th smallest residual, rather than something simpler like the $(1-\\alpha)$ percentile of a Gaussian fit, produce an exact guarantee? Because of a symmetry argument that needs nothing about the model's correctness. If the calibration point and a genuine future point are exchangeable — interchangeable in distribution, so swapping which one you call "the new point" changes nothing about the joint distribution of scores — then the future point's nonconformity score is, before you see it, equally likely to land in any of the $n+1$ possible rank positions among the $n$ calibration scores plus itself. Setting the threshold at the $\\lceil(n+1)(1-\\alpha)\\rceil$-th smallest calibration score means the future score exceeds it in at most a $\\alpha$ fraction of those equally-likely rank positions — which is exactly the coverage guarantee, derived from counting, not from any assumption about what the model computed.</p>
 
-${H.lab('conformal', 'Split conformal, end to end', 'Residuals ranked, the quantile taken, the interval applied to fresh data — and then the coverage measured on that fresh data. Move α and watch the empirical coverage track the promise. Turn on drift and watch the guarantee break exactly as the theory says it should.')}
-
 <p><b>What you are looking at.</b> A curved function is being predicted with a slightly-wrong model, drawn as the solid blue line. The shaded band around it, of constant width $2q$, is the conformal prediction interval computed from the calibration procedure above. Fresh test points land inside the band (drawn faint) or outside it (drawn red), and the readout tallies what fraction actually landed inside — the empirical coverage — against the promised $1-\\alpha$.</p>
 
 <p><b>What to do with it.</b> With drift off, move $\\alpha$ across its range and watch the empirical coverage track $1-\\alpha$ closely at every setting, even though the underlying model is visibly not the true function. That tracking is the guarantee working exactly as derived — it never required the model to be right, only the calibration set to be a fair sample of what is coming.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Switch drift on. The empirical coverage collapses well below the promised level, because the calibration set and the test set are no longer exchangeable — the test distribution has moved to somewhere the calibration quantile was never computed for. Nothing about the maths announces this failure in advance; the band still gets drawn, still looks reassuring, and simply stops being true. Now leave drift off and switch on heteroskedastic noise instead: the band stays a constant width everywhere, too wide where the curve is easy to predict and too narrow where it is hard, because plain split conformal has no mechanism for admitting "this region is harder" — that is precisely the gap that normalised and Mondrian conformal variants close, by scaling the nonconformity score by a local difficulty estimate before taking the quantile.</p>
+
+${H.lab('conformal', 'Split conformal, end to end', 'Residuals ranked, the quantile taken, the interval applied to fresh data — and then the coverage measured on that fresh data. Move α and watch the empirical coverage track the promise. Turn on drift and watch the guarantee break exactly as the theory says it should.')}
 
 <p>Why this matters for a real decision: a calibrated point probability tells you the average is right; a conformal set tells you <b>when the model does not know</b>. In credit that is the difference between an automatic decline and a referral to manual review, and "we route wide prediction sets to a human" is a substantially stronger answer in a validation meeting than "we picked a threshold and hoped."</p>
 
@@ -381,13 +381,13 @@ ${H.table(['', 'ACTUAL +', 'ACTUAL −'], [
 
 ${H.key('Accuracy on an imbalanced problem is not a weak metric — it is close to meaningless. On a 1%-positive problem, predicting "no" for everyone scores 99% and catches nothing. Never quote accuracy without quoting the base rate next to it.')}
 
-${H.lab('confusion', 'The threshold is the model’s real dial', 'One trained model, one slider. Watch precision, recall, F1, the confusion matrix, and the position on both curves move together. Nothing about the model changes — only where you cut it.')}
-
 <p><b>What you are looking at.</b> The left panel shows two overlapping histograms of the model's raw score — blue for the negative class, red for the positive one — with a vertical line marking wherever the threshold slider currently sits. The right panel is the live confusion matrix built from that same threshold, colour-coded by cell, with a small ROC curve underneath marking exactly where this threshold's false-positive and true-positive rate land on it.</p>
 
 <p><b>What to do with it.</b> Drag the threshold slider from one end to the other and read the five numbers in the readout as they move. Notice recall only ever increases as you lower the threshold — the model catches strictly more of the positives it was already catching, never fewer — while precision generally falls, because the additional flagged examples come from further out in the tail of the score distribution where the two classes overlap most. Watch the ROC-AUC readout throughout: it never moves, because nothing about the model or its ranking has changed, only where you sliced it.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Press the button that reproduces the 1%-positive worked example above, then hunt for the threshold that maximises accuracy. You will find it near the high end of the slider, where the model flags almost nothing — because with positives this rare, refusing to flag anyone is close to optimal for accuracy specifically, and yet it is the single worst possible threshold for actually catching fraud. That is the confusion matrix worked example, reproduced by your own hand on the slider rather than read off a table.</p>
+
+${H.lab('confusion', 'The threshold is the model’s real dial', 'One trained model, one slider. Watch precision, recall, F1, the confusion matrix, and the position on both curves move together. Nothing about the model changes — only where you cut it.')}
 
 <h2><span class="sn">2.13.2</span> ROC and PR are the same information, weighted differently</h2>
 
@@ -402,13 +402,13 @@ ${H.deriv('why ROC stays flattering while PR degrades as positives get rarer', [
       ['$\\text{precision} = \\dfrac{TPR\\cdot\\pi}{TPR\\cdot\\pi + FPR\\cdot(1-\\pi)} \\to 0 \\text{ as } \\pi \\to 0$', 'Rewrite precision in terms of the base rate $\\pi$ using $TP=TPR\\cdot P$ and $FP=FPR\\cdot N$. As $\\pi\\to0$, the denominator is dominated by the $FPR\\cdot(1-\\pi)$ term — an ocean of negatives contributing a trickle of false positives that nonetheless swamps the vanishing pool of true positives — so precision collapses toward zero even while FPR itself, and therefore the whole ROC curve, has not moved at all.']
     ], 'This is the entire mechanism behind "0.95 AUC, useless model": ROC-AUC is built from a ratio, FPR, that is structurally forgiving of a huge negative class, while PR-AUC is built from precision, a ratio that is not. Both curves are drawn from the same underlying confusion matrices; they simply weight the same false positives completely differently.')}
 
-${H.lab('roc', 'Same model, two stories', 'ROC and PR side by side on data whose imbalance you control. Push the positive rate to 1% and watch ROC stay beautiful while PR collapses — the single clearest demonstration of why a 0.95 AUC can be useless.')}
-
 <p><b>What you are looking at.</b> Two panels built from the identical scored population: the ROC curve on the left, precision-recall on the right, with the readout reporting ROC-AUC, PR-AUC (sometimes called average precision), Gini and KS for whatever positive rate and model quality you have set.</p>
 
 <p><b>What to do with it.</b> Hold model quality fixed and drag the positive-rate slider down toward its minimum. Watch the ROC curve on the left barely change shape at all, while the PR curve on the right visibly sags and its area shrinks — the derivation above, happening in front of you rather than on paper.</p>
 
 <p><b>The thing genuinely worth noticing.</b> At the lowest positive rate the lab allows, read both AUC numbers side by side: it is entirely possible to see a ROC-AUC above 0.90 sitting next to a PR-AUC well under 0.5, on the exact same model. Neither number is wrong. They are answering different questions, and under heavy imbalance only one of those questions — precision, and by extension PR-AUC — describes what a human reviewing the flagged cases will actually experience.</p>
+
+${H.lab('roc', 'Same model, two stories', 'ROC and PR side by side on data whose imbalance you control. Push the positive rate to 1% and watch ROC stay beautiful while PR collapses — the single clearest demonstration of why a 0.95 AUC can be useless.')}
 
 ${H.key('Under heavy class imbalance, report both ROC-AUC and PR-AUC, and operate on PR. ROC-AUC compares model quality; PR-AUC tells you whether the model is deployable at all.')}
 
@@ -435,13 +435,13 @@ $$p^* = \\frac{C_{FP}}{C_{FP}+C_{FN}} = \\frac{60}{60+900} = \\frac{60}{960} = 0
 <p>So the operating threshold is <b>6.25%</b>, a long way from 0.5. Nothing about the model changed; the business asymmetry chose the cut. Use 0.5 and you would approve everyone up to a 50% default probability, which given these costs would be catastrophically expensive — which is why <mark>"threshold 0.5" is almost never the right answer to a cost-sensitive problem</mark>, and why §2.12's insistence on calibrated probabilities matters here specifically: this formula computes a cut on the value of $p$ itself, so if $p$ is inflated or deflated by the kind of monotone distortion §2.12 describes, the threshold you compute is a cut at the wrong <i>true</i> probability even though the arithmetic above is flawless.</p>
 <p>The senior addition: costs are rarely constant across applicants. Loss given default scales with exposure — a defaulted £50,000 mortgage and a defaulted £500 overdraft are not the same $C_{FN}$ — so the decision is really a per-application expected-value calculation, and the "threshold" becomes a surface across exposure and probability rather than a single number quoted in a policy document.</p>`)}
 
-${H.lab('cost', 'Cost-optimal threshold calculator', 'Set the two costs and the model’s scores; the optimal cut, the expected cost curve, and the money left on the table by using 0.5 are all computed.')}
-
 <p><b>What you are looking at.</b> The curve plots expected cost per application, in pounds, against every possible decision threshold from 0.01 to 0.99. The green dot marks the threshold that empirically minimises that curve on the scored population; the red dot marks the cost of using 0.5 regardless.</p>
 
 <p><b>What to do with it.</b> Set the two cost sliders to the worked example's £900 and £60 and confirm the green dot sits at roughly 0.0625 — the empirical minimum tracking the formula derived above exactly, because the underlying scores in this lab are genuinely calibrated. Then push the costs toward equal and watch the green dot slide back toward 0.5, confirming that 0.5 is not wrong in general — it is exactly right in the one special case the formula predicts.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Read the "money left on the table" readout at the default £900/£60 split: it is the gap between the red and green dots' heights, multiplied out per application. Multiply that per-application figure by a realistic monthly application volume in your head, and the abstract "threshold 0.5 is often wrong" becomes a concrete number a finance director would recognise as real money — which is precisely the pitch that gets a cost-sensitive threshold shipped instead of quietly overridden back to 0.5 by whoever inherits the model next.</p>
+
+${H.lab('cost', 'Cost-optimal threshold calculator', 'Set the two costs and the model’s scores; the optimal cut, the expected cost curve, and the money left on the table by using 0.5 are all computed.')}
 
 <h2><span class="sn">2.13.4</span> Lift and gains — the table a business actually reads</h2>
 
@@ -461,13 +461,13 @@ ${H.table(['decile (1 = riskiest)', 'bads in decile', 'share of all bads', 'cumu
 
 <p>The relabelling is not a coincidence, and it is worth being able to say why out loud. A cumulative gains curve — cumulative share of bads caught on the y-axis, cumulative share of the population reviewed on the x-axis — is, point for point, the same curve as an ROC curve with true positive rate and a rescaled x-axis: reviewing the top $k\\%$ of the population by score is exactly the operating point where you are catching $TPR$ at whatever $FPR$ that cut-off happens to produce, and the ROC curve's own x-axis is a monotone reparameterisation of "population reviewed." Learn to move fluently between the two representations, because the ROC curve is what you compute and validate against, and the gains table is what actually gets presented — "review the riskiest fifth and catch two-thirds of the losses" and "AUC 0.78" are, quite literally, the same sentence spoken in two different rooms.</p>
 
-${H.lab('lift', 'Deciles, lift and cumulative gains', 'The same scores as the ROC lab, in the business’s units. The table updates with the model quality slider — and the gains curve is exactly the ROC curve with the axes relabelled.')}
-
 <p><b>What you are looking at.</b> The bar chart on the left shows each decile's share of all bads, with the top two deciles picked out in a different colour and a dashed line at 10% marking what a random, scoreless decile would carry. The line on the right is the cumulative gains curve built from the same deciles, against the diagonal a random ranking would produce.</p>
 
 <p><b>What to do with it.</b> Drag model quality down toward its minimum and watch the decile bars flatten toward the 10% dashed line — a model with no real signal cannot concentrate bads into its riskiest decile any better than a coin flip could, and the gains curve correspondingly collapses onto the diagonal.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Push model quality back up to its maximum and compare the shape of the gains curve here to the ROC curve in the previous lab, on the same underlying scores. They bow in exactly the same way, because they are the same curve — the exercise is not abstract once you have watched both labs respond identically to the same slider.</p>
+
+${H.lab('lift', 'Deciles, lift and cumulative gains', 'The same scores as the ROC lab, in the business’s units. The table updates with the model quality slider — and the gains curve is exactly the ROC curve with the axes relabelled.')}
 
 <h2><span class="sn">2.13.5</span> For regression targets, the same choice recurs in a different shape</h2>
 
@@ -786,13 +786,13 @@ ${H.probe([
 
 ${H.analogy(`<p>Rolling-origin backtesting is a driving test administered the way real driving actually works: you never get examined on a road you already memorised the exam route for. Each origin date is a fresh exam — everything you have seen so far is fair preparation, everything after the exam date is unseen road — and taking the test four times at four different points in your training tells the examiner something a single pass-or-fail on one route cannot: whether you are a driver who generalises, or one who happened to memorise last Tuesday's particular junctions.</p>`)}
 
-${H.lab('cv', 'Every validation scheme, drawn', 'Switch between schemes and watch which rows are used for what. The group and time-series views make the failure modes obvious: a random fold splits a customer across train and validate, and a random fold on time trains on the future.')}
-
 <p><b>What you are looking at.</b> Each coloured row is one round of the selected scheme: blue cells are rows used for training that round, red cells are the validation rows, amber marks an inner tuning fold under nested CV, and grey marks rows not yet reached in a time-ordered scheme. The strip of forty cells along each row is the dataset itself, laid out left to right in whatever order the scheme cares about — arbitrary row order for k-fold, calendar order for out-of-time and rolling origin.</p>
 
 <p><b>What to do with it.</b> Switch to "group k-fold" and look for the small "g0", "g1" labels marking which customer group each column belongs to — notice every column sharing a group label stays the same colour within a round, never split between blue and red. Switch to "out-of-time" and watch the red block sit entirely to the right of every blue cell, with nothing interleaved. Switch to "nested CV" and watch the amber inner-tuning block rotate independently of the red outer-validation block within each round.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Switch to "stratified k-fold" and look at the white ticks marking positive-labelled rows: count them per fold and they land close to even, whereas switching to plain "k-fold" on the identical underlying data can leave some folds visibly tick-sparse and others tick-heavy, purely from where the random cut fell. The visual difference is the entire justification for stratification, with no formula required.</p>
+
+${H.lab('cv', 'Every validation scheme, drawn', 'Switch between schemes and watch which rows are used for what. The group and time-series views make the failure modes obvious: a random fold splits a customer across train and validate, and a random fold on time trains on the future.')}
 
 <h2><span class="sn">2.14.2</span> Measuring the lie, not just naming it</h2>
 
@@ -808,13 +808,13 @@ ${H.deriv('the entity-leakage bound, in the noise-free limit', [
       ['The predicted label is uncorrelated with the true one: $\\mathrm{AUC} \\to 0.5$.', 'With no learnable signal and no leakage to exploit, a nearest-neighbour classifier does exactly as well as a coin flip — which is the honest answer, because a coin flip is, by construction, all there ever was to learn here.']
     ], 'The two limits, 1.0 and 0.5, are not a hypothetical worst case dreamt up for effect — they are the exact bookends of what entity leakage can do to a validation score, achieved here with a model that is not even trying to cheat. A gradient-boosted model with enough capacity to fit small idiosyncrasies of individual rows behaves the same way for the identical reason, just with a smaller and messier gap; the direction of the bias is never in doubt, only its size.')}
 
-${H.lab('leak-cv', 'How much does the wrong scheme lie by?', 'The same data with an entity structure and a time trend, evaluated four ways. The gap between the random-k-fold number and the out-of-time number is the size of the lie — computed, not asserted.')}
-
 <p><b>What you are looking at.</b> Three bars, each the mean AUC of an actual logistic regression trained and validated five times under a different scheme, on the same synthetic population: random k-fold, group k-fold, and out-of-time, with a "rows per customer" and a "strength of the time trend" slider controlling how much entity structure and drift are baked into the data.</p>
 
 <p><b>What to do with it.</b> Start with "rows per customer" near its minimum, where there is barely any entity structure to leak, and note the three bars sit close together. Now raise it toward its maximum and watch the random k-fold bar climb well above the other two — the derivation above, playing out on a real trained model rather than an idealised nearest-neighbour toy.</p>
 
 <p><b>The thing genuinely worth noticing.</b> The readout's "size of the lie" converts the gap between random k-fold and out-of-time into basis points. Push both sliders to their maximum simultaneously and watch that number become large enough that, translated into a real credit book, it is the difference between a model a validator signs off on and one they send back — computed live from a model you can watch being trained, not a claim you have to take on faith.</p>
+
+${H.lab('leak-cv', 'How much does the wrong scheme lie by?', 'The same data with an entity structure and a time trend, evaluated four ways. The gap between the random-k-fold number and the out-of-time number is the size of the lie — computed, not asserted.')}
 
 <h2><span class="sn">2.14.3</span> Nested CV — validating the search, not just the model</h2>
 
@@ -1012,25 +1012,25 @@ ${H.deriv('why the distinct-values gap between grid and random grows with dimens
       ['Matching budgets, $n = m^d$: random tests $m^d$ distinct values of the important axis; grid tests $m$.', 'Substitute the shared budget. The ratio $m^d / m = m^{d-1}$ is the exact size of random search\'s advantage on the one axis that actually matters, and it grows without bound as $d$ grows, for a fixed per-axis resolution $m$.']
     ], 'Plug in the lab\'s own numbers as a sanity check: $d=2$, $m=3$, budget $n=9=3^2$. Random\'s advantage is $m^{d-1} = 3^1 = 3$ — exactly the 3-vs-9 distinct-value gap computed above. In six dimensions with the same per-axis resolution, the advantage becomes $3^5 = 243$-fold. This is the substance of Bergstra & Bengio\'s 2012 result: not that random search is a clever trick, but that a grid\'s structure actively fights the fact that most axes do not matter.')}
 
-${H.lab('search', 'Why random beats grid', 'The yellow band is the region where the one hyperparameter that matters is well set. Grid samples that band three times with the same value of the important axis; random samples it three times with three different values — and the readout counts how often each strategy finds a good configuration.')}
-
 <p><b>What you are looking at.</b> Two scatter panels share the same axes: the horizontal one is the hyperparameter that actually determines quality, the vertical one is a hyperparameter that does nothing. The amber band marks where the important axis is well set. Left panel is grid's trial points, right panel is random's, both drawn from the same evaluation budget.</p>
 
 <p><b>What to do with it.</b> Leave the budget at its default and count the grid dots' x-coordinates by eye: they fall on a handful of repeated vertical lines. The random panel's dots scatter across the whole width with no repeated x-coordinate. Read the "distinct good values" readout for both — it is counting exactly the quantity the derivation above computed.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Narrow "width of the good region" toward its minimum, simulating a hyperparameter that needs to be hit quite precisely to matter. Grid's discrete columns can now miss the band entirely between two adjacent grid lines, reporting zero good trials, while random — sampling continuously — almost always lands at least one point inside no matter how narrow the target, simply by scattering everywhere rather than committing to a fixed lattice in advance.</p>
 
+${H.lab('search', 'Why random beats grid', 'The yellow band is the region where the one hyperparameter that matters is well set. Grid samples that band three times with the same value of the important axis; random samples it three times with three different values — and the readout counts how often each strategy finds a good configuration.')}
+
 <p><b>Bayesian optimisation</b> and its close relative TPE (tree-structured Parzen estimators) go a step further than either grid or random: after each evaluation, fit a cheap surrogate model of "how does the score depend on the hyperparameters so far," and choose the next point to evaluate where that surrogate predicts either a high score or high uncertainty — exploiting what looks promising while still exploring where you know the least. This pays for its own overhead specifically when each real evaluation is expensive — a large neural network trained for days, say — because the surrogate model's fitting cost is trivial by comparison and the informed choice of where to look next can save whole evaluations that grid or random would have wasted on clearly unpromising regions.</p>
 
 <p><b>Successive halving</b> attacks the problem from an entirely different angle: instead of choosing evaluations more cleverly, spend less on each one until it has earned more. Start many configurations on a small budget — a handful of training epochs, a subsample of the data — rank them by their early performance, discard the worse half (or worse $1/\\eta$ fraction, for a cut factor $\\eta$), and give the survivors a larger budget. Repeat until one configuration remains. <b>Hyperband</b> is successive halving run at several different starting-budget-versus-number-of-configurations trade-offs simultaneously, because successive halving alone has one weak spot worth naming honestly: cutting on an early, noisy estimate can eliminate a genuinely good configuration that simply had a bad early run, and Hyperband hedges that risk by also trying brackets that give more configurations a longer initial look.</p>
-
-${H.lab('halving', 'Successive halving, running', 'Configurations are trained on increasing budgets, with the worst half cut at each rung. Watch the total compute spent versus a full-budget random search that finds the same winner.')}
 
 <p><b>What you are looking at.</b> Each row is one rung of the tournament: blue cells are configurations still alive at that budget, green marks the configuration that is genuinely best (known here because this is a simulation), and the rung's assigned budget is labelled on the left. Configurations vanish from row to row as the worst fraction is cut.</p>
 
 <p><b>What to do with it.</b> Leave noise near zero and watch the green cell survive every cut, reaching the final rung — with clean early signal, halving reliably finds the true best while spending only a fraction of what evaluating every configuration at full budget would have cost, exactly as the "compute used" versus "full-budget search would cost" readout quantifies.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Raise "noise in early estimates" and watch the green cell sometimes vanish at an early rung, cut on a bad early read despite being the true best configuration. This is not a bug in the method, it is the honest price of the entire strategy: successive halving buys enormous compute savings by trusting early, noisy estimates, and occasionally that trust is misplaced. Hyperband's answer is to run several brackets side by side rather than betting everything on one aggressive cutting schedule — a hedge against exactly this failure, not a way to eliminate it.</p>
+
+${H.lab('halving', 'Successive halving, running', 'Configurations are trained on increasing budgets, with the worst half cut at each rung. Watch the total compute spent versus a full-budget random search that finds the same winner.')}
 
 <h2><span class="sn">2.15.2</span> Stacking, and why banks rarely ship it</h2>
 
@@ -1235,13 +1235,13 @@ $$\\sum_i \\phi_i = f(x) - \\mathbb{E}[f]$$
 
 <p>Computing this by brute force means summing over every ordering, and the number of orderings is $d!$ — 6 for three features, 24 for four, and already 3,628,800 for ten. <b>TreeSHAP</b> exploits the specific structure of a decision tree to compute the exact same quantity in time polynomial in the number of trees, leaves and depth, by tracking, for every path through the tree, how many orderings are consistent with that path having been reached — a combinatorial shortcut, not an approximation, which is precisely why it is the default for gradient-boosted models. <b>KernelSHAP</b> makes no assumption about the model at all: it samples a manageable number of coalitions, computes $v(S)$ for each by querying the model, and solves a specially-weighted linear regression whose coefficients converge to the Shapley values as the sample grows — general-purpose, but a sampling approximation, and considerably slower than TreeSHAP's exact polynomial-time route on the tree ensembles this course ships most often.</p>
 
-${H.lab('shap', 'Exact Shapley values, computed over all orderings', 'Four features, sixteen coalitions, twenty-four orderings — small enough to compute the definition directly rather than approximate it. Change the inputs and watch the waterfall rebalance, always summing exactly to the prediction minus the base rate.')}
-
 <p><b>What you are looking at.</b> A waterfall chart starting from $\\mathbb{E}[f(x)]$, the base rate, on the left. Each bar is one feature's exact Shapley value $\\phi_i$ for the current applicant, ordered by magnitude, red for driving the score up and blue for pulling it down, stacking left to right until the final bar lands exactly on $f(x)$, this applicant's actual prediction.</p>
 
 <p><b>What to do with it.</b> Drag any slider — utilisation, enquiries, tenure, income band — and watch every bar in the waterfall resize at once, not just the one you touched: because the underlying model has genuine interactions, changing one feature changes the marginal contribution every other feature is credited with, exactly as the hand-worked example above showed for utilisation and enquiry together.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Watch the "Σφᵢ (must equal the gap)" and "efficiency holds?" readouts at every setting you try. They match to machine precision, always — this is 24 orderings of four real features being summed in your browser, live, not a stylised illustration, and the efficiency property is not asserted anywhere in this lab, it falls out of the arithmetic every single time.</p>
+
+${H.lab('shap', 'Exact Shapley values, computed over all orderings', 'Four features, sixteen coalitions, twenty-four orderings — small enough to compute the definition directly rather than approximate it. Change the inputs and watch the waterfall rebalance, always summing exactly to the prediction minus the base rate.')}
 
 <h2><span class="sn">2.17.3</span> Reason codes, mechanically</h2>
 
@@ -1424,13 +1424,13 @@ ${H.table(['bin', 'expected share $e_i$', 'actual share $a_i$', 'contribution $(
 
 ${H.flag('That is the same Jeffreys-divergence form as IV in §2.11, with different inputs (expected-vs-actual population shares here, good-vs-bad class shares there) — and the 0.1/0.25 thresholds are industry convention, not derived from any type-I error rate or hypothesis test. State them as convention and you sound like someone who has actually read the maths behind the number, rather than someone reciting a rule of thumb as though it were a proof.')}
 
-${H.lab('psi', 'PSI, computed on two distributions you control', 'Drag the actual distribution away from the expected one and watch PSI cross the conventional bands. The per-bin contributions show which part of the population moved — which is the diagnostic, not the total.')}
-
 <p><b>What you are looking at.</b> Two overlaid histograms across the same bins — blue for the expected, training-time distribution, red for the actual, current one — with amber labels marking whichever bins are contributing most heavily to the PSI total shown in the readout.</p>
 
 <p><b>What to do with it.</b> Drag the mean-shift slider slowly away from zero and watch the PSI readout climb through the conventional bands one at a time, while the amber labels concentrate on whichever tail is moving. Then reset the shift to zero and instead widen the spread — PSI still rises, from a population that has not moved on average at all, just become more dispersed, which is a genuinely different kind of drift than a shift and worth being able to tell apart from the shape of the two histograms rather than the PSI number alone.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Produce a PSI just above 0.25 two different ways — once with a large mean shift and narrow spread, once with no mean shift and a large spread change — and compare the amber-highlighted bins in each case. The total can be identical while the diagnosis is completely different: one is "a new type of applicant has arrived," the other is "the same applicants have become more heterogeneous." A PSI figure without its per-bin breakdown collapses that distinction, which is exactly why a validator will always ask to see the bins, not just the summary statistic.</p>
+
+${H.lab('psi', 'PSI, computed on two distributions you control', 'Drag the actual distribution away from the expected one and watch PSI cross the conventional bands. The per-bin contributions show which part of the population moved — which is the diagnostic, not the total.')}
 
 <h2><span class="sn">2.18.3</span> Retraining and rollout, as a written policy rather than a judgement call</h2>
 
@@ -1497,13 +1497,13 @@ ${H.worked('reading a Cox coefficient as a hazard ratio', `
 
 <p>What it obliges you to check is the assumption baked into the name: <b>proportional hazards</b> means the ratio between any two accounts' hazards stays constant over time, and that is a real, falsifiable assumption rather than a formality. If a covariate's effect genuinely changes shape over the life of a loan — a recent-enquiry flag that predicts risk sharply in month 2 but says almost nothing by month 24, say — the plain Cox model is misspecified, and the standard diagnostic is to test the covariate's <b>Schoenfeld residuals</b> for a trend over time; a flat trend supports proportionality, a sloped one contradicts it. Know the modern alternative too: gradient boosting fitted against a survival objective — Cox's partial likelihood, or an accelerated-failure-time loss — typically beats a linear Cox model on raw discrimination while keeping the same honest treatment of censoring, at the usual cost of trading away the clean, single-coefficient hazard-ratio story a committee can read off a table.</p>
 
-${H.lab('km', 'Kaplan–Meier and censoring', 'Two cohorts, with censoring you control. Watch what happens to the naive "default rate" when censored accounts are scored as negatives — and watch the KM curve stay honest.')}
-
 <p><b>What you are looking at.</b> Two Kaplan–Meier survival curves, one per cohort, each starting at $S(0)=1$ and stepping down at every genuine default event within the 12-month window; short tick marks along each curve mark where an account was censored rather than defaulted. The readout compares the naive default rate — treating every censored account as a survivor — against the Kaplan–Meier estimate on the same simulated data.</p>
 
 <p><b>What to do with it.</b> Raise the censoring-rate slider and watch the gap between "naive" and "Kaplan–Meier" in the readout widen steadily — more accounts with genuinely unresolved fates means more that the naive method silently counts as goods, exactly the mechanism the worked table above computed by hand on ten accounts.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Push censoring high and compare how visually smooth and honest the KM curve remains against how badly the single naive percentage misleads at the same setting. In a 12-month PD model with heavy attrition — accounts closing early, customers churning to a competitor before their window completes — this is not a hypothetical distortion; it is a systematic optimism that no amount of feature engineering fixes, because the naive rate's problem was never about the features, it was about which accounts were allowed to count as evidence at all.</p>
+
+${H.lab('km', 'Kaplan–Meier and censoring', 'Two cohorts, with censoring you control. Watch what happens to the naive "default rate" when censored accounts are scored as negatives — and watch the KM curve stay honest.')}
 
 <h2><span class="sn">2.18.5</span> Time series and recommenders, briefly</h2>
 
@@ -1712,13 +1712,13 @@ ${H.intuition(`<p>Picture a tailor with one pattern trying to fit two people of 
 
 ${H.flag('This is where the field genuinely disagrees, not merely on implementation but on the underlying value judgement, and it is worth stating both sides honestly rather than picking a winner. One camp argues equalised odds should take priority: calibration can be satisfied by a model that has simply learned and reproduced a historically biased base rate, so insisting on calibration risks laundering that history as "accuracy." The other camp argues calibration is close to non-negotiable the moment the number feeds pricing or an expected-loss calculation (§2.12): an uncalibrated "20% risk" that means 35% for one group is not a fairness improvement, it is a different kind of harm, arguably a more concrete and more immediately measurable one. Both positions are held by serious, technically fluent people, and the honest professional answer is not to assert one is simply correct — it is to name the trade-off explicitly, state which criterion the deployment context makes non-negotiable (calibration is close to mandatory wherever the number sets a price), and document that the choice was made deliberately rather than defaulted into.')}
 
-${H.lab('fair', 'The impossibility, made concrete', 'Two groups with different base rates. Try to satisfy calibration within groups and equalised odds at the same time — the readout will tell you exactly how far you are from each, and you will not reach zero on both unless you equalise the base rates or make the classifier perfect.')}
-
 <p><b>What you are looking at.</b> Five paired bars, blue for group A and red for group B, each showing one metric — approval rate, TPR, FPR, precision, and the observed default rate among applicants scored near the current threshold — computed from actual scored populations whose true base rates and decision thresholds you control.</p>
 
 <p><b>What to do with it.</b> Press "equal thresholds" and watch the calibration bars (observed risk at the threshold) line up closely across groups, while the TPR and FPR bars sit visibly apart — a calibrated model, unequal odds. Press "try to equalise approval rates" instead and watch the reverse: the top bars converge while the calibration bars pull apart.</p>
 
 <p><b>The thing genuinely worth noticing.</b> Press the third button, which equalises the two groups' true base rates rather than touching any threshold. Every gap in every row collapses toward zero at once, with no per-group tuning at all — the single free variable that actually resolves the impossibility is the one thing a classifier can never change: the real underlying difference in risk between the two populations. Move the base rates apart again and every gap reopens no matter how cleverly you set the two thresholds, which is the theorem, not an artefact of this particular simulation.</p>
+
+${H.lab('fair', 'The impossibility, made concrete', 'Two groups with different base rates. Try to satisfy calibration within groups and equalised odds at the same time — the readout will tell you exactly how far you are from each, and you will not reach zero on both unless you equalise the base rates or make the classifier perfect.')}
 
 <h3>Two ways the picture so far is still too simple</h3>
 
