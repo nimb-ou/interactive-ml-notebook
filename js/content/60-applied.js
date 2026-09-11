@@ -1178,19 +1178,19 @@ ${H.probe([
         q: 'Model A: $0.004/call, 62% success. Model B: $0.021/call, 91%. With 4 calls per attempt and human escalation at $1.80, which is cheaper per successful task?',
         options: ['A, by 5×', 'B, by roughly 3×', 'They are equal', 'Cannot be determined'],
         answer: 1,
-        why: '≈$0.29 vs ≈$0.11 once retries and escalation are priced. Per-call dashboards actively mislead here.'
+        why: 'Cost per successful task prices the whole attempt, not one call: model A costs $0.016 per attempt but only succeeds 62% of the time, so it needs about 1.61 attempts on average and fails twice (0.38² ≈ 14.4% of the time) badly enough to need a $1.80 human escalation, landing near $0.29 per success. Model B costs more per call but needs only 1.10 attempts and escalates on just 0.8% of tasks, landing near $0.11 — genuinely cheaper despite the higher sticker price. "A, by 5×" is the tempting answer because $0.021/$0.004 really is roughly five, and that is exactly what a naive per-call dashboard would report — it is not a wrong calculation, it is the wrong quantity, since it prices one call in isolation and ignores that A fails more than a third of the time. The general lesson, from §5.7.2, is that any metric computed per call rather than per successful outcome silently rewards a model for failing cheaply.'
       },
       {
         q: 'The only control that works against an injection attack you have not imagined is…',
         options: ['an input filter', 'least-privilege tools', 'a stricter system prompt', 'a larger model'],
         answer: 1,
-        why: 'It removes the capability rather than trying to detect the attempt. Filters catch known patterns only.'
+        why: 'Least-privilege tools work against an unimagined attack because they remove the capability the attack would need, rather than trying to recognise the attack itself — an agent with no tool that can transfer money cannot be talked into transferring money, whatever the injected text says, because the action is not available for it to invoke at all. "A stricter system prompt" is the most tempting wrong answer because it operates on the same channel the attack arrives through — text — so it feels like the natural first line of defence, but §5.7.3 shows this failing directly: with only the stricter prompt on, the model tries to comply with the injected instruction anyway, because the model consumes one undifferentiated token stream with no structural marker for "trusted instruction" versus "retrieved content." "An input filter" is tempting for the same reason and fails for a related one: filters catch known patterns, and the whole point of "an attack you have not imagined" is that it will not match a known pattern. The general principle is §5.7.3\'s core claim that injection defences must be architectural, not textual — permission boundaries, not prompt wording.'
       },
       {
         q: 'Deleting a customer’s data from your system must include…',
         options: ['the database only', 'the vector index too — it is a copy of the data', 'the logs only', 'nothing extra'],
         answer: 1,
-        why: 'A chronically late discovery. Embeddings are derived data and retention/deletion obligations reach them.'
+        why: 'A vector index is built specifically to make retrieved data searchable, so once a customer\'s documents have been embedded and indexed, deleting only the row in the primary database leaves a fully searchable copy of their content sitting in the index, retrievable by any RAG query that happens to match it. "The database only" is the tempting answer because the primary database is the obvious store of record, and it is easy to think of a vector index as infrastructure rather than as another place the underlying data actually lives — but embeddings are derived data, and derived does not mean deleted-by-implication. The general principle, from §5.7.5, is that retention and deletion obligations reach every place data has been copied, cached, or indexed, and teams that treat "delete the customer\'s record" as a single-database operation discover this gap expensively and late.'
       }
     ],
     cards: [
@@ -1342,7 +1342,7 @@ ${H.lab('drill5', 'Part 5 drill', 'Fifteen prompts from the applied stack.')}`,
         q: 'The gate between every pair of rungs on the ladder is…',
         options: ['a budget approval', 'does the private eval pass?', 'a security review', 'a model upgrade'],
         answer: 1,
-        why: 'Escalate on evidence, never on ambition. If you cannot answer the eval question, you have not earned the next rung.'
+        why: 'The ladder\'s discipline is to climb only when a measured evaluation on your own tasks shows the current rung actually failing, because every rung up buys a new class of failure — latency, cost, non-determinism, a training pipeline to maintain — that has to be justified by evidence rather than by how capable the next rung sounds. Only a private eval built from your own tasks (§5.11) can supply that evidence; a public benchmark score cannot, since it says nothing about your documents, your tools or your failure costs. "A security review" is the tempting wrong answer because it sounds like exactly the serious, appropriate gate for something like handing an agent real tool access — but a security review answers "is this safe to run," not "do we actually need to run it," and a system can pass a security review while sitting on a rung it never earned. "A budget approval" fails for a related reason: cost is a symptom of having climbed, not a test of whether climbing was warranted. The general principle, stated directly in this section\'s lede, is escalate on evidence, never on ambition.'
       }
     ]
   });

@@ -1948,7 +1948,7 @@ ${H.lab('drill2', 'Part 2 drill', 'Eighteen prompts, shuffled. Answer aloud befo
         q: 'Which single Part 2 idea is used by the most other sections?',
         options: ['t-SNE', 'The bias–variance decomposition', 'DBSCAN', 'MAPE'],
         answer: 1,
-        why: 'It frames model choice (2.2), regularisation (2.3), ensembles (2.7–2.8), validation (2.14) and tuning (2.15).'
+        why: 'Bias² + variance + irreducible noise is the lens the rest of Part 2 keeps reaching for whenever it needs to justify a design choice: why added flexibility helps only up to a point (§2.2), why regularisation deliberately trades bias for variance (§2.3), why bagging and boosting attack variance and bias from opposite directions (§2.7–2.8), and why the validation protocol exists at all (§2.14) — it is shared vocabulary underneath all of them, not one topic sitting alongside them. "t-SNE" and "DBSCAN" are tempting mainly because they are memorable, visually distinctive techniques from earlier in Part 2, but each is a self-contained tool for one job — visualisation, density clustering — that the rest of Part 2 never needs to invoke to make its own arguments. "MAPE" is a single evaluation metric, useful in its own narrow context (§2.13) but not a framework other sections build on top of. The general principle is that some ideas in a course are terminal facts and some are load-bearing infrastructure other sections depend on, and bias-variance is the clearest example of the second kind, which is why §2.2 develops it before anything that needs it.'
       }
     ]
   });

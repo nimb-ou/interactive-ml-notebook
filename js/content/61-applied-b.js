@@ -168,19 +168,19 @@ ${H.probe([
         q: 'Small-to-big retrieval means…',
         options: ['start with a small model, escalate', 'embed small chunks for precise matching but return their larger parent for context', 'chunk smaller as the corpus grows', 'retrieve fewer documents over time'],
         answer: 1,
-        why: 'It decouples the unit you match on from the unit you answer with, which is the cleanest resolution of the precision/completeness trade.'
+        why: 'Small-to-big works by decoupling the unit you match on from the unit you hand the model to answer with: index sentence-level chunks so each embedding is precisely about one thing, but return the surrounding parent section so the model has enough context to actually answer, which is the cleanest resolution of the precision/completeness trade §5.9.1 opens with. "Start with a small model, escalate" is the tempting wrong answer because "small-to-big" pattern-matches to a familiar idiom elsewhere in this course — start cheap and climb only when a cheaper option measurably fails, which is literally the decision ladder of §5.13 — but that idiom concerns model or method selection, and nothing about chunk retrieval swaps models at all. The general principle, from §5.9.2\'s table and the chunking lab, is that precision and completeness do not have to be traded against each other once you stop assuming the retrieval unit and the generation unit must be the same chunk.'
       },
       {
         q: 'The single cheapest improvement to chunk retrievability is usually…',
         options: ['a bigger embedding model', 'prepending the document title and section path to each chunk before embedding', 'more overlap', 'a larger k'],
         answer: 1,
-        why: 'It gives an otherwise contextless chunk something to match against, and costs one line of code.'
+        why: 'A chunk\'s embedding is computed from its own text alone, so a chunk that says "the limit is 4,096" carries no distinguishing signal to match a query against, while "API Reference → Rate Limits → the limit is 4,096" does — for the cost of one line of code prepending the heading before embedding (§5.9.3). "A bigger embedding model" is the tempting answer because a stronger embedding model is the reflexive fix for anything described as a retrieval problem, and it genuinely helps in general — but it solves the wrong layer here: a better model still faithfully embeds a contextless chunk as contextless, since it cannot invent context that chunking already discarded. "More overlap" only rescues an answer split across a chunk boundary; it does nothing for a chunk that is intact but ambiguous on its own, which is this failure mode. The general principle, from §5.9.1\'s pipeline diagram, is that quality lost upstream in parsing and chunking bounds everything downstream, and no amount of spend on the embedding model recovers it.'
       },
       {
         q: 'Re-embedding a 120M-token corpus costs roughly…',
         options: ['a few dollars', 'a few hundred dollars', 'a few thousand dollars', 'it is not feasible'],
         answer: 0,
-        why: 'At ~$0.02 per million tokens, about $2.80. Parsing correctly is the expensive part; embeddings are cheap and easy to redo.'
+        why: 'The worked box\'s own arithmetic gets you here: at 512-token chunks the 40,000-document corpus produces roughly 270,000 chunks, which at 512 tokens each is about 138M tokens actually sent to the embedding API — and at roughly $0.02 per million tokens that comes to about $2.80, comfortably "a few dollars." "A few hundred" or "a few thousand" dollars are the tempting, conservative-sounding guesses, since reprocessing an entire large corpus sounds like it should be expensive by default — but embedding is priced per token at a rate several orders of magnitude below most people\'s intuition for "processing 120 million tokens," and this specific number is worth memorising precisely so it never gets treated as a blocker to re-indexing. The general principle, stated directly at the end of the worked box, is that embeddings are nearly free and easy to redo while parsing is the expensive, hard-to-redo stage (§5.9.2) — which is exactly where re-engineering effort should go instead.'
       }
     ],
     cards: [
@@ -356,25 +356,25 @@ ${H.probe([
         q: 'The parameter you tune at query time to trade recall against latency in HNSW is…',
         options: ['M', 'efConstruction', 'efSearch', 'the number of layers'],
         answer: 2,
-        why: 'It is per-query and needs no rebuild. M and efConstruction are baked into the index at build time.'
+        why: 'efSearch controls the candidate-list size during the query itself, so it is the one HNSW parameter you can raise or lower per request with no rebuild, which is exactly what makes it the runtime recall/latency dial (§5.10.1). "efConstruction" is the most tempting wrong answer, since it shares nearly the same name and does genuinely determine how good the graph is — but it acts only at build time: changing it means re-running construction over the whole index, which is precisely what a per-query knob cannot require. "M" is baked in even more permanently, since it fixes how many edges each node gets when the graph is built, and changing it means building a structurally different graph. The general principle is to separate what is architecture, fixed once at build time, from what is a genuine runtime dial — the lab\'s recall-against-work curve is steep then flat specifically along the efSearch axis, which is what makes tuning it worthwhile.'
       },
       {
         q: 'Product quantisation with $m=64$ sub-spaces compresses a 1024-d float32 vector to…',
         options: ['1024 bytes', '256 bytes', '64 bytes', '16 bytes'],
         answer: 2,
-        why: 'One byte per sub-space (a 256-centroid codebook index): 4,096 bytes → 64 bytes, a 64× reduction.'
+        why: 'Each of the 64 sub-vectors is replaced by a single byte, the index into its own 256-centroid codebook (256 values fit exactly in one byte), so the uncompressed 1,024-dimensional float32 vector at 4,096 bytes becomes 64 bytes total — one byte per sub-space, a 64× reduction (§5.10.3\'s steps). "256 bytes" is the tempting wrong answer because 256 is the number sitting right there in the description, the centroid count per sub-space, and it is easy to conflate "256 possible codes per sub-space" with "256 bytes needed overall" if you do not track that the codebook size only determines what one byte can index, not how many bytes the compressed vector needs. "1,024 bytes" makes the related mistake of assigning one byte per dimension directly, skipping the step where quantisation first groups dimensions into sub-vectors. The general principle is the same one-byte-per-codebook-index arithmetic the section\'s memory table applies at scale, taking 10M vectors at 1,024-d from 41 GB flat down to 0.64 GB at 64 bytes per vector.'
       },
       {
         q: 'Pre-filtering a graph index by a highly selective predicate…',
         options: ['is the correct approach', 'breaks graph connectivity so the walk cannot reach the surviving nodes', 'is always faster', 'improves recall'],
         answer: 1,
-        why: 'Which is why real systems use filtered traversal — walk through non-matching nodes, collect only matching ones — with a brute-force fallback.'
+        why: 'An HNSW-style graph\'s edges connect nodes based on proximity across the whole dataset, so restricting the candidate set to a highly selective filter before searching removes most of the paths the walk relies on, and the traversal can get stranded far from the true nearest matching neighbours — in the worst case degenerating to a linear scan of just the filtered survivors (§5.10.2). "Is always faster" is the tempting answer because narrowing the search space before doing the work sounds like it should obviously cost less, mirroring how filtering data down before processing usually saves effort elsewhere in engineering — but here the filter is applied to a graph\'s traversal structure, not to a flat scan, and a fragmented graph can force the walk to do more work while still returning a worse result. The general principle is that filtered vector search needs filtered traversal — walk through non-matching nodes but only collect matching ones, with a brute-force fallback below some selectivity threshold — precisely because neither pre-filtering nor post-filtering respects how the graph is actually connected.'
       },
       {
         q: 'With 60,000 vectors, the right index is usually…',
         options: ['HNSW', 'IVF-PQ', 'flat exact search', 'DiskANN'],
         answer: 2,
-        why: 'A brute-force matrix multiply over 60k vectors takes single-digit milliseconds — less than the network round trip to a vector database.'
+        why: 'At 60,000 vectors, a brute-force matrix multiply against the query completes in single-digit milliseconds on ordinary hardware — faster than the network round trip to a vector database would even take — so building an approximate index is paying its build time, memory overhead and recall loss to solve a latency problem that does not yet exist at this scale. "HNSW" is the tempting answer precisely because the section introduces it as the default, and defaults are exactly what people reach for without first checking whether the underlying problem — searching millions to hundreds of millions of vectors quickly — actually applies; at 60k it does not. "IVF-PQ" and "DiskANN" make the same mistake at an even larger scale mismatch, since both exist specifically for corpora orders of magnitude bigger than this one. The general principle, from §5.10\'s own probe, is that the right question is never "which index is best" in the abstract but what recall and latency you actually need, and under roughly 100k vectors the honest answer is frequently no index at all.'
       }
     ],
     cards: [
@@ -562,25 +562,25 @@ ${H.probe([
         q: 'A 100-example eval with a pass rate near 70% has a 95% confidence interval of roughly…',
         options: ['±1 point', '±3 points', '±9 points', '±20 points'],
         answer: 2,
-        why: '$1.96\\sqrt{0.7\\cdot0.3/100} \\approx 0.09$. Most reported small improvements are inside this.'
+        why: 'Plugging into the standard-error formula for a proportion, $1.96\\sqrt{p(1-p)/n}$ with $p=0.7$ and $n=100$, gives roughly 0.09 — a 95% interval of about ±9 points, exactly what the eval-size lab\'s interval curve plots at n=100 (§5.11.1). "±3 points" is the tempting wrong answer because it is roughly the interval you would get after quintupling the sample to n≈500 — the lab\'s second reference line — so it is easy to misremember which sample size a "reasonably sized" eval set actually buys you. "±1 point" undershoots by close to an order of magnitude and would need an eval set in the thousands, not the hundreds. The general principle is that an eval score is a sample estimate with real sampling noise, and most reported 2–3 point gains measured on around 100 examples sit entirely inside this interval, indistinguishable from nothing (§5.11.1\'s tldr).'
       },
       {
         q: 'The cheapest fix for position bias in an LLM judge is…',
         options: ['a bigger judge model', 'evaluating each pair in both orders and averaging', 'raising the temperature', 'more examples'],
         answer: 1,
-        why: 'It cancels the bias exactly and gives you the flip rate as a free diagnostic.'
+        why: 'Position bias is a fixed offset favouring whichever slot an option happens to occupy, so judging each pair in both orders and averaging makes that offset cancel exactly, regardless of its size, and hands you the order-flip rate for free as a direct measure of how much of the signal was ever presentation rather than content (§5.11.2, the judge lab). "A bigger judge model" is the tempting answer because a stronger model is the reflexive fix for most quality problems in this stack, but position bias is documented as reproducible across model families — it does not shrink by choosing a better judge because it is a property of the judging setup, not of judge competence. "More examples" fails for a different reason: more data helps when the problem is noise, but position bias is systematic, so averaging more biased judgements just measures the biased number more precisely, not the true one. The general principle, organising the whole bias table in §5.11.2, is to separate bias (fixed by a targeted mitigation) from variance (fixed by more samples) — position bias is squarely the first kind.'
       },
       {
         q: 'Paired evaluation on the same items needs fewer examples because…',
         options: ['it is more accurate per item', 'item-difficulty variance cancels; only items where the systems differ carry information', 'it uses a better judge', 'it avoids position bias'],
         answer: 1,
-        why: 'Items both systems get right or both get wrong contribute nothing to the comparison and are removed from the variance.'
+        why: 'When both systems are scored on the identical item, an item they both get right, or both get wrong, tells you nothing about which one is better — all the comparative information lives in the items where they disagree, so the effective sample size for detecting a difference tracks the discordance rate rather than the raw item count, which is exactly what the lab\'s McNemar-style formula computes. "It is more accurate per item" sounds plausible because pairing does feel like a more careful measurement, but the accuracy of any single item\'s score is unchanged by pairing — what changes is which items carry statistical weight once you aggregate. "It avoids position bias" conflates two independent fixes discussed in the same section: pairing on identical items is what buys sample efficiency, while judging in both orders is the separate technique that cancels position bias, and a paired comparison graded in only one order still carries the full bias. The general principle is §5.11.1\'s key box: paired comparison removes item-difficulty variance from the estimate, which is why it needs several-fold fewer examples than scoring two systems independently.'
       },
       {
         q: 'The most valuable source of eval cases is…',
         options: ['a public benchmark', 'production failures and complaints', 'synthetic examples from an LLM', 'the training set'],
         answer: 1,
-        why: 'The cases you can invent are the ones the system already handles. The ones that broke carry the information.'
+        why: 'A case you can invent, hand-picked or synthetic, is almost by definition a case within the range of situations you already anticipated, and the system usually already handles those; a real production failure is proof, by construction, of a case the system does not yet handle, which is exactly the information an eval set exists to capture (§5.11.3\'s golden-set step). "A public benchmark" is tempting because it looks like the rigorous, externally validated option, but §5.11\'s own flag notes that contamination has made a strong public-benchmark score weak evidence about a model released after that benchmark was published — and even ignoring contamination, a public benchmark contains none of your tools, your documents, or your users\' actual failure modes. "Synthetic examples from an LLM" shares the same blind spot as hand-invented cases: an LLM generating test cases draws on the same distribution of "things people would think to test," never on what actually broke in your system. The general principle, stated in this section\'s tldr, is to build the eval from your own production traffic, because the examples you can think of are the ones that were never the problem.'
       }
     ],
     cards: [
@@ -728,25 +728,25 @@ ${H.probe([
         q: 'Training/serving skew is best prevented by…',
         options: ['more tests on the serving code', 'one feature-transformation implementation used by both paths', 'retraining more often', 'monitoring accuracy'],
         answer: 1,
-        why: 'Two implementations diverge over time no matter how well tested. Share the code or serve from one store.'
+        why: 'Skew arises because the same feature is computed by two independently maintained codebases (§5.12.1\'s table gives pandas-in-training, Java-in-serving as the canonical case), and any two implementations of the same logic drift apart over a year of separate maintenance no matter how carefully either team writes it — so the structural fix is to leave nothing to drift, one implementation with two callers, or a feature store serving both. "More tests on the serving code" is tempting because more testing is the general-purpose answer to "stop code from behaving unexpectedly," but tests written against one side of a two-codebase problem cannot detect that the other side computes something subtly different; catching that requires comparing the two outputs directly, which is really a weaker version of just sharing the implementation. "Monitoring accuracy" only catches skew after it has already degraded predictions in production, which is detection, not prevention. The general principle, stated in this section\'s key box, is that a feature computed in two places is a feature computed two ways — eliminate the duplication rather than trying to police it.'
       },
       {
         q: 'Shadow deployment means…',
         options: ['deploying to a staging environment', 'running the new model on real traffic but not acting on its outputs', 'deploying to 1% of users', 'A/B testing two models'],
         answer: 1,
-        why: 'It answers the operational questions — does it run, latency, output sanity — at zero user risk.'
+        why: 'Shadow mode runs the new model against real, live traffic, computing predictions and measuring latency and output sanity, while only the old model\'s outputs are ever acted on — so it answers the purely operational questions at zero user risk, because nothing the shadow model produces ever reaches a user (§5.12.2\'s release-ladder table). "Deploying to a staging environment" is tempting because it also sounds like a safe pre-production step, but staging traffic is synthetic or replayed rather than the real, messy production distribution shadow mode is deliberately exposed to, so it cannot surface the production-only edge cases shadow mode exists to catch. "Deploying to 1% of users" is the next rung up, canary, and it does carry real user risk — exactly the distinction the ladder is organised around, since shadow answers "does it run" before canary risks answering "is it good." The general principle is that each stage of the release ladder answers a different question, and skipping the order means taking on user risk before ruling out the cheap, riskless failures shadow mode is built to find.'
       },
       {
         q: 'Input drift monitoring cannot detect…',
         options: ['covariate shift', 'concept drift, where $p(y|x)$ changes but $p(x)$ does not', 'schema changes', 'null-rate spikes'],
         answer: 1,
-        why: 'Only labelled outcomes reveal a change in the relationship. This is why outcome monitoring is a separate, unavoidable system.'
+        why: 'Input monitoring — PSI, null rates, cardinality — only ever measures the distribution of $x$, so it is blind by construction to a change in the relationship between $x$ and $y$: if the inputs look statistically identical to before but the world has changed how $y$ depends on them, nothing in the input distribution moves and nothing fires, which is exactly why outcome monitoring, delayed by the label lag, exists as a separate, unavoidable layer (§5.12.3\'s three-layer table). "Covariate shift" is the wrong pick specifically because it names the thing input monitoring is designed to catch — a shift in $p(x)$ itself is precisely what PSI and null-rate checks measure, so choosing it has the mechanism backwards. "Schema changes" and "null-rate spikes" are likewise both squarely input-layer phenomena this monitoring catches immediately, not the delayed, label-dependent case the question is asking about. The general principle is to track which of $p(x)$, $p(y)$, or $p(y\\mid x)$ has changed, and to know that only labelled outcomes can ever reveal a change in the last one, however sophisticated the input monitoring becomes.'
       },
       {
         q: 'The main benefit of a permanent randomised holdback is…',
         options: ['faster inference', 'measuring the model’s cumulative value and keeping uncontaminated training data', 'reducing cost', 'satisfying auditors'],
         answer: 1,
-        why: 'Without it you cannot answer "what is this worth?" a year later, and every row of your training data has been influenced by the model.'
+        why: 'A slice of traffic permanently excluded from the model\'s decisions supplies two things nothing else can: a genuine counterfactual against which to measure what the model is actually worth, cumulatively, long after launch, and a pool of training data untouched by the model\'s own past decisions — which matters because a model retrained partly on the outcomes of its own earlier choices is training on a feedback loop, not on the world (§5.12.1\'s feedback-loop row and §5.12.2\'s note). "Satisfying auditors" is tempting because holdbacks do come up in compliance conversations, but that is a downstream consequence rather than the reason the practice exists, or the reason teams that skip it come to regret it. "Faster inference" and "reducing cost" both mistake a holdback, which excludes a slice of users from treatment rather than changing how the model runs, for an engineering optimisation it has nothing to do with. The general principle, stated directly in this section\'s note, is that both benefits — attribution and clean retraining data — are essentially impossible to reconstruct retroactively once the whole population has already been exposed to the model.'
       }
     ],
     cards: [
