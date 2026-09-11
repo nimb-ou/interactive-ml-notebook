@@ -56,11 +56,32 @@ twice here.
 `H.flag` on contested or fast-moving claims, `H.pitfall` on traps, `H.key` on the sentence to
 memorise, the `mistake` argument of `H.probe`. Fast-moving material stated flat is a defect.
 
-## Status — complete
+## Status — complete, with one correction to how "complete" was measured
 
 Every non-reference section now clears the bar. Corpus average teaching helpers rose from
 4.6 to 5.9 per section, and no section sits below four. The priority list below is kept as
 the record of what the pass started from.
+
+**A later pass found four more defects, and the way it found them matters more than the
+defects did.** Counting teaching helpers — the measure point 5 defines and the measure the
+priority list below is built on — did not and could not surface any of them, because all
+four sat in sections already well above the helper threshold. The defect was never a
+missing helper. It was a **result asserted where it should have been derived**:
+
+- §6.8 used "sensitivity" throughout, including to justify why DP-SGD clips gradients, and
+  never defined it; the Laplace mechanism's noise scale was a table cell, not a proof.
+- §5.3 argued at length that an early error poisons a trajectory without ever writing $p^k$.
+- §3.13 said activation outliers "waste the whole grid" three times without quantifying it.
+- §5.1 warned that teams tune prompts to fix indexing problems but gave no way to tell
+  which stage was at fault.
+
+All four were in Parts 5 and 6, which read as having been drafted more descriptively than
+the mathematical tracks. Point 1 of the bar already forbids this ("the theory is derived,
+not asserted"), so the bar was right and the *instrument* was wrong. **A helper count
+measures whether scaffolding exists, not whether the load-bearing claim under it was
+proved.** Any future audit should read for asserted-versus-derived directly; there is no
+count that substitutes for it, and a section scoring well on every other measure is exactly
+where this defect hides.
 
 Six labs were found describing something other than what their code computes. None was
 detectable by `npm test`, because all six rendered without error:
