@@ -794,7 +794,28 @@ ${H.analogy(`<p>Rolling-origin backtesting is a driving test administered the wa
 
 ${H.lab('cv', 'Every validation scheme, drawn', 'Switch between schemes and watch which rows are used for what. The group and time-series views make the failure modes obvious: a random fold splits a customer across train and validate, and a random fold on time trains on the future.')}
 
-<h2><span class="sn">2.14.2</span> Measuring the lie, not just naming it</h2>
+<h2><span class="sn">2.14.2</span> Choosing k: the estimate itself has a bias and a variance</h2>
+
+<p>Everything above treated $k$ as a detail. It is not — $k$ trades one property of the <i>estimate</i> against another, and the trade is worth deriving rather than accepting "5 or 10, by convention" on faith.</p>
+
+${H.deriv('why small k is pessimistically biased, and why the bias shrinks as k grows', [
+      ['Each of the $k$ folds trains on $n(k-1)/k$ rows, not the full $n$ you will actually deploy with.', 'By construction: one block of $n/k$ rows is held out for validation, leaving $k-1$ of the $k$ blocks, or $n(k-1)/k$ rows, for training that round.'],
+      ['More training data produces a model that is at least as good, in expectation — a <b>learning curve</b> that is flat or falling, essentially never rising, as sample size grows.', 'A learner given strictly more evidence about the same underlying pattern cannot become systematically worse at finding it; this is an empirical regularity about every model family in this course, not a theorem, but a famously reliable one.'],
+      ['So each fold\'s validation score estimates the performance of a model trained on $n(k-1)/k$ rows — systematically worse than the model you actually ship, which trains on all $n$.', 'The fold\'s model is, by the previous line, at a genuine disadvantage relative to the deployed model, so its measured error is a pessimistic proxy for the error the deployed model will actually have.'],
+      ['That pessimism shrinks as $n(k-1)/k \\to n$ — which happens exactly as $k\\to n$.', 'The fraction of data withheld from training each round, $1/k$, shrinks toward $1/n$ as $k$ grows, so the gap between "what each fold trained on" and "what you will deploy" narrows toward zero at the extreme case of leave-one-out CV, $k=n$.']
+    ], 'Put real numbers on it at $n=1{,}000$: $k=2$ trains each fold on 500 rows, half the data — a large, real handicap relative to the 1,000-row deployed model. $k=5$ trains on 800 rows (80%); $k=10$ trains on 900 (90%); leave-one-out, $k=1{,}000$, trains on 999 rows (99.9%) — essentially the deployed model itself, evaluated on the one row it did not see. Bias shrinks monotonically as $k$ grows, with no exception.')}
+
+<p>If bias were the only consideration, leave-one-out would always win. It is not the only consideration, because the $k$ validation scores k-fold produces are not independent measurements of the same quantity — they are built from training sets that overlap, and the overlap gets worse, not better, as $k$ grows.</p>
+
+${H.deriv('why the folds become more correlated, not less, as k grows', [
+      ['Fold $i$\'s training set and fold $j$\'s training set share every block except blocks $i$ and $j$ themselves: $n(k-2)/k$ rows in common.', 'Each fold trains on all blocks except its own held-out one, so two folds\' training sets differ only in which one block each of them excludes — everything else, $k-2$ of the $k$ blocks, is shared by both.'],
+      ['As a fraction of each fold\'s own training set size, that overlap is $\\dfrac{n(k-2)/k}{n(k-1)/k} = \\dfrac{k-2}{k-1}$.', 'Divide the shared row count by the size of one fold\'s training set — both expressed with the common factor $n/k$, which cancels.'],
+      ['That fraction increases with $k$: it is $3/4$ at $k=5$, $8/9\\approx0.889$ at $k=10$, $18/19\\approx0.947$ at $k=20$, and $\\to1$ as $k\\to n$.', 'A quick check of the formula at each value confirms the direction: more folds means each one holds out a smaller slice, so any two folds\' training sets differ by an ever-smaller fraction of themselves.']
+    ], 'Two models trained on 94.7%-identical data (k=20) will make highly correlated errors — near-identical training sets tend to get near-identical rows wrong. Reusing the averaging-variance identity from §2.2\'s bagging derivation, $\\mathrm{Var}(\\text{mean of }k) = \\rho\\sigma^2 + (1-\\rho)\\sigma^2/k$: as $\\rho$ climbs toward 1 alongside $k$, the achievable variance reduction saturates well short of the naive $1/k$ a textbook independence assumption would promise, and can stop improving at all long before $k$ reaches $n$.')}
+
+${H.flag('There is no clean closed-form answer for the exact variance of a k-fold estimate — the correlation ρ above depends on the model, the data and the metric, and estimating that variance honestly from a single run of cross-validation is a genuinely unresolved problem in the statistics literature, not a gap in this course\'s explanation. What survives is the shape of the trade-off: bias falls monotonically with k, variance-reduction efficiency does not rise monotonically with k, and $k=5$ or $k=10$ is where practice has settled empirically, not a value derived by minimising a formula in closed form.')}
+
+<h2><span class="sn">2.14.3</span> Measuring the lie, not just naming it</h2>
 
 <p>It is one thing to say "a random fold with entity leakage inflates your score." It is a stronger claim, and a far more useful one in a room that wants evidence, to say by how much. The mechanism is worth deriving in the idealised limit, because the limit makes the direction of the bias impossible to argue with.</p>
 
@@ -816,7 +837,7 @@ ${H.deriv('the entity-leakage bound, in the noise-free limit', [
 
 ${H.lab('leak-cv', 'How much does the wrong scheme lie by?', 'The same data with an entity structure and a time trend, evaluated four ways. The gap between the random-k-fold number and the out-of-time number is the size of the lie — computed, not asserted.')}
 
-<h2><span class="sn">2.14.3</span> Nested CV — validating the search, not just the model</h2>
+<h2><span class="sn">2.14.4</span> Nested CV — validating the search, not just the model</h2>
 
 <p>Every scheme so far assumes the model itself is fixed before validation starts. In practice it never is: you try several learning rates, several regularisation strengths, several tree depths, and you pick whichever configuration scored best in cross-validation. That selection step is invisible in the final number you report, and it is not innocent.</p>
 
@@ -833,7 +854,7 @@ ${H.pitfall(`<p>Nested CV is computationally expensive — an outer $k$-fold wra
 
 ${H.probe([
       ['Why not k-fold on a time series?', 'It trains on the future to predict the past. Use out-of-time and rolling-origin backtests, which mirror the one thing deployment will actually ask of the model: predict forward from what has already happened.'],
-      ['When do you need group k-fold?', 'Whenever one entity contributes multiple rows — otherwise a model can partly succeed by recognising the entity rather than learning the general pattern, and the noise-free bound in §2.14.2 shows the inflation this can cause is not a rounding error.'],
+      ['When do you need group k-fold?', 'Whenever one entity contributes multiple rows — otherwise a model can partly succeed by recognising the entity rather than learning the general pattern, and the noise-free bound in §2.14.3 shows the inflation this can cause is not a rounding error.'],
       ['Why nested CV?', 'The fold that chose your hyperparameters is no longer an unbiased judge of performance — it is the biased-maximum mechanism of §2.1.3, applied to a search over configurations instead of a search over models. The outer loop restores an unbiased estimate by never letting the same data choose and grade.']
     ])}`,
     labs: {
@@ -975,7 +996,7 @@ ${H.probe([
         q: 'Each customer contributes 8 rows and you use random 5-fold CV. What breaks?',
         options: ['Nothing', 'The same customer appears in train and validate, so you measure memorisation of the customer', 'The folds become imbalanced', 'Training becomes slower'],
         answer: 1,
-        why: 'A random row-level split has no reason to keep one customer\'s rows together, so most customers end up with some rows in training and some in validation. The idealised bound in §2.14.2 shows exactly how far this can inflate the score — toward AUC 1.0 for a model that is doing nothing but recognising near-duplicates of rows it already trained on. Group k-fold, assigning whole entities to one side of the split, is the fix; nothing about the fold count or stratification touches this failure, which is why the other two options are tempting but wrong.'
+        why: 'A random row-level split has no reason to keep one customer\'s rows together, so most customers end up with some rows in training and some in validation. The idealised bound in §2.14.3 shows exactly how far this can inflate the score — toward AUC 1.0 for a model that is doing nothing but recognising near-duplicates of rows it already trained on. Group k-fold, assigning whole entities to one side of the split, is the fix; nothing about the fold count or stratification touches this failure, which is why the other two options are tempting but wrong.'
       },
       {
         q: 'You tuned 60 hyperparameter configurations with 5-fold CV and report the best CV score. That number is…',
