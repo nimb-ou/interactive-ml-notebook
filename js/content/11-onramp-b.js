@@ -277,7 +277,7 @@ ${H.more('index notation, and the sum that is not written down', `<p>Once you ar
 
 ${H.probe([
       ['What is the difference between $\\min f$ and $\\arg\\min f$?', '$\\min$ is the smallest <i>value</i> of $f$; $\\arg\\min$ is the <i>input</i> that achieves it. Training returns an $\\arg\\min$.'],
-      ['What does $\\mathbb{E}_{x\\sim p}[f(x)]$ mean when $p$ is the data distribution?', 'The average of $f$ over the data-generating process — which we approximate by the sample mean over a finite dataset. That gap is the whole of generalization (§1.4).'],
+      ['What does $\\mathbb{E}_{x\\sim p}[f(x)]$ mean when $p$ is the data distribution?', 'The average of $f$ over the data-generating process — which we approximate by the sample mean over a finite dataset. That gap is the whole of generalisation (§1.4).'],
       ['Why does $\\propto$ show up all over Bayes?', 'Because the denominator $P(B)$ does not depend on the hypothesis, so it cannot change which hypothesis wins. Dropping it saves work and never changes the argmax (§1.1).'],
       ['A paper writes $x^{(i)}$ and $W^{[2]}$ in the same line. What are the brackets doing?', 'Marking both superscripts as labels rather than powers: example $i$ and layer 2. Without the brackets they would read as an exponent, which is why the convention exists.'],
       ['In $\\nabla_w \\mathcal{L}$, what is the subscript?', 'The variable being differentiated with respect to — not an index. The result is one object with the same shape as $w$ (§0.7).']
@@ -514,7 +514,7 @@ ${H.intuition(`<p>It is worth asking why a loss is always a single number. Nothi
 ${H.table(['Expression', 'Derivative w.r.t. $w$', 'Where it shows up'], [
       ['$a^\\top w$', '$a$', 'any linear score; the logit of a linear model'],
       ['$w^\\top A w$', '$(A + A^\\top)w$, and $2Aw$ if $A$ symmetric', 'quadratic forms, Newton steps, PCA'],
-      ['$\\|w\\|_2^2 = w^\\top w$', '$2w$', 'L2 regularization → weight decay (§2.3)'],
+      ['$\\|w\\|_2^2 = w^\\top w$', '$2w$', 'L2 regularisation → weight decay (§2.3)'],
       ['$\\|Xw - y\\|_2^2$', '$2X^\\top(Xw-y)$', 'linear regression, ridge, the normal equations'],
       ['$\\log\\big(\\sum_j e^{z_j}\\big)$', '$\\mathrm{softmax}(z)$', 'the log-partition function; why softmax appears at all'],
       ['softmax + cross-entropy', '$\\hat p - y$', 'the cleanest gradient in machine learning (§3.2)']

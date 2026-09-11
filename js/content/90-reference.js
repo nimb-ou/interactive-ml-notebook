@@ -17,7 +17,7 @@ ${H.lab('numsearch', 'Search the numbers', 'Type to filter. Every entry links ba
 <div>
 ${H.box('memory arithmetic', `
 <p>Bytes/param: <b>FP32 4</b> · FP16/BF16 <b>2</b> · FP8/INT8 <b>1</b> · INT4 <b>0.5</b>.</p>
-<p>Adam training ≈ <b>16 bytes/param</b> (2 weight + 2 grad in FP16, 12 FP32 optimizer state).</p>
+<p>Adam training ≈ <b>16 bytes/param</b> (2 weight + 2 grad in FP16, 12 FP32 optimiser state).</p>
 <p>Weight VRAM ≈ params × bytes/param, +~20% overhead.</p>
 <p>KV per token per layer = $2\\cdot n_{kv}\\cdot d_{head}\\cdot$ bytes; total × L × seq × batch. <b>70B GQA, 4k, batch 8, BF16 → 10 GB.</b></p>`, 'worked')}
 
@@ -25,7 +25,7 @@ ${H.box('retrieval', `
 <p>RRF <b>k = 60</b> (Cormack et al., SIGIR 2009).</p>
 <p>Chunks <b>200–500 tokens</b>, <b>10–20%</b> overlap.</p>
 <p>Rerank the top <b>~100</b> candidates, keep <b>5–10</b>.</p>
-<p>Binary quantization = <b>32×</b> smaller (128 B/vector); PQ 64 B = <b>64×</b>. Tool retrieval past <b>~30</b> tools.</p>
+<p>Binary quantisation = <b>32×</b> smaller (128 B/vector); PQ 64 B = <b>64×</b>. Tool retrieval past <b>~30</b> tools.</p>
 <p>1M × 1024-d float32 = <b>4.1 GB</b>; HNSW graph at M=32 ≈ <b>170 MB</b>.</p>`, 'worked')}
 
 ${H.box('fine-tuning', `
@@ -136,7 +136,7 @@ ${H.box('retrieval, ranking &amp; privacy', `
           ['200–500 tokens', 'chunk size, 10–20% overlap', 'rag'],
           ['4.1 GB', '1M × 1024-d float32 vectors', 'rag'],
           ['170 MB', 'HNSW graph links at M=32 for 1M vectors', 'rag'],
-          ['32× / 64×', 'binary quantization / PQ 64-byte compression', 'rag'],
+          ['32× / 64×', 'binary quantisation / PQ 64-byte compression', 'rag'],
           ['~30 tools', 'where agent tool-selection accuracy degrades', 'agents'],
           ['$0.29 vs $0.11', 'cost per successful task: cheap vs accurate model', 'production-ai'],
           ['63%', 'attacker success over 100 tries at 99% refusal', 'safety'],
@@ -157,7 +157,7 @@ ${H.box('retrieval, ranking &amp; privacy', `
           ['0.80', 'four-fifths adverse-impact screen ⚑ US enforcement convention', 'fairness'],
           ['0.738', 'worked impact ratio: 31% vs 42% approval', 'fairness'],
           ['≈37%', 'rows omitted by each bootstrap sample (out-of-bag)', 'trees'],
-          ['16 bytes/param', 'Adam training state (12 bytes FP32 optimizer state)', 'distributed'],
+          ['16 bytes/param', 'Adam training state (12 bytes FP32 optimiser state)', 'distributed'],
           ['901st smallest', 'conformal quantile for 1,000 calibration points at α=0.10', 'calibration'],
           ['£2,340', 'worked conformal interval half-width', 'calibration']
         ];
@@ -292,7 +292,7 @@ ${H.table(['Name', 'Formula', '§'], [
       ['UCB1', '$\\hat\\mu_k+\\sqrt{2\\ln t/n_k}$', '<a href="#/bandits">6.6</a>'],
       ['Regret', '$R_T=T\\max_k\\mu_k-\\sum_t\\mu_{a_t}$; $O(\\log T)$ for good policies', '<a href="#/bandits">6.6</a>'],
       ['Checkpointing memory', '$(L/k+k)M$, minimised at $k=\\sqrt L$', '<a href="#/autodiff">3.11</a>'],
-      ['Quantization', '$q=\\mathrm{round}(x/s)+z$; $\\hat x=s(q-z)$', '<a href="#/compression">3.13</a>'],
+      ['Quantisation', '$q=\\mathrm{round}(x/s)+z$; $\\hat x=s(q-z)$', '<a href="#/compression">3.13</a>'],
       ['Distillation loss', '$\\alpha T^2 D_{KL}(\\sigma(z_t/T)\\|\\sigma(z_s/T))+(1-\\alpha)\\mathrm{CE}$', '<a href="#/compression">3.13</a>'],
       ['FGSM', '$x\'=x+\\epsilon\\,\\mathrm{sign}(\\nabla_x\\mathcal{L})$', '<a href="#/robustness">3.14</a>'],
       ['Differential privacy', '$P(M(D)\\in S)\\le e^{\\varepsilon}P(M(D\')\\in S)+\\delta$', '<a href="#/privacy">6.8</a>'],
@@ -313,7 +313,7 @@ ${H.table(['Name', 'Formula', '§'], [
           ['ALiBi', 'rope', 'A linear penalty on attention logits proportional to token distance; extrapolates beyond trained length.'],
           ['ATE', 'causal', 'Average treatment effect, $\\mathbb{E}[Y(1)-Y(0)]$.'],
           ['Attention sink', 'rope', 'The first few tokens absorb excess attention mass; keep them cached or long-context quality collapses.'],
-          ['AWQ', 'serving', 'Activation-aware 4-bit weight quantization that protects salient channels; the GPU production pick.'],
+          ['AWQ', 'serving', 'Activation-aware 4-bit weight quantisation that protects salient channels; the GPU production pick.'],
           ['Bagging', 'trees', 'Averaging models fit on bootstrap resamples to cut variance.'],
           ['Bandit', 'intervals', 'Shifts traffic toward the winning arm while learning; regret grows like log T for good algorithms.'],
           ['Bias–variance', 'bias-variance', 'Expected squared error = bias² + variance + irreducible noise.'],
@@ -361,7 +361,7 @@ ${H.table(['Name', 'Formula', '§'], [
           ['Leakage', 'features', 'Using information unavailable at prediction time; the top interview-killer.'],
           ['LoRA', 'lora', 'Frozen $W_0$ plus a trainable low-rank $BA$; r=16, α=2r, all linear layers.'],
           ['Log-sum-exp', 'information', 'Subtract the max before exponentiating; behind stable softmax and online softmax.'],
-          ['MAP', 'mle-map', 'Maximise likelihood plus log-prior; the prior IS the regularizer.'],
+          ['MAP', 'mle-map', 'Maximise likelihood plus log-prior; the prior IS the regulariser.'],
           ['Matryoshka embedding', 'rag', 'Trained so a truncated prefix still retrieves well; memory scales with the prefix you keep.'],
           ['MCP', 'mcp', 'The tool-integration protocol; stateless at the protocol layer since 2026-07-28.'],
           ['MLA', 'kv-cache', 'Multi-head latent attention: a low-rank K/V latent, smaller cache than GQA at MHA quality.'],
@@ -409,7 +409,7 @@ ${H.table(['Name', 'Formula', '§'], [
           ['WOE', 'features', 'Weight of evidence, $\\ln(\\%good/\\%bad)$ per bin; the scorecard’s native scale.'],
           ['WSD schedule', 'optimisers', 'Warmup, long stable phase, sharp final decay; matches cosine and allows branching.'],
           ['XGBoost gain', 'boosting', '$\\frac12[\\frac{G_L^2}{H_L+\\lambda}+\\frac{G_R^2}{H_R+\\lambda}-\\frac{G^2}{H+\\lambda}]-\\gamma$.'],
-          ['ZeRO / FSDP', 'distributed', 'Shard optimizer state, gradients and parameters across data-parallel ranks.'],
+          ['ZeRO / FSDP', 'distributed', 'Shard optimiser state, gradients and parameters across data-parallel ranks.'],
 
           /* --- terms added with Parts 0.6–0.8, 1.12–1.15, 2.16–2.25,
                  3.11–3.14, 4.19–4.22, 5.9–5.12, 6.6–6.8 and Part 7 --- */
@@ -433,7 +433,7 @@ ${H.table(['Name', 'Formula', '§'], [
           ['efSearch', 'vector-search', 'HNSW’s query-time candidate list — the one knob that trades recall against latency without a rebuild.'],
           ['Focal loss', 'vision-tasks', '$(1-p_t)^\\gamma$ down-weights easy negatives so a dense detector is not swamped by background.'],
           ['Gaussian process', 'gp-bayesopt', 'A prior over functions; the posterior is Gaussian in closed form and its variance does not depend on $y$.'],
-          ['Group-wise quantization', 'compression', 'One scale per block of 64–128 weights; what makes 4-bit viable at all.'],
+          ['Group-wise quantisation', 'compression', 'One scale per block of 64–128 weights; what makes 4-bit viable at all.'],
           ['Isotonic regression', 'calibration', 'A monotone step-function calibrator fitted by pool-adjacent-violators; more flexible than Platt, easier to overfit.'],
           ['Jump-ahead', 'structured-output', 'Emit deterministic schema tokens without a forward pass; why constrained decoding can be faster than free decoding.'],
           ['Lottery ticket hypothesis', 'compression', 'A dense network contains a sparse subnetwork that trains to the same accuracy from the same init — real, and not yet actionable.'],
@@ -444,7 +444,7 @@ ${H.table(['Name', 'Formula', '§'], [
           ['NSW / HNSW graph', 'vector-search', 'Short edges for local refinement, long edges as motorways; greedy descent finds neighbours in $O(\\log n)$ hops.'],
           ['Peeking', 'experimentation', 'Checking a fixed-horizon test repeatedly; inflates the false-positive rate from 5% to 20–35%.'],
           ['Position bias', 'ranking', 'Users click the top result because it is on top; training on raw clicks reproduces the previous ranker.'],
-          ['Product quantization', 'vector-search', 'Split a vector into sub-spaces, replace each by a 256-centroid codebook index — 64× compression, distances by table lookup.'],
+          ['Product quantisation', 'vector-search', 'Split a vector into sub-spaces, replace each by a 256-centroid codebook index — 64× compression, distances by table lookup.'],
           ['Prompt-lookup decoding', 'speculative', 'Draft by n-gram matching against the prompt; no model, no training, very high acceptance when the output quotes the input.'],
           ['Self-consistency', 'reasoning', 'Sample $k$ traces and take the majority; buys accuracy only when the errors are diverse.'],
           ['Small-to-big retrieval', 'chunking', 'Embed small chunks for precision, return their parent section for completeness.'],
@@ -492,7 +492,7 @@ ${H.table(['Source', 'What it underwrites'], [
       ['Hoffmann et al., <i>Training Compute-Optimal LLMs</i> (2022), with Epoch AI’s replication', '<a href="#/scaling-laws">4.10</a> ⚑ coefficients contested'],
       ['Su et al., <i>RoFormer</i> (RoPE, 2021); Press et al., <i>ALiBi</i> (2021); Peng et al., <i>YaRN</i> (2023)', '<a href="#/rope">4.4</a>'],
       ['Dao et al., <i>FlashAttention</i> (2022) and FlashAttention-2 (2023)', '<a href="#/kv-cache">4.7</a>'],
-      ['Rafailov et al., <i>Direct Preference Optimization</i> (2023)', '<a href="#/post-training">4.12</a> derivation'],
+      ['Rafailov et al., <i>Direct Preference Optimisation</i> (2023)', '<a href="#/post-training">4.12</a> derivation'],
       ['Park et al., <i>Disentangling Length from Quality in DPO</i>, arXiv:2403.19159', '<a href="#/post-training">4.12</a> length bias'],
       ['DeepSeek-AI, <i>DeepSeek-R1</i>, arXiv:2501.12948; DeepSeek-V3 technical report', '<a href="#/post-training">4.12</a> GRPO, RLVR; <a href="#/moe">4.8</a> MoE, MLA'],
       ['Hu et al., <i>LoRA</i> (2021); Dettmers et al., <i>QLoRA</i> (2023)', '<a href="#/lora">4.13</a>'],
@@ -509,11 +509,11 @@ ${H.table(['Source', 'What it underwrites'], [
       ['Schulman et al., <i>PPO</i> (2017)', '<a href="#/post-training">4.12</a>, <a href="#/rl">6.1</a>'],
       ['OWASP Top 10 for LLM Applications; OpenTelemetry GenAI semantic conventions', '<a href="#/production-ai">5.7</a>'],
       ['Anthropic model and system cards; Jimenez et al., <i>SWE-bench</i> (2023)', 'currency anchor, <a href="#/llm-eval">4.16</a>'],
-      ['Boyd &amp; Vandenberghe, <i>Convex Optimization</i>; Nesterov (1983)', '<a href="#/optimization">1.12</a> duality, KKT, accelerated rates'],
+      ['Boyd &amp; Vandenberghe, <i>Convex Optimisation</i>; Nesterov (1983)', '<a href="#/optimization">1.12</a> duality, KKT, accelerated rates'],
       ['Efron (1979); Efron &amp; Tibshirani, <i>An Introduction to the Bootstrap</i>', '<a href="#/sampling">1.13</a>'],
       ['Gelman et al., <i>Bayesian Data Analysis</i>; Hoffman &amp; Gelman, <i>NUTS</i> (2014)', '<a href="#/bayesian-inference">1.14</a>'],
       ['Goldberg, <i>What Every Computer Scientist Should Know About Floating-Point</i> (1991); Welford (1962)', '<a href="#/numerics">1.15</a>'],
-      ['Breiman, <i>Bagging</i> (1996) and <i>Random Forests</i> (2001); Wolpert, <i>Stacked Generalization</i> (1992)', '<a href="#/ensembles">2.16</a>'],
+      ['Breiman, <i>Bagging</i> (1996) and <i>Random Forests</i> (2001); Wolpert, <i>Stacked Generalisation</i> (1992)', '<a href="#/ensembles">2.16</a>'],
       ['Rasmussen &amp; Williams, <i>Gaussian Processes for Machine Learning</i>; Shahriari et al., <i>Taking the Human Out of the Loop</i> (2016)', '<a href="#/gp-bayesopt">2.21</a>'],
       ['Chen et al., <i>SimCLR</i> (2020); Grill et al., <i>BYOL</i> (2020); Chen &amp; He, <i>SimSiam</i> (2021); Oord et al., <i>CPC/InfoNCE</i> (2018)', '<a href="#/self-supervised">2.22</a>'],
       ['Burges, <i>From RankNet to LambdaRank to LambdaMART</i> (2010); Joachims et al., <i>Unbiased Learning-to-Rank</i> (2017)', '<a href="#/ranking">2.24</a>'],
@@ -526,13 +526,13 @@ ${H.table(['Source', 'What it underwrites'], [
       ['Wei et al., <i>Chain-of-Thought</i> (2022); Wang et al., <i>Self-Consistency</i> (2023); Lightman et al., <i>Let’s Verify Step by Step</i> (2023); Snell et al., <i>Scaling LLM Test-Time Compute</i> (2024)', '<a href="#/reasoning">4.20</a>'],
       ['Willard &amp; Louf, <i>Efficient Guided Generation</i> (Outlines, 2023); XGrammar (2024)', '<a href="#/structured-output">4.21</a>'],
       ['Leviathan et al., <i>Fast Inference from Transformers via Speculative Decoding</i> (2023); Chen et al. (2023); Cai et al., <i>Medusa</i> (2024)', '<a href="#/speculative">4.22</a>'],
-      ['Malkov &amp; Yashunin, <i>HNSW</i> (2018); Jégou et al., <i>Product Quantization</i> (2011); Subramanya et al., <i>DiskANN</i> (2019)', '<a href="#/vector-search">5.10</a>'],
+      ['Malkov &amp; Yashunin, <i>HNSW</i> (2018); Jégou et al., <i>Product Quantisation</i> (2011); Subramanya et al., <i>DiskANN</i> (2019)', '<a href="#/vector-search">5.10</a>'],
       ['Zheng et al., <i>Judging LLM-as-a-Judge with MT-Bench</i> (2023)', '<a href="#/evals">5.11</a>'],
       ['Sculley et al., <i>Hidden Technical Debt in Machine Learning Systems</i> (NeurIPS 2015)', '<a href="#/mlops">5.12</a>'],
       ['Lattimore &amp; Szepesvári, <i>Bandit Algorithms</i>; Auer et al., <i>UCB1</i> (2002); Chapelle &amp; Li, <i>An Empirical Evaluation of Thompson Sampling</i> (2011)', '<a href="#/bandits">6.6</a>'],
       ['Ren et al., <i>Faster R-CNN</i> (2015); Lin et al., <i>Focal Loss</i> (2017); Carion et al., <i>DETR</i> (2020); Kirillov et al., <i>SAM</i> (2023)', '<a href="#/vision-tasks">6.7</a>'],
       ['Dwork &amp; Roth, <i>The Algorithmic Foundations of Differential Privacy</i>; Abadi et al., <i>DP-SGD</i> (2016); Zhu et al., <i>Deep Leakage from Gradients</i> (2019); Carlini et al., <i>Extracting Training Data from LLMs</i> (2021)', '<a href="#/privacy">6.8</a>'],
-      ['Bergstra &amp; Bengio, <i>Random Search for Hyper-Parameter Optimization</i> (2012); Li et al., <i>Hyperband</i> (2018)', '<a href="#/gp-bayesopt">2.21</a>, <a href="#/hyperparameters">2.15</a>']
+      ['Bergstra &amp; Bengio, <i>Random Search for Hyper-Parameter Optimisation</i> (2012); Li et al., <i>Hyperband</i> (2018)', '<a href="#/gp-bayesopt">2.21</a>, <a href="#/hyperparameters">2.15</a>']
     ])}
 
 ${H.note('Three claims are genuinely contested and should be flagged every single time you use them: the exact Chinchilla coefficients, "what works" for class imbalance, and the PSI/IV thresholds. Flagging them is not hedging — it is the thing that makes the rest of your answers credible.')}

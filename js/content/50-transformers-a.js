@@ -861,7 +861,7 @@ ${H.probe([
       },
       {
         q: 'In Llama-3-8B, K and V projections are much smaller than Q and O because…',
-        options: ['they are quantized', 'grouped-query attention shares K/V across groups of query heads', 'they are low-rank factorised', 'they are tied to the embeddings'],
+        options: ['they are quantised', 'grouped-query attention shares K/V across groups of query heads', 'they are low-rank factorised', 'they are tied to the embeddings'],
         answer: 1,
         why: '8 K/V heads instead of 32: 4096×1024 rather than 4096×4096, which also shrinks the KV cache by 4× (§4.7).'
       }
@@ -1056,12 +1056,12 @@ ${H.worked('worked number — proving decode is memory-bound', `
 <p>A 70B model in BF16 is 140 GB of weights. Take an accelerator with ≈3.35 TB/s of HBM bandwidth and ≈990 TFLOP/s of dense BF16 compute.</p>
 <p><b>Memory time per decoded token</b> (batch 1): every weight must be read once → 140 GB ÷ 3.35 TB/s ≈ <b>42 ms</b>. That caps you at ~24 tokens/second before any cache traffic.</p>
 <p><b>Compute time for the same token:</b> a forward pass costs about $2N$ = 140 GFLOP → 140 GFLOP ÷ 990 TFLOP/s ≈ <b>0.14 ms</b>.</p>
-<p>The chip spends <mark>roughly 300× longer moving weights than using them</mark>. That ratio explains every serving decision downstream: batching is free throughput (the same 140 GB read serves all 64 sequences, so 64 tokens cost the same 42 ms), quantizing weights to INT4 cuts the read to 35 GB and roughly quadruples the ceiling, and shrinking the KV cache (GQA, MLA, FP8 KV) matters because at long context the cache read starts to rival the weight read.</p>
+<p>The chip spends <mark>roughly 300× longer moving weights than using them</mark>. That ratio explains every serving decision downstream: batching is free throughput (the same 140 GB read serves all 64 sequences, so 64 tokens cost the same 42 ms), quantising weights to INT4 cuts the read to 35 GB and roughly quadruples the ceiling, and shrinking the KV cache (GQA, MLA, FP8 KV) matters because at long context the cache read starts to rival the weight read.</p>
 <p><b>MFU</b> (model FLOPs utilisation) is achieved useful FLOPs over peak. Training runs at 35–55% and that is respectable; single-stream decode sits near <i>0.05%</i> — not because anything is broken, but because the workload has no arithmetic to do per byte fetched. Quote MFU for training and tokens-per-second-per-GPU for serving; confusing the two is a tell.</p>`)}
 
 <p><b>What you are looking at.</b> The plot draws memory time per decode step (flat, because the same weights are read regardless of how many sequences you are decoding at once) against compute time per step (rising linearly with batch size, because more sequences means proportionally more arithmetic), for whatever model size, hardware bandwidth and precision you choose. The green marker sits at your current batch size on the curve of actual step time — the larger of the two.</p>
 <p><b>What to do with it.</b> Start at batch 1 and confirm the marker sits on the flat blue line, reproducing the worked 42 ms figure. Drag the batch slider up and watch step time stay essentially flat — the same weight read now amortises across every sequence in the batch — until the amber crossover marker, where the rising compute line finally overtakes the flat memory line.</p>
-<p><b>The thing genuinely worth noticing.</b> Past the crossover, adding more batch starts costing real time again, because the workload has flipped into compute-bound: the free lunch is over. Switch precision to INT4 and watch that crossover point move sharply to the right — a smaller memory read buys a wider window in which batching is still nearly free, which is exactly why quantization is a serving lever and not merely an accuracy one.</p>
+<p><b>The thing genuinely worth noticing.</b> Past the crossover, adding more batch starts costing real time again, because the workload has flipped into compute-bound: the free lunch is over. Switch precision to INT4 and watch that crossover point move sharply to the right — a smaller memory read buys a wider window in which batching is still nearly free, which is exactly why quantisation is a serving lever and not merely an accuracy one.</p>
 
 ${H.lab('bound', 'Memory-bound or compute-bound? — the roofline', 'Move the batch size and watch the workload cross from bandwidth-bound to compute-bound. The crossing point is the arithmetic intensity your hardware needs, and it is why serving stacks fight so hard for batch.')}
 

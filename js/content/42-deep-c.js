@@ -77,7 +77,7 @@ ${H.intuition(`<p>The reason reverse mode wins for training is entirely about th
 ${H.table(['Bucket', 'Size (bf16 weights, Adam)', 'Scales with'], [
       ['Parameters', '2 bytes × $N$', 'model size'],
       ['Gradients', '2 bytes × $N$', 'model size'],
-      ['Optimizer state (Adam m, v, fp32 master)', '~12 bytes × $N$', 'model size'],
+      ['Optimiser state (Adam m, v, fp32 master)', '~12 bytes × $N$', 'model size'],
       ['<b>Activations</b>', '$O(L \\cdot B \\cdot S \\cdot d)$', '<b>batch × sequence × depth</b>']
     ])}
 <p>The first three buckets are fixed once the model is chosen — they do not care how big a batch you feed it. The fourth does not care about the model's size in the same way at all; it grows with how much data you push through in one go and how deep the network is. This is exactly why increasing batch size is often what tips a training run from fitting to not fitting, even though the parameter count on disk has not moved an inch — a fact worth having ready, because "we didn't change the model, why did it OOM?" is one of the most common confusions in the field.</p>
@@ -365,7 +365,7 @@ ${H.pitfall('The loss spike that "recovers" often has not. A large spike can kno
 ${H.probe([
       ['Your loss is flat at exactly $\\ln(C)$ for a $C$-class problem. Diagnose it.', 'The model is outputting a uniform distribution — it has learned the prior and nothing else. Either the LR is far too low, the labels are shuffled relative to the inputs, or the head is disconnected. Check the label alignment first; it is the most common cause.'],
       ['Validation loss is <i>below</i> training loss. Is something wrong?', 'Usually not. Training loss is measured with dropout and augmentation on, validation without. Confirm by evaluating the training set in eval mode; if the gap persists, your split is not random.'],
-      ['What is the first thing you do on a new model?', 'Overfit ten examples to near-zero loss with regularization off. It takes two minutes and eliminates the entire class of data and plumbing bugs.'],
+      ['What is the first thing you do on a new model?', 'Overfit ten examples to near-zero loss with regularisation off. It takes two minutes and eliminates the entire class of data and plumbing bugs.'],
       ['Loss falls but your metric does not move. What is happening?', 'The loss and the metric are not aligned: often a threshold problem on an imbalanced task, or a proxy loss that does not track the objective. Look at the metric’s decomposition, not the loss.']
     ])}`,
     labs: {
@@ -383,7 +383,7 @@ ${H.probe([
           { name: 'saw', gen: (t) => 2.3 * Math.exp(-t / 55) + .28 + .16 * Math.abs(((t % 25) / 25) - .5), cause: 'A cyclic (or restarting) learning-rate schedule',
             why: 'Nothing is wrong. Plot the learning rate on the same axes and the mystery evaporates. Half of all confusing curve features are the schedule.' },
           { name: 'overfit', gen: (t) => 2.3 * Math.exp(-t / 22) + .04, gen2: (t) => 2.3 * Math.exp(-t / 30) + .35 + Math.max(0, (t - 45) * .010), cause: 'Overfitting',
-            why: 'Training keeps falling; validation bottoms out around step 45 and then climbs. Early stopping at the minimum, more regularization, more data or more augmentation.' },
+            why: 'Training keeps falling; validation bottoms out around step 45 and then climbs. Early stopping at the minimum, more regularisation, more data or more augmentation.' },
           { name: 'step', gen: (t) => (t < 55 ? 2.3 * Math.exp(-t / 30) + .3 : 2.3 * Math.exp(-t / 30) + .95), cause: 'A data pipeline event — shard boundary or distribution change',
             why: 'A discontinuity, not a slope change. Optimisation problems bend the curve; data problems step it. Plot loss against data index rather than step and the boundary will be obvious.' },
           { name: 'plateau', gen: (t) => t < 30 ? 2.3 - .02 * t : (t < 75 ? 1.7 : 1.7 - .02 * (t - 75)), cause: 'A saddle or a dead-ReLU plateau; the schedule later escapes it',
@@ -547,13 +547,13 @@ ${H.probe([
       },
       {
         q: 'Comparing two runs with different batch sizes, you should plot loss against…',
-        options: ['optimizer steps', 'tokens or examples seen', 'wall-clock time', 'epochs'],
+        options: ['optimiser steps', 'tokens or examples seen', 'wall-clock time', 'epochs'],
         answer: 1,
         why: 'Step axes make the larger batch look artificially efficient. Many optimiser comparisons evaporate when replotted against tokens.'
       }
     ],
     cards: [
-      { q: 'First thing to do with a new model', a: 'Overfit ten examples to near-zero loss with regularization off. It rules out every data and plumbing bug in two minutes.' },
+      { q: 'First thing to do with a new model', a: 'Overfit ten examples to near-zero loss with regularisation off. It rules out every data and plumbing bug in two minutes.' },
       { q: 'Loss stuck at ln(C)', a: 'Uniform predictions — the model learned the prior. Check label alignment and gradient flow.' },
       { q: 'Bend vs step', a: 'A bend is an optimisation event; a vertical step is a data event.' },
       { q: 'Update-to-weight ratio', a: '$\\|\\Delta w\\|/\\|w\\| \\approx 10^{-3}$ is healthy. Orders of magnitude off in either direction is the earliest reliable warning.' },
@@ -564,40 +564,40 @@ ${H.probe([
   /* ------------------------------------------------------------------ 3.13 */
   ML.section({
     id: 'compression', track: 'deep', num: '3.13', level: 2,
-    title: 'Quantization, pruning, and distillation',
+    title: 'Quantisation, pruning, and distillation',
     lede: 'Three ways to make a trained model smaller and faster. They compose, they have very different risk profiles, and the arithmetic that decides which one you need is the same memory-bandwidth arithmetic as §4.14.',
     prereq: ['numerics'],
     related: ['serving', 'lora', 'numerics'],
     html: `
-<p>You have a model that works. Someone else now needs it to run on hardware smaller than the one it was trained on, or to answer in milliseconds rather than seconds, or to cost a fraction of what it currently costs per query. The model's accuracy is fine; its <i>footprint</i> is the problem. Three genuinely different levers exist for shrinking that footprint, and they correspond to three different questions you could ask about a trained network: can each number be described more cheaply? Are all of these numbers actually necessary? And could a much smaller network be taught to reach almost the same answers? Those questions are quantization, pruning and distillation, in that order, and this section builds each from its motivating question rather than its acronym.</p>
-${H.analogy(`<p>Think of the three as three different answers to "this video file is too large". Quantization is lowering the bitrate: every frame is still there, but each pixel is described with fewer bits, and you choose that trade knowing exactly how much space each bit costs you. Pruning is deleting frames: if ninety per cent of a static shot is identical to the frame before it, most of those frames are redundant, and removing them shrinks the file — but only if your player actually skips the deleted frames rather than storing blank ones and playing them anyway, which is precisely the distinction between structured and unstructured pruning below. Distillation is asking someone who watched the whole film to write you a much shorter summary that still lets you follow the plot — a different, smaller artefact, produced by learning from the original rather than editing it.</p>`)}
+<p>You have a model that works. Someone else now needs it to run on hardware smaller than the one it was trained on, or to answer in milliseconds rather than seconds, or to cost a fraction of what it currently costs per query. The model's accuracy is fine; its <i>footprint</i> is the problem. Three genuinely different levers exist for shrinking that footprint, and they correspond to three different questions you could ask about a trained network: can each number be described more cheaply? Are all of these numbers actually necessary? And could a much smaller network be taught to reach almost the same answers? Those questions are quantisation, pruning and distillation, in that order, and this section builds each from its motivating question rather than its acronym.</p>
+${H.analogy(`<p>Think of the three as three different answers to "this video file is too large". Quantisation is lowering the bitrate: every frame is still there, but each pixel is described with fewer bits, and you choose that trade knowing exactly how much space each bit costs you. Pruning is deleting frames: if ninety per cent of a static shot is identical to the frame before it, most of those frames are redundant, and removing them shrinks the file — but only if your player actually skips the deleted frames rather than storing blank ones and playing them anyway, which is precisely the distinction between structured and unstructured pruning below. Distillation is asking someone who watched the whole film to write you a much shorter summary that still lets you follow the plot — a different, smaller artefact, produced by learning from the original rather than editing it.</p>`)}
 
 ${H.tldr([
-      '<b>Quantization</b> is nearly always the first move: INT8 is roughly free, 4-bit costs 1–3 points of quality and quarters the memory, and LLM inference is memory-bandwidth-bound so fewer bytes means proportionally more tokens per second.',
+      '<b>Quantisation</b> is nearly always the first move: INT8 is roughly free, 4-bit costs 1–3 points of quality and quarters the memory, and LLM inference is memory-bandwidth-bound so fewer bytes means proportionally more tokens per second.',
       '<b>Pruning</b>: unstructured sparsity compresses well but rarely speeds anything up without special kernels; structured pruning (whole heads, channels, layers) is slower to recover but actually runs faster.',
       '<b>Distillation</b> transfers the teacher’s <i>soft</i> predictions. The information is in the wrong answers’ relative probabilities — which is why the temperature matters and why the gradient is scaled by $T^2$.'
     ])}
 
-<h2><span class="sn">3.13.1</span> Quantization</h2>
-<p>A trained weight is stored as a 32- or 16-bit float, which is a far more precise description than the weight's actual role in the network needs — nobody is relying on the fifteenth decimal digit of a single attention weight. Quantization exploits that slack directly: pick a small integer grid, typically 256 points for 8-bit or 16 points for 4-bit, and describe every weight by the nearest grid point plus one shared conversion recipe for the whole group of weights. Map a float tensor to that grid with $q = \\mathrm{round}(x/s) + z$, where $s$ is a <b>scale</b> — how much real value one integer step represents — and $z$ is a <b>zero-point</b>, an offset used when the values are not centred on zero. Recovering an approximate float back out is <b>dequantisation</b>, $\\hat x = s(q-z)$, and the whole scheme lives or dies on how good an approximation that round-trip is. Two decisions determine everything about that quality.</p>
+<h2><span class="sn">3.13.1</span> Quantisation</h2>
+<p>A trained weight is stored as a 32- or 16-bit float, which is a far more precise description than the weight's actual role in the network needs — nobody is relying on the fifteenth decimal digit of a single attention weight. Quantisation exploits that slack directly: pick a small integer grid, typically 256 points for 8-bit or 16 points for 4-bit, and describe every weight by the nearest grid point plus one shared conversion recipe for the whole group of weights. Map a float tensor to that grid with $q = \\mathrm{round}(x/s) + z$, where $s$ is a <b>scale</b> — how much real value one integer step represents — and $z$ is a <b>zero-point</b>, an offset used when the values are not centred on zero. Recovering an approximate float back out is <b>dequantisation</b>, $\\hat x = s(q-z)$, and the whole scheme lives or dies on how good an approximation that round-trip is. Two decisions determine everything about that quality.</p>
 ${H.table(['Decision', 'Options', 'Trade'], [
       ['Symmetric or affine', '$z=0$ (symmetric) vs a learned zero-point', 'symmetric is cheaper; affine handles skewed activation ranges (post-ReLU)'],
       ['Granularity', 'per-tensor / per-channel / per-group (e.g. 64 or 128 weights)', 'finer granularity costs a few bits of overhead and recovers most of the quality — <b>group-wise is why 4-bit works at all</b>'],
-      ['<b>PTQ or QAT</b>', 'quantise after training vs simulate quantization during it', 'PTQ needs ~128 calibration samples and an afternoon; QAT needs a training run and buys 1–2 points back at ≤4 bits'],
-      ['What to quantise', 'weights only / weights + activations / + KV cache', 'weight-only is easiest and helps most for LLMs; activation quantization is where outliers bite']
+      ['<b>PTQ or QAT</b>', 'quantise after training vs simulate quantisation during it', 'PTQ needs ~128 calibration samples and an afternoon; QAT needs a training run and buys 1–2 points back at ≤4 bits'],
+      ['What to quantise', 'weights only / weights + activations / + KV cache', 'weight-only is easiest and helps most for LLMs; activation quantisation is where outliers bite']
     ])}
-<p>The granularity row deserves a second look, because it is the row that decides whether 4-bit is usable at all. A single scale for an entire weight matrix has to serve every value in that matrix, including whichever one happens to be the largest in magnitude — and one unusually large weight forces the whole grid to stretch to accommodate it, wasting most of the grid's resolution on a range the typical weight never visits. Shrink the group a single scale has to cover, down to a block of 64 or 128 weights, and each group can set its own scale tuned to its own range. The overhead is a handful of extra numbers stored per group; the payoff, visible directly in the lab below, is the difference between 4-bit quantization being usable and 4-bit quantization being useless.</p>
-<p><b>What you are looking at.</b> A real multilayer perceptron, trained to convergence on a two-class problem, then quantised at the bit width and granularity you choose. The left panel is a histogram of the original fp32 weights, in outline, with the quantised values overlaid as coloured spikes — each spike is one surviving grid level, and its height is how many weights landed on it. The right panel is the network's decision boundary after quantization, on the same held-out points used to score accuracy.</p>
+<p>The granularity row deserves a second look, because it is the row that decides whether 4-bit is usable at all. A single scale for an entire weight matrix has to serve every value in that matrix, including whichever one happens to be the largest in magnitude — and one unusually large weight forces the whole grid to stretch to accommodate it, wasting most of the grid's resolution on a range the typical weight never visits. Shrink the group a single scale has to cover, down to a block of 64 or 128 weights, and each group can set its own scale tuned to its own range. The overhead is a handful of extra numbers stored per group; the payoff, visible directly in the lab below, is the difference between 4-bit quantisation being usable and 4-bit quantisation being useless.</p>
+<p><b>What you are looking at.</b> A real multilayer perceptron, trained to convergence on a two-class problem, then quantised at the bit width and granularity you choose. The left panel is a histogram of the original fp32 weights, in outline, with the quantised values overlaid as coloured spikes — each spike is one surviving grid level, and its height is how many weights landed on it. The right panel is the network's decision boundary after quantisation, on the same held-out points used to score accuracy.</p>
 <p><b>What to do with it.</b> Start at 8 bits and note the two panels barely change from the unquantised baseline — the grid is fine enough to be invisible. Walk the bit width down toward 1 and watch the histogram collapse onto a handful of spikes, each one absorbing a wide range of original values, while the decision boundary visibly coarsens and the accuracy readout drops. Then, holding bits fixed at 4, switch granularity from per-channel back to per-tensor and watch accuracy fall again with nothing else changed.</p>
-<p><b>The thing genuinely worth noticing.</b> The granularity switch is the whole argument for group-wise quantization made visible: the same number of bits, describing the same weights, gives a noticeably worse result the moment one scale has to serve a wider range of values. That is not a subtle effect requiring careful measurement — it shows up as a clearly worse decision boundary on the same two-line change. Every production 4-bit format ships a group size for exactly this reason.</p>
-${H.lab('quant', 'Quantize a trained network and watch the accuracy fall', 'A real MLP, really trained, whose weights are really quantised at the bit width you choose. Everything below the plot is measured, including the accuracy — this is not a lookup table.')}
-${H.flag('The hard part of LLM quantization is <b>activation outliers</b>: a handful of channels carry values 100× the rest, and per-tensor scaling then wastes the whole grid on them. LLM.int8() handles those channels in fp16; SmoothQuant migrates the difficulty from activations into weights; AWQ protects the 1% of weight channels that matter most; GPTQ solves a layerwise reconstruction problem with second-order information. All four exist because of the same outlier phenomenon.')}
-${H.worked('why 4-bit quantization buys throughput, not just memory', `
+<p><b>The thing genuinely worth noticing.</b> The granularity switch is the whole argument for group-wise quantisation made visible: the same number of bits, describing the same weights, gives a noticeably worse result the moment one scale has to serve a wider range of values. That is not a subtle effect requiring careful measurement — it shows up as a clearly worse decision boundary on the same two-line change. Every production 4-bit format ships a group size for exactly this reason.</p>
+${H.lab('quant', 'Quantise a trained network and watch the accuracy fall', 'A real MLP, really trained, whose weights are really quantised at the bit width you choose. Everything below the plot is measured, including the accuracy — this is not a lookup table.')}
+${H.flag('The hard part of LLM quantisation is <b>activation outliers</b>: a handful of channels carry values 100× the rest, and per-tensor scaling then wastes the whole grid on them. LLM.int8() handles those channels in fp16; SmoothQuant migrates the difficulty from activations into weights; AWQ protects the 1% of weight channels that matter most; GPTQ solves a layerwise reconstruction problem with second-order information. All four exist because of the same outlier phenomenon.')}
+${H.worked('why 4-bit quantisation buys throughput, not just memory', `
 <p>Decoding one token from a 70B model reads every weight once. At bf16 that is 140 GB per token; on a card with 2 TB/s of memory bandwidth the floor is $140/2000 = 70$ ms per token, or about 14 tokens/second — <b>before any computation at all</b>.</p>
 <p>Quantise to 4-bit and the read becomes 35 GB, so the floor drops to 17.5 ms, about 57 tokens/second. <b>The speedup is 4×, and it comes from bandwidth, not arithmetic.</b> This is also why batching is nearly free for decode: the weights are read once for the whole batch (§4.14).</p>`)}
 
 <h2><span class="sn">3.13.2</span> Pruning</h2>
-<p>Quantization keeps every weight and describes each one more cheaply. <b>Pruning</b> asks a different question: does every weight need to be there at all? The idea is old — LeCun, Denker and Solla's 1990 paper <i>Optimal Brain Damage</i> showed that a substantial fraction of a trained network's weights could be deleted, with the smallest-magnitude ones removed first, and the network fine-tuned back to nearly its original accuracy. The magnitude heuristic behind that result is still the default today: a weight close to zero is contributing almost nothing to the output, so zeroing it out and removing it from the parameter count should cost little.</p>
+<p>Quantisation keeps every weight and describes each one more cheaply. <b>Pruning</b> asks a different question: does every weight need to be there at all? The idea is old — LeCun, Denker and Solla's 1990 paper <i>Optimal Brain Damage</i> showed that a substantial fraction of a trained network's weights could be deleted, with the smallest-magnitude ones removed first, and the network fine-tuned back to nearly its original accuracy. The magnitude heuristic behind that result is still the default today: a weight close to zero is contributing almost nothing to the output, so zeroing it out and removing it from the parameter count should cost little.</p>
 <p>What that 1990 result does not tell you, and what trips up a great many otherwise-careful engineers, is whether removing those weights makes the network faster to run. Those are two separate claims — smaller on disk, and quicker at inference — and pruning delivers the first far more reliably than the second.</p>
 ${H.table(['Kind', 'What is removed', 'Compression', 'Actual speedup', 'Recovery'], [
       ['Unstructured magnitude', 'individual weights below a threshold', '10–20× on disk', '<b>none</b> on dense hardware', 'easy, retrain a little'],
@@ -610,7 +610,7 @@ ${H.pitfall('"We pruned 90% of the weights" almost never means "it runs 10× fas
 ${H.intuition(`<p>The <b>lottery ticket hypothesis</b> is the interesting theoretical claim here: a randomly initialised dense network contains a sparse subnetwork that, trained <i>from the same initialisation</i>, matches the full network. It is a genuine and reproducible finding at small scale. What it has not delivered is a way to find the ticket without training the dense network first — so it remains a statement about what exists rather than a practical method.</p>`)}
 
 <h2><span class="sn">3.13.3</span> Distillation</h2>
-<p>Quantization and pruning both start from a trained network and shrink it in place. <b>Distillation</b> does something stranger: it trains a second, smaller network from scratch, and the thing that makes the smaller network good is not the original training data at all — it is the first network's <i>predictions</i>. Call the large, already-trained network the <b>teacher</b> and the small one being trained the <b>student</b>. The naive way to teach the student would be to hand it the same hard labels the teacher was trained on — this image is a "7", full stop — and that works, but it throws away something the teacher has that the raw labels never had: an opinion about which wrong answers are <i>less</i> wrong than others.</p>
+<p>Quantisation and pruning both start from a trained network and shrink it in place. <b>Distillation</b> does something stranger: it trains a second, smaller network from scratch, and the thing that makes the smaller network good is not the original training data at all — it is the first network's <i>predictions</i>. Call the large, already-trained network the <b>teacher</b> and the small one being trained the <b>student</b>. The naive way to teach the student would be to hand it the same hard labels the teacher was trained on — this image is a "7", full stop — and that works, but it throws away something the teacher has that the raw labels never had: an opinion about which wrong answers are <i>less</i> wrong than others.</p>
 ${H.analogy(`<p>Picture a strict exam graded pass/fail against a marked answer key, next to a thoughtful tutor who tells you not just the right answer but how close each of your alternatives was — "your '7' looks a bit like a '1', which makes sense, they share a vertical stroke; it looks nothing like an '8'". The pass/fail exam is a hard label: right or wrong, nothing else. The tutor's running commentary is what a teacher network's full output distribution carries, and it is strictly more informative per example, which is the entire case for distillation over training the small network from labels alone.</p>`)}
 <p>To use that commentary you first have to make it legible, because a well-trained classifier's raw output is usually close to one-hot — 99.9% on the correct class, with all the interesting "this looks a little like a 1" information compressed into probabilities near zero that are hard to learn from. <b>Temperature</b> softens the softmax to bring that information back out: divide the logits by $T > 1$ before the softmax, and the output distribution spreads out, so that the small probabilities the teacher assigned to plausible wrong answers become large enough to actually train on. The full distillation loss blends this softened teacher-matching term with an ordinary hard-label term:</p>
 $$\\mathcal{L} = \\alpha\\, T^2\\,\\mathrm{KL}\\!\\left(\\sigma(z_t/T)\\,\\|\\,\\sigma(z_s/T)\\right) + (1-\\alpha)\\,\\mathrm{CE}(y, \\sigma(z_s))$$
@@ -632,8 +632,8 @@ ${H.table(['Variant', 'What is matched', 'Note'], [
 ${H.flag('Distilling from a commercial API to train a competitor is prohibited by most providers’ terms of service and is a live legal question, not merely a technical one. It is also, separately, how a great many open models were actually trained. Mention the constraint if the topic comes up in an interview — awareness of it is part of the job.')}
 
 ${H.probe([
-      ['You need 4× less memory on a 13B model tomorrow. What do you do?', 'Weight-only 4-bit group quantization (AWQ or GPTQ, group size 128) with a small calibration set. It is hours of work, costs a point or two, and buys ~4× on both memory and decode throughput.'],
-      ['Why does INT8 quantization of LLMs fail without special handling?', 'Activation outliers: a few channels have values two orders of magnitude larger, and per-tensor scaling then wastes the grid. LLM.int8(), SmoothQuant and AWQ are three different answers.'],
+      ['You need 4× less memory on a 13B model tomorrow. What do you do?', 'Weight-only 4-bit group quantisation (AWQ or GPTQ, group size 128) with a small calibration set. It is hours of work, costs a point or two, and buys ~4× on both memory and decode throughput.'],
+      ['Why does INT8 quantisation of LLMs fail without special handling?', 'Activation outliers: a few channels have values two orders of magnitude larger, and per-tensor scaling then wastes the grid. LLM.int8(), SmoothQuant and AWQ are three different answers.'],
       ['Why is unstructured pruning disappointing in production?', 'Dense kernels do not exploit scattered zeros. You get disk compression, not latency. Structured pruning or 2:4 sparsity is what actually runs faster.'],
       ['Why multiply the distillation loss by $T^2$?', 'The gradient through a temperature-$T$ softmax scales as $1/T^2$; the factor restores it so that $\\alpha$ balances the two terms independently of $T$.']
     ])}`,
@@ -641,7 +641,7 @@ ${H.probe([
       quant: function (host) {
         const st = Viz.controls(host, [
           { k: 'bits', label: 'weight bits', min: 1, max: 8, step: 1, value: 4, fmt: v => v + '-bit' },
-          { k: 'group', label: 'quantization granularity', type: 'select', value: 'row', options: [{ v: 'tensor', t: 'per tensor' }, { v: 'row', t: 'per output channel' }] },
+          { k: 'group', label: 'quantisation granularity', type: 'select', value: 'row', options: [{ v: 'tensor', t: 'per tensor' }, { v: 'row', t: 'per output channel' }] },
           { k: 'sym', label: 'symmetric', type: 'toggle', value: true },
           { k: 'prune', label: 'also prune smallest weights', min: 0, max: .9, step: .05, value: 0, fmt: v => (v * 100).toFixed(0) + '%' }
         ], () => S.redraw());
@@ -709,7 +709,7 @@ ${H.probe([
 
             ctx.save(); ctx.translate(w1, 0);
             const P2 = Viz.plot(ctx, w - w1, h, { xd: [-2.6, 2.9], yd: [-1.9, 2.3], pad: { l: 8, r: 8, t: 16, b: 30 } })
-              .frame({ grid: false, xticks: [], yticks: [], xlabel: 'decision boundary after quantization' });
+              .frame({ grid: false, xticks: [], yticks: [], xlabel: 'decision boundary after quantisation' });
             accOf(Wq);
             P2.clip(() => {
               Labs.boundary(P2, (x, y) => net.predict([x, y]), { step: 4, lo: 0, hi: 1 });
@@ -732,13 +732,13 @@ ${H.probe([
           const s = arr.map(Math.abs).sort((a, b) => a - b);
           return s[Math.floor(frac * s.length)];
         }
-        Viz.legend(host, [{ c: 'var(--line)', t: 'original fp32 weights' }, { c: 'var(--c2)', t: 'quantization grid' }]);
-        Viz.note(host, 'At 8 bits the grid is dense enough that the two distributions are indistinguishable and accuracy is unchanged. At 3 bits the weights collapse onto eight levels and the decision boundary visibly coarsens. Now switch granularity to <b>per tensor</b> at 4 bits: accuracy falls further, because one scale must serve channels with very different magnitudes. <b>That is the entire argument for group-wise quantization</b>, and it is why every 4-bit LLM format has a group size.');
+        Viz.legend(host, [{ c: 'var(--line)', t: 'original fp32 weights' }, { c: 'var(--c2)', t: 'quantisation grid' }]);
+        Viz.note(host, 'At 8 bits the grid is dense enough that the two distributions are indistinguishable and accuracy is unchanged. At 3 bits the weights collapse onto eight levels and the decision boundary visibly coarsens. Now switch granularity to <b>per tensor</b> at 4 bits: accuracy falls further, because one scale must serve channels with very different magnitudes. <b>That is the entire argument for group-wise quantisation</b>, and it is why every 4-bit LLM format has a group size.');
       }
     },
     quiz: [
       {
-        q: '4-bit weight quantization speeds up LLM decoding mainly because…',
+        q: '4-bit weight quantisation speeds up LLM decoding mainly because…',
         options: ['integer arithmetic is faster', 'decoding is memory-bandwidth-bound and there are 4× fewer bytes to read', 'the model has fewer parameters', 'it enables larger batches'],
         answer: 1,
         why: 'Each decoded token reads every weight once. Bytes read, not FLOPs, set the floor.'
@@ -756,14 +756,14 @@ ${H.probe([
         why: 'It is a normalisation derived from the chain rule, not a knob.'
       },
       {
-        q: 'The main obstacle to INT8 quantization of LLM activations is…',
+        q: 'The main obstacle to INT8 quantisation of LLM activations is…',
         options: ['insufficient training data', 'a few channels with outlier values 100× the rest', 'lack of hardware support', 'the softmax'],
         answer: 1,
         why: 'Per-tensor scaling wastes the grid on outliers. LLM.int8(), SmoothQuant and AWQ each attack this differently.'
       }
     ],
     cards: [
-      { q: 'Quantization formula', a: '$q=\\mathrm{round}(x/s)+z$, $\\hat x = s(q-z)$. Group-wise scales are what make 4-bit viable.' },
+      { q: 'Quantisation formula', a: '$q=\\mathrm{round}(x/s)+z$, $\\hat x = s(q-z)$. Group-wise scales are what make 4-bit viable.' },
       { q: 'Why 4-bit is 4× faster to decode', a: 'Decode is memory-bandwidth-bound: 70B at bf16 reads 140 GB/token, at 4-bit 35 GB/token.' },
       { q: 'Pruning that actually speeds things up', a: 'Structured (heads, channels, layers) or 2:4 semi-structured on supported hardware. Unstructured buys disk only.' },
       { q: 'Dark knowledge', a: 'The relative probabilities the teacher assigns to wrong answers. Temperature amplifies them; $T^2$ rescales the gradient.' },

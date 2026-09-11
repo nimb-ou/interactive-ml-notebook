@@ -113,7 +113,7 @@ ${H.iq('Warm-up: the questions that open loops', [
       readiness: function (host) {
         const DIMS = [
           { k: 'coding', label: 'Coding — arrays, hashing, complexity, from-scratch ML', weight: 1.0, secs: [['7.5', 'coding-round'], ['0.5', 'python-toolkit']] },
-          { k: 'breadth', label: 'ML breadth — bias/variance, regularization, metrics, trees', weight: 1.2, secs: [['7.2', 'interview-breadth'], ['2.26', 'part2-recall'], ['2.13', 'metrics']] },
+          { k: 'breadth', label: 'ML breadth — bias/variance, regularisation, metrics, trees', weight: 1.2, secs: [['7.2', 'interview-breadth'], ['2.26', 'part2-recall'], ['2.13', 'metrics']] },
           { k: 'depth', label: 'ML depth — deriving backprop, attention, the normal equations', weight: 1.1, secs: [['7.3', 'interview-depth'], ['0.7', 'matrix-calculus'], ['3.2', 'backprop']] },
           { k: 'stats', label: 'Statistics — intervals, power, causal inference, experiments', weight: 0.9, secs: [['1.6', 'intervals'], ['2.25', 'experimentation'], ['1.7', 'causal']] },
           { k: 'design', label: 'ML system design — requirements, serving, monitoring', weight: 1.3, secs: [['7.4', 'ml-system-design'], ['5.12', 'mlops'], ['4.14', 'serving']] },
@@ -451,7 +451,7 @@ ${H.key('If you fumbled more than five of these, do not read them again — say 
           ['Models', 'Bagging vs boosting — what does each reduce?', 'Bagging reduces variance (parallel strong learners); boosting reduces bias (sequential weak learners on residuals).', 'boosting'],
           ['Models', 'Why does a random forest subsample features?', 'To lower the correlation ρ between trees. The ensemble variance floor is ρσ², so diversity — not the number of trees — is the binding constraint.', 'ensembles'],
           ['Models', 'The kernel trick in one sentence.', 'The dual depends on data only through inner products, so replacing them with a PSD kernel gives another space’s geometry without ever constructing its features.', 'svm'],
-          ['Models', 'What does the SVM margin maximise, and why does that generalise?', 'The distance to the nearest points. A larger margin means a smaller effective capacity, which bounds generalization error.', 'svm'],
+          ['Models', 'What does the SVM margin maximise, and why does that generalise?', 'The distance to the nearest points. A larger margin means a smaller effective capacity, which bounds generalisation error.', 'svm'],
           ['Models', 'Why must you scale features before k-means and SVM?', 'Both use Euclidean distance, so a feature measured in thousands dominates one measured in units. Trees are scale-invariant and do not care.', 'unsupervised'],
           ['Models', 'k-means assumptions?', 'Spherical, similar-sized, similar-density clusters — it minimises within-cluster squared Euclidean distance. Use GMM for elliptical, DBSCAN for arbitrary shapes.', 'unsupervised'],
           ['Models', 'Why is Naive Bayes badly calibrated but a decent classifier?', 'Conditional independence counts correlated evidence repeatedly, producing over-confident posteriors — but the argmax often survives.', 'knn-nb'],
@@ -460,7 +460,7 @@ ${H.key('If you fumbled more than five of these, do not read them again — say 
           ['Deep', 'What problem does batch norm solve, and what replaced it in transformers?', 'It stabilises layer input distributions and permits higher learning rates. Layer norm (then RMSNorm) replaced it because batch statistics are unstable for variable-length sequences.', 'normalisation'],
           ['Deep', 'Why do residual connections help?', 'They give a gradient path with derivative 1 straight to earlier layers, so depth stops multiplying small numbers. It is what makes 100+ layer stacks trainable.', 'cnn'],
           ['Deep', 'Adam in one sentence, and its two bias corrections.', 'Per-parameter step sizes from EMAs of the gradient and its square; both EMAs start at zero, so each is divided by 1−β^t to remove the initial bias.', 'optimisers'],
-          ['Deep', 'What does weight decay do that L2 does not, in Adam?', 'AdamW decouples decay from the adaptive denominator. Plain L2 inside Adam is scaled by 1/√v, so heavily-updated parameters get less regularization than intended.', 'optimisers'],
+          ['Deep', 'What does weight decay do that L2 does not, in Adam?', 'AdamW decouples decay from the adaptive denominator. Plain L2 inside Adam is scaled by 1/√v, so heavily-updated parameters get less regularisation than intended.', 'optimisers'],
           ['Deep', 'Why two 3×3 convolutions instead of one 5×5?', 'Same receptive field, 18 vs 25 parameters per channel pair, and one extra nonlinearity.', 'cnn'],
           ['Deep', 'Dropout at training and at inference?', 'Randomly zero units during training (scaling the rest by 1/(1−p)); at inference use all units with no scaling. Getting the scaling wrong shifts every activation.', 'normalisation'],
           ['Deep', 'What does gradient clipping prevent?', 'A single large-gradient batch destroying the weights. Standard in LLM pretraining, usually at global norm 1.0.', 'training-dynamics'],
@@ -972,7 +972,7 @@ ${H.iq('Design-round questions and what a strong answer contains', [
         level: 'senior',
         a: `<p>Work the budget backwards. 50 ms p99 total: network 5, feature fetch 10, model 20, serialisation and overhead 15. Now check each against reality — a feature store point lookup is single-digit ms only if it is one batched call, so batch the fetches.</p>
 <p>Capacity: at 10k QPS and 20 ms of model time, one thread serves 50 QPS, so you need ~200 concurrent slots plus headroom — a handful of machines for gradient boosting, a different conversation for a neural model. Add dynamic batching if the model is on a GPU; measure whether batching helps or hurts p99 (it usually trades p50 for throughput).</p>
-<p>Then the levers, in order of return: <b>cache</b> (what fraction of requests repeat?), <b>precompute</b> (which features can be computed offline?), <b>shrink</b> (quantize or distil — §3.13), <b>degrade</b> (a cheap fallback when the budget is blown).</p>`,
+<p>Then the levers, in order of return: <b>cache</b> (what fraction of requests repeat?), <b>precompute</b> (which features can be computed offline?), <b>shrink</b> (quantise or distil — §3.13), <b>degrade</b> (a cheap fallback when the budget is blown).</p>`,
         follow: ['What if p99 is fine but p999 is terrible?', 'How does batching interact with the latency target?', 'What is your fallback when the model service is down?']
       },
       {

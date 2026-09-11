@@ -784,7 +784,7 @@ ${H.probe([
   /* ------------------------------------------------------------------ 1.4 */
   ML.section({
     id: 'concentration', track: 'foundations', num: '1.4',
-    title: 'LLN, CLT, concentration — why generalization is possible at all',
+    title: 'LLN, CLT, concentration — why generalisation is possible at all',
     lede: 'Nothing forces a number measured on data you have to say anything about data you do not have. This section is the argument that it does anyway: averages of independent things cluster tightly around their true value, at a rate you can compute, and that rate is the theoretical licence for the entire train/test protocol. A limit is not a guarantee about your 4,000-row test set; concentration is.',
     rests: 'Licenses: §2.1 the split · §2.14 trusting a validation number · §2.13 every reported metric.',
     html: `
@@ -1071,8 +1071,8 @@ ${H.probe([
   /* ------------------------------------------------------------------ 1.5 */
   ML.section({
     id: 'mle-map', track: 'foundations', num: '1.5',
-    title: 'MLE, MAP, and the bridge to loss and regularization',
-    lede: 'The single most reused idea on this site: it turns every model in Parts 2 and 4 into an optimization problem you can write down from scratch.',
+    title: 'MLE, MAP, and the bridge to loss and regularisation',
+    lede: 'The single most reused idea on this site: it turns every model in Parts 2 and 4 into an optimisation problem you can write down from scratch.',
     rests: 'Consumed by: every loss in Part 2 · the softmax objective in §4.9 · the KL penalties in §4.12.',
     html: `
 <h2><span class="sn">1.5.1</span> Maximum likelihood</h2>
@@ -1090,7 +1090,7 @@ ${H.table(['Assume', 'NLL becomes', 'Known as'], [
 <h2><span class="sn">1.5.2</span> MAP adds a prior</h2>
 $$\\arg\\max_\\theta\\; \\log p(\\text{data}\\mid\\theta) + \\log p(\\theta)$$
 <p>A zero-mean Gaussian prior $\\mathcal{N}(0,\\tau^2)$ contributes $-\\frac{1}{2\\tau^2}\\|\\theta\\|_2^2$ — an <b>L2 penalty with $\\lambda = 1/(2\\tau^2)$</b>. A Laplace prior contributes $-\\frac{1}{b}\\|\\theta\\|_1$ — <b>L1</b>. So:</p>
-${H.key('Regularization is a prior, and the regularization strength is the prior’s inverse variance.')}
+${H.key('Regularisation is a prior, and the regularisation strength is the prior’s inverse variance.')}
 <p>Let $\\tau^2 \\to \\infty$ (a flat prior) and MAP degenerates to MLE — the cleanest one-line answer to "when are MAP and MLE the same?"</p>
 
 ${H.lab('assum', 'Assumption → loss → penalty', 'Pick a noise model and a prior; the objective assembles itself. Compare squared error against absolute error at a large residual — that ratio is exactly why one is robust and the other is not.')}
@@ -1240,7 +1240,7 @@ ${H.probe([
     ],
     cards: [
       { q: 'The MLE→loss bridge', a: 'The NLL of your assumed noise model IS your loss: Gaussian→MSE, Bernoulli→cross-entropy, Poisson→deviance, Laplace→MAE.' },
-      { q: 'The MAP→regularizer bridge', a: 'Gaussian prior → L2 with λ=1/(2τ²); Laplace prior → L1. Strength is the prior’s inverse variance.' },
+      { q: 'The MAP→regulariser bridge', a: 'Gaussian prior → L2 with λ=1/(2τ²); Laplace prior → L1. Strength is the prior’s inverse variance.' },
       { q: 'When does MAP equal MLE?', a: 'When the prior variance → ∞ (flat prior).' }
     ]
   });

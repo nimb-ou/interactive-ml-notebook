@@ -6,7 +6,7 @@
 
   ML.track({ id: 'start', short: 'Part 0', title: 'Start here', blurb: 'What machine learning actually is, plus the exact linear algebra, matrix calculus, notation and probability the rest of the site consumes — built from zero, with things you can drag.' });
   ML.track({ id: 'foundations', short: 'Part 1', title: 'Mathematical & statistical foundations', blurb: 'Bayes, the distributions that recur, concentration, MLE/MAP, intervals and testing, causal inference, eigen/SVD, information theory, optimisation, sampling, Bayesian inference and floating point.' });
-  ML.track({ id: 'classical', short: 'Part 2', title: 'Core & classical machine learning', blurb: 'Loss vs metric, bias–variance, regularization, GLMs, SVMs, trees, boosting, clustering, PCA, features, calibration, metrics, validation, ensembles, Gaussian processes, self-supervision, ranking and online experiments.' });
+  ML.track({ id: 'classical', short: 'Part 2', title: 'Core & classical machine learning', blurb: 'Loss vs metric, bias–variance, regularisation, GLMs, SVMs, trees, boosting, clustering, PCA, features, calibration, metrics, validation, ensembles, Gaussian processes, self-supervision, ranking and online experiments.' });
   ML.track({ id: 'deep', short: 'Part 3', title: 'Neural networks & deep learning', blurb: 'Backprop by hand, activations, initialisation, normalisation, optimisers, CNNs, RNNs, autodiff, reading a training curve, compression and adversarial robustness.' });
   ML.track({ id: 'llm', short: 'Part 4', title: 'LLMs & transformers', blurb: 'Attention derived, RoPE, the block with shapes, MoE and SSMs, pretraining, scaling laws, distributed training, SFT→DPO→GRPO→RLVR, LoRA, serving, decoding, evaluation, safety, multimodality, reasoning and speculative decoding.' });
   ML.track({ id: 'applied', short: 'Part 5', title: 'RAG, agents, MCP, production', blurb: 'Retrieval end to end, chunking, vector indexes, RAG vs fine-tune vs long context, agent loops, the 2026 stateless MCP, prompt injection, evals that do not lie, MLOps and cost per successful task.' });
@@ -62,8 +62,8 @@
     <h4>Ship something that holds up</h4>
     <p>The parts that decide whether it survives real users.</p>
     <ol>
-      <li><a href="#/decision-ladder">5.8</a> the decision ladder — read this first</li>
-      <li><a href="#/rag">5.1</a>, <a href="#/chunking">5.10</a>, <a href="#/vector-search">5.9</a> retrieval end to end</li>
+      <li><a href="#/decision-ladder">5.13</a> the decision ladder — read this first</li>
+      <li><a href="#/rag">5.1</a>, <a href="#/chunking">5.9</a>, <a href="#/vector-search">5.10</a> retrieval end to end</li>
       <li><a href="#/evals">5.11</a> evals, <a href="#/production-ai">5.7</a> injection and cost</li>
       <li><a href="#/serving">4.14</a> and <a href="#/speculative">4.22</a> for the latency budget</li>
     </ol>
@@ -74,8 +74,8 @@
     <p>The sections most people skip and later regret.</p>
     <ol>
       <li><a href="#/calibration">2.12</a> calibration and conformal prediction</li>
-      <li><a href="#/optimization">1.14</a> duality and KKT, <a href="#/numerics">1.15</a> floating point</li>
-      <li><a href="#/training-dynamics">3.11</a> reading a training curve</li>
+      <li><a href="#/optimization">1.12</a> duality and KKT, <a href="#/numerics">1.15</a> floating point</li>
+      <li><a href="#/training-dynamics">3.12</a> reading a training curve</li>
       <li><a href="#/experimentation">2.25</a> peeking, CUPED and sequential tests</li>
     </ol>
   </div>

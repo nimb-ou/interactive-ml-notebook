@@ -830,7 +830,7 @@ ${H.probe([
       },
       {
         q: 'A credit model is trained only on approved applicants. What is the problem called and what fixes it?',
-        options: ['Overfitting; use regularization', 'Selection bias; reject inference or a randomised holdout above the cut-off', 'Concept drift; retrain', 'Class imbalance; resample'],
+        options: ['Overfitting; use regularisation', 'Selection bias; reject inference or a randomised holdout above the cut-off', 'Concept drift; retrain', 'Class imbalance; resample'],
         answer: 1,
         why: 'The labels exist only for applicants the old policy approved, so the training population is a selected subset rather than the population the model will score — and the selection was hardest exactly near the cut-off, which is where the new model most needs to be accurate. "Overfitting; use regularisation" is tempting because the symptom looks similar, a model that performs worse in production than in validation, but regularisation cannot manufacture information about applicants whose outcomes were never observed. Reject inference attempts to impute those outcomes; the stronger fix is a small randomised acceptance band just below the line, which buys genuinely unbiased labels at a deliberate and budgeted cost. §1.7.5 also connects this to survivorship and regression to the mean, which are the same selection problem in different clothes.'
       }
@@ -1172,7 +1172,7 @@ ${H.probe([
     ],
     cards: [
       { q: 'SVD in one sentence', a: 'Rotate · scale · rotate; $A=U\\Sigma V^\\mathsf{T}$, and truncation gives the best low-rank fit (Eckart–Young).' },
-      { q: 'PSD definition and consequence', a: '$x^\\mathsf{T}Ax\\ge0$ ⟺ all eigenvalues ≥ 0. Covariance and kernel matrices are PSD, making their optimizations convex.' },
+      { q: 'PSD definition and consequence', a: '$x^\\mathsf{T}Ax\\ge0$ ⟺ all eigenvalues ≥ 0. Covariance and kernel matrices are PSD, making their optimisations convex.' },
       { q: 'Condition number', a: '$\\kappa=\\sigma_{\\max}/\\sigma_{\\min}$ — how much the map stretches unevenly; it governs both numerical stability and gradient-descent speed.' }
     ]
   });

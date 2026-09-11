@@ -618,7 +618,7 @@ ${H.tldr([
 <h2><span class="sn">4.22.1</span> Why one token per pass is so wasteful</h2>
 ${H.worked('the arithmetic of a decode step', `
 <p>Decoding one token from a 70B model in bf16 reads 140 GB of weights. At 2 TB/s that is 70 ms — a floor of about 14 tokens/second — while performing only 140 GFLOPs, which the same card could do in under a millisecond.</p>
-<p><b>The arithmetic intensity of decode is about 1 FLOP per byte; the hardware wants 200+.</b> The GPU is idle more than 99% of the time, waiting for memory. Every serving optimisation in this section and §4.14 is an attempt to get more useful work out of each pass over the weights: batching amortises across requests, quantization shrinks the bytes, and speculation amortises across <i>positions within one request</i>.</p>`)}
+<p><b>The arithmetic intensity of decode is about 1 FLOP per byte; the hardware wants 200+.</b> The GPU is idle more than 99% of the time, waiting for memory. Every serving optimisation in this section and §4.14 is an attempt to get more useful work out of each pass over the weights: batching amortises across requests, quantisation shrinks the bytes, and speculation amortises across <i>positions within one request</i>.</p>`)}
 
 <h2><span class="sn">4.22.2</span> The algorithm, and why it is exact</h2>
 ${H.steps([

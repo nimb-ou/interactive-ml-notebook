@@ -109,7 +109,7 @@ ${H.intuition(`<p>The most consequential thing to understand about this taxonomy
 
 ${H.key('The goal is never to fit the data you have. It is to fit the data you do not have.')}
 
-<p>That this is achievable at all is neither obvious nor guaranteed. It works when your training examples genuinely represent what arrives later, and when the family of rules you searched was not so flexible that it could fit random noise as readily as real signal. Making that statement precise is the work of §1.4 on concentration. Controlling it in practice is the work of §2.2 on bias and variance, §2.3 on regularization, and §2.14 on validation.</p>
+<p>That this is achievable at all is neither obvious nor guaranteed. It works when your training examples genuinely represent what arrives later, and when the family of rules you searched was not so flexible that it could fit random noise as readily as real signal. Making that statement precise is the work of §1.4 on concentration. Controlling it in practice is the work of §2.2 on bias and variance, §2.3 on regularisation, and §2.14 on validation.</p>
 
 <h2><span class="sn">0.1.4</span> Watching all three objects at once</h2>
 
@@ -217,7 +217,7 @@ ${H.table(['If you want to…', 'Go to'], [
         q: 'A model scores 0.99 on the data it was fitted to and 0.61 on data it has never seen. Which of the three objects is most likely the problem?',
         options: ['The optimiser failed to converge', 'The model family is too flexible for the amount of data available', 'The loss was computed incorrectly', 'The data was not shuffled'],
         answer: 1,
-        why: 'The pattern to recognise here is the <i>gap</i> between the two numbers, rather than either number taken on its own. Start by noticing what the 0.99 tells you: the optimiser worked beautifully, because it found parameters that fit the training examples almost exactly. So the very number that looks alarming actually rules out option A. What the gap tells you instead is that the family of rules you searched was flexible enough to fit the random noise in your particular sample, and given the chance, it did exactly that. Memorising the training set is always available to a sufficiently flexible model, and it always produces this signature. The fix is to reduce that flexibility, either by choosing a simpler family or by adding regularization (§2.3), or to supply more data so that the noise averages out and only real structure survives. This gap has a name — variance — and §2.2 is devoted entirely to it.'
+        why: 'The pattern to recognise here is the <i>gap</i> between the two numbers, rather than either number taken on its own. Start by noticing what the 0.99 tells you: the optimiser worked beautifully, because it found parameters that fit the training examples almost exactly. So the very number that looks alarming actually rules out option A. What the gap tells you instead is that the family of rules you searched was flexible enough to fit the random noise in your particular sample, and given the chance, it did exactly that. Memorising the training set is always available to a sufficiently flexible model, and it always produces this signature. The fix is to reduce that flexibility, either by choosing a simpler family or by adding regularisation (§2.3), or to supply more data so that the noise averages out and only real structure survives. This gap has a name — variance — and §2.2 is devoted entirely to it.'
       },
       {
         q: 'Next-token prediction on a large corpus of text is best described as…',
@@ -426,7 +426,7 @@ ${H.table(['Term', 'What it means, in words', 'Where it bites'], [
       ['Identity $I$', 'The matrix that leaves every vector alone — ones down the diagonal, zeros elsewhere', 'Ridge adds $\\lambda I$ to force a matrix to be invertible (§2.3)'],
       ['Inverse $A^{-1}$', 'The map that undoes $A$. Exists only when $\\det A \\ne 0$, i.e. when nothing was flattened', 'Closed-form least squares (§2.4); Newton steps (§1.12)'],
       ['Rank', 'How many genuinely independent directions survive in the output', 'LoRA (§4.13) is the claim that a weight update only needs rank 16'],
-      ['Norm $\\|x\\|_2$', 'Length: $\\sqrt{\\sum_i x_i^2}$', 'L2 regularization is a penalty on this length (§2.3)'],
+      ['Norm $\\|x\\|_2$', 'Length: $\\sqrt{\\sum_i x_i^2}$', 'L2 regularisation is a penalty on this length (§2.3)'],
       ['Orthogonal matrix', 'Columns are unit length and mutually perpendicular; the map is a pure rotation or reflection', 'The $U$ and $V$ of the SVD; why rotations do not amplify error (§1.15)'],
       ['Symmetric, PSD', '$A = A^\\mathsf{T}$, and $x^\\mathsf{T}Ax \\ge 0$ for every $x$ — the map never reverses a direction back on itself', 'Covariance and kernel matrices; guarantees a bowl-shaped loss (§1.8)']
     ])}

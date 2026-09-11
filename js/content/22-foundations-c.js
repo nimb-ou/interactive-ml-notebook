@@ -29,7 +29,7 @@ ${H.tldr([
 ${H.table(['Problem', 'Convex?', 'Consequence'], [
       ['Linear/ridge regression', 'yes, strictly (with $\\lambda>0$)', 'unique solution, closed form'],
       ['Lasso', 'yes, not strictly', 'unique fit, possibly non-unique $w$ under collinearity'],
-      ['Logistic regression', 'yes', 'unique optimum unless the data are separable, when $\\|w\\|\\to\\infty$ — which is what regularization actually fixes'],
+      ['Logistic regression', 'yes', 'unique optimum unless the data are separable, when $\\|w\\|\\to\\infty$ — which is what regularisation actually fixes'],
       ['SVM (hinge + L2)', 'yes', 'a quadratic program with a dual; global optimum guaranteed'],
       ['k-means objective', 'no (in the assignments)', "Lloyd's algorithm finds a local optimum; restart it (§2.9)"],
       ['Neural networks', 'no', 'many minima — but at scale most are of similar quality, and saddle points, not minima, are the obstacle (§3.5)']
@@ -296,7 +296,7 @@ ${H.probe([
         q: 'Logistic regression on perfectly separable data has…',
         options: ['no solution because the loss is non-convex', 'a convex loss whose minimiser runs off to infinite weights', 'a unique bounded optimum', 'multiple disconnected minima'],
         answer: 1,
-        why: 'The logistic loss is convex everywhere, so "non-convex" is simply false — that option is there to catch a memorised-but-wrong association between "something is going wrong" and "the problem must be non-convex". On separable data the likelihood keeps improving forever as $\\|w\\|\\to\\infty$ in the separating direction, because pushing the decision boundary\'s confidence toward certainty always lowers the loss a little further; a convex function with no minimiser inside any bounded region is called non-coercive, and that is the correct diagnosis. Any amount of L2 regularization restores a finite optimum by adding a term that grows with $\\|w\\|$, which is the practical reason scikit-learn regularises logistic regression by default rather than leaving it to the user to discover this failure mode.'
+        why: 'The logistic loss is convex everywhere, so "non-convex" is simply false — that option is there to catch a memorised-but-wrong association between "something is going wrong" and "the problem must be non-convex". On separable data the likelihood keeps improving forever as $\\|w\\|\\to\\infty$ in the separating direction, because pushing the decision boundary\'s confidence toward certainty always lowers the loss a little further; a convex function with no minimiser inside any bounded region is called non-coercive, and that is the correct diagnosis. Any amount of L2 regularisation restores a finite optimum by adding a term that grows with $\\|w\\|$, which is the practical reason scikit-learn regularises logistic regression by default rather than leaving it to the user to discover this failure mode.'
       },
       {
         q: 'Why is Newton’s method impractical for deep networks?',
@@ -876,7 +876,7 @@ ${H.table(['Format', 'Bits (s/e/m)', 'Max', 'Smallest normal', 'Decimal digits',
       ['<b>bf16</b>', '1/8/7', '~3.4e38', '~1.2e-38', '~2.4', '<b>training</b> — same range as fp32, no loss scaling needed'],
       ['fp16', '1/5/10', '65,504', '~6.1e-5', '~3.3', 'training with loss scaling; inference'],
       ['fp8 (E4M3)', '1/4/3', '448', '~2e-3', '~1.5', 'inference, and forward passes on H100-class hardware'],
-      ['int8', 'integer', '127', '1', 'exact, 256 levels', 'post-training quantization (§3.13)']
+      ['int8', 'integer', '127', '1', 'exact, 256 levels', 'post-training quantisation (§3.13)']
     ], 'num')}
 ${H.key('bf16 has the same exponent as fp32 and only 8 bits of mantissa. It sacrificed precision — which training tolerates, because gradients are noisy anyway — to keep range, which training does not tolerate losing. That single design choice is why bf16 replaced fp16 for pretraining.')}
 ${H.history(`<p>Before 1985 every hardware vendor's floating point rounded, overflowed and lost precision according to its own conventions, so the same formula could give a different answer on a different machine. IEEE 754, driven largely by William Kahan, standardised the format this section describes — including the exact rounding rule that makes <code>(1e16+1)-1e16</code> return zero identically on every conforming processor built since. That predictability is the entire reason "compute it and see" is a reliable debugging technique at all: the behaviour is specified, not accidental.</p>
@@ -1085,7 +1085,7 @@ ${H.probe([
       },
       {
         q: 'Adam’s $\\varepsilon = 10^{-8}$ exists to…',
-        options: ['add regularization', 'prevent division by zero when the second-moment estimate is tiny', 'set the learning rate floor', 'stabilise the momentum'],
+        options: ['add regularisation', 'prevent division by zero when the second-moment estimate is tiny', 'set the learning rate floor', 'stabilise the momentum'],
         answer: 1,
         why: 'Adam divides the momentum-smoothed gradient by $\\sqrt{\\hat v}$, an estimate of that coordinate\'s recent squared-gradient magnitude, and for a parameter with little or no gradient history $\\hat v$ can sit at or near zero — without $\\varepsilon$ added to the denominator, that division is exactly the "division by ~zero" failure mode in this section\'s table of five, producing <code>inf</code> or <code>NaN</code> updates. It is a numerical guard, not a modelling choice: it does not penalise any particular weight value the way an L2 term would, it only stops one specific arithmetic operation from blowing up. Raising it toward 1e-3 has a real, secondary effect worth knowing — it damps Adam\'s per-coordinate adaptivity and pushes its behaviour toward plain SGD with momentum, because the denominator stops being dominated by the (now swamped) gradient-history term.'
       }

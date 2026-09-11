@@ -211,7 +211,7 @@ ${H.table(['Index', 'Idea', 'Recall@10', 'Build', 'Memory', 'Use when'], [
       ['<b>HNSW</b>', 'layered proximity graph, greedy descent', '95–99%', 'slow', '<b>1.5–2×</b>', 'the default under ~10M vectors'],
       ['IVF-Flat', 'k-means partitions, scan the nearest few', '90–97%', 'fast', '1×', 'large, memory available'],
       ['<b>IVF-PQ</b>', 'partitions + product-quantised codes', '80–95%', 'fast', '<b>0.03–0.1×</b>', 'hundreds of millions of vectors'],
-      ['ScaNN', 'anisotropic quantization, score-aware', '95–98%', 'medium', 'low', 'Google-stack, very strong benchmarks'],
+      ['ScaNN', 'anisotropic quantisation, score-aware', '95–98%', 'medium', 'low', 'Google-stack, very strong benchmarks'],
       ['DiskANN / Vamana', 'graph on SSD', '95%+', 'slow', 'tiny RAM', 'billions of vectors, cost-constrained'],
       ['Binary + rescore', '1-bit codes, then exact rerank of the top few hundred', '95%+', 'fast', '<b>0.03×</b>', 'a startlingly strong and underused baseline']
     ])}
@@ -241,20 +241,20 @@ ${H.vs('Pre-filter', [
     ])}
 ${H.flag('The real answer is <b>filtered traversal</b>: walk the graph normally but only admit matching nodes into the result set, while still traversing through non-matching ones. Qdrant, Weaviate and pgvector-with-iterative-scan all implement a version of this, and each switches to a brute-force scan below some selectivity threshold. When you evaluate a vector database, <i>measure recall with your actual filters applied</i> — unfiltered benchmark numbers are close to meaningless for a real workload.')}
 
-<h2><span class="sn">5.10.3</span> Product quantization, in one page</h2>
+<h2><span class="sn">5.10.3</span> Product quantisation, in one page</h2>
 ${H.steps([
       'Split each $D$-dimensional vector into $m$ sub-vectors of length $D/m$.',
       'Run k-means with 256 centroids on each sub-space, over the training set. Each sub-vector is now representable by <b>one byte</b> — the index of its nearest centroid.',
       'A 1,024-dimensional float32 vector (4,096 bytes) with $m=64$ becomes <b>64 bytes</b>: a 64× compression.',
       'At query time, precompute the distance from the query’s sub-vectors to all 256 centroids per sub-space — a $m\\times256$ lookup table — then every candidate distance is $m$ table lookups and an add. No decompression, and it is fast because it is cache-resident.',
-      '<b>Rescore</b> the top few hundred with the full-precision vectors to recover most of the lost recall. This step is what makes aggressive quantization acceptable.'
+      '<b>Rescore</b> the top few hundred with the full-precision vectors to recover most of the lost recall. This step is what makes aggressive quantisation acceptable.'
     ])}
 ${H.worked('the memory arithmetic that picks your index', `
 <p>10 million chunks, 1,024-dimensional embeddings:</p>
 <ul>
 <li><b>Flat float32</b>: 10M × 4 KB = <b>41 GB</b>. Exact, and needs a large machine.</li>
 <li><b>HNSW float32, M=32</b>: 41 GB + graph ≈ <b>60 GB</b>. Fast and accurate, expensive.</li>
-<li><b>int8 quantized + HNSW</b>: ~10 GB + graph ≈ <b>15 GB</b>, with ~1% recall loss. Usually the right answer.</li>
+<li><b>int8 quantised + HNSW</b>: ~10 GB + graph ≈ <b>15 GB</b>, with ~1% recall loss. Usually the right answer.</li>
 <li><b>IVF-PQ, 64 bytes/vector</b>: <b>0.64 GB</b>. Fits anywhere; 85–93% recall, restored to ~97% with rescoring.</li>
 <li><b>Binary (1 bit/dim) + rescore</b>: 128 bytes/vector = <b>1.3 GB</b>, with a full-precision rescore of the top 500.</li>
 </ul>
@@ -359,7 +359,7 @@ ${H.probe([
         why: 'It is per-query and needs no rebuild. M and efConstruction are baked into the index at build time.'
       },
       {
-        q: 'Product quantization with $m=64$ sub-spaces compresses a 1024-d float32 vector to…',
+        q: 'Product quantisation with $m=64$ sub-spaces compresses a 1024-d float32 vector to…',
         options: ['1024 bytes', '256 bytes', '64 bytes', '16 bytes'],
         answer: 2,
         why: 'One byte per sub-space (a 256-centroid codebook index): 4,096 bytes → 64 bytes, a 64× reduction.'
@@ -380,7 +380,7 @@ ${H.probe([
     cards: [
       { q: 'Index selection, in one line', a: '<100k: flat. <10M with RAM: HNSW (int8). Hundreds of millions: IVF-PQ or DiskANN. Always rescore.' },
       { q: 'HNSW parameters', a: 'M (edges), efConstruction (build quality), efSearch (the runtime recall/latency dial).' },
-      { q: 'Product quantization', a: 'Split into $m$ sub-vectors, 256-centroid codebook each → 1 byte per sub-vector; distances by table lookup; rescore the top few hundred.' },
+      { q: 'Product quantisation', a: 'Split into $m$ sub-vectors, 256-centroid codebook each → 1 byte per sub-vector; distances by table lookup; rescore the top few hundred.' },
       { q: 'Filtered ANN', a: 'Pre-filter breaks connectivity, post-filter under-returns. Filtered traversal with a brute-force fallback is the real answer — benchmark with your filters on.' }
     ]
   });

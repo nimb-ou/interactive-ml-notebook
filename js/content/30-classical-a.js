@@ -205,7 +205,7 @@ ${H.intuition(`<p>There is a reason "more flexible model" and "more variance" tr
 
 <p><b>What to do with it.</b> Set the polynomial degree to 0 or 1 and look at the gap between blue and green — that visible gap is bias, and it is large, because a near-flat curve simply cannot bend to follow the true shape. Now look at the grey curves: they sit almost on top of each other, because a model with almost no freedom fits almost the same way regardless of which twenty points it was given. Push the degree up past 8 or so and watch the picture invert: the blue average now tracks the green truth closely, so bias has nearly vanished, but the grey curves fan out wildly between the training points, each one snaking through its own sample's particular noise. That fan is variance, drawn rather than computed.</p>
 
-<p><b>The thing genuinely worth noticing.</b> Leave the degree high, where the grey curves are chaos, and slide <i>ridge λ</i> up from zero. Watch the grey fan pull back in toward the blue average almost immediately, while the blue average drifts slightly away from the green truth. You are watching regularization trade variance for bias in real time, on the same picture, with nothing hidden — which is the entire content of §2.3 rendered as a moving fan of curves instead of an equation.</p>
+<p><b>The thing genuinely worth noticing.</b> Leave the degree high, where the grey curves are chaos, and slide <i>ridge λ</i> up from zero. Watch the grey fan pull back in toward the blue average almost immediately, while the blue average drifts slightly away from the green truth. You are watching regularisation trade variance for bias in real time, on the same picture, with nothing hidden — which is the entire content of §2.3 rendered as a moving fan of curves instead of an equation.</p>
 
 ${H.lab('bv', 'Bias and variance, measured not asserted', 'Twenty independent training sets, one model family, fitted repeatedly. The grey curves are the individual fits; the blue is their average. Bias is the gap between the blue curve and the truth; variance is the spread of the grey ones. Move the degree and watch the two trade.')}
 
@@ -215,7 +215,7 @@ ${H.lab('bv', 'Bias and variance, measured not asserted', 'Twenty independent tr
 
 <p>Modern practice broke that assumption in a very specific, reproducible place. Keep adding parameters until the model has <i>exactly</i> as many free parameters as there are training examples — the <b>interpolation threshold</b> — and the model can now fit the training data perfectly, error zero, by solving what is essentially a square system of equations with no slack left in it. Right at that threshold there is usually exactly one way to hit every training point exactly, and whichever one that is depends with extreme sensitivity on the specific noise in your specific sample: this is the same fragility as a design matrix on the edge of losing invertibility, the near-singular $X^\\mathsf{T}X$ from §0.7, where a tiny change to the data swings the fitted solution wildly. Test error at the interpolation threshold spikes for exactly that reason — not because the model is complex, but because the fitting problem has become numerically unstable.</p>
 
-<p>Keep adding parameters past that point, though, and something genuinely surprising happens: test error <i>falls again</i>. Past the threshold there is no longer a single way to fit the training data exactly — there are infinitely many, an entire family of parameter settings that all achieve zero training error. Which one you end up with now depends on the optimiser, not just the data, and gradient descent and its relatives have a systematic preference among that family: among all the solutions that fit the training data equally well, they gravitate toward the one with the smallest norm, the least ornate. That preference is a form of regularization nobody wrote into the loss function — <b>implicit regularization</b> — and it does, silently, the same job that adding $\\lambda\\|w\\|^2$ to the loss does explicitly in §2.3. The more parameters you add beyond the threshold, the more room the optimiser has to find a smooth, small-norm interpolant instead of a jagged, forced one, and test error descends a second time.</p>
+<p>Keep adding parameters past that point, though, and something genuinely surprising happens: test error <i>falls again</i>. Past the threshold there is no longer a single way to fit the training data exactly — there are infinitely many, an entire family of parameter settings that all achieve zero training error. Which one you end up with now depends on the optimiser, not just the data, and gradient descent and its relatives have a systematic preference among that family: among all the solutions that fit the training data equally well, they gravitate toward the one with the smallest norm, the least ornate. That preference is a form of regularisation nobody wrote into the loss function — <b>implicit regularisation</b> — and it does, silently, the same job that adding $\\lambda\\|w\\|^2$ to the loss does explicitly in §2.3. The more parameters you add beyond the threshold, the more room the optimiser has to find a smooth, small-norm interpolant instead of a jagged, forced one, and test error descends a second time.</p>
 
 ${H.history(`<p>The classical U-curve is not wrong within the regime it was derived for — it comes from decades of statistical learning theory built around models with far fewer parameters than training examples, where "more capacity always eventually overfits" was a completely reasonable summary of the evidence. What changed was the arrival of models, particularly neural networks, routinely trained with more parameters than data points, a regime the classical theory was never built to describe. Documented under the name double descent by machine learning theorists in the late 2010s, the phenomenon did not overturn bias–variance decomposition — every equation in §2.2.1 still holds exactly — it revealed that variance is not the monotonically increasing function of capacity the classical picture assumed. Past the interpolation threshold, more parameters can mean <i>less</i> effective variance, because the optimiser is now choosing among solutions rather than being forced into the one that happens to fit.</p>`)}
 
@@ -223,13 +223,13 @@ ${H.history(`<p>The classical U-curve is not wrong within the regime it was deri
 
 <p><b>What to do with it.</b> With ridge λ at zero, watch training error (dashed grey) fall steadily toward zero as width grows — no surprise there, more parameters fit the training data better, exactly as classical intuition says. Now watch the blue test-error curve instead: it falls at first, just like the classical U-curve predicts, then spikes sharply right at the red interpolation-threshold line, then — and this is the part worth stopping on — falls again as width keeps growing past that line, often ending up lower than anywhere on the curve's left-hand side.</p>
 
-<p><b>The thing genuinely worth noticing.</b> Raise ridge λ away from zero, even slightly, and watch the spike at the threshold soften dramatically while the rest of the curve barely moves. Explicit regularization is filling in exactly the instability that implicit regularization was covering for on its own — the same $\\lambda$ that added a constant to the diagonal of $X^\\mathsf{T}X$ in §0.7 is here damping the exact near-singular fitting problem that produces the spike. That single slider move is the cleanest demonstration on this site that the classical and modern pictures are not rival theories; they are the same mechanism, with and without the extra help.</p>
+<p><b>The thing genuinely worth noticing.</b> Raise ridge λ away from zero, even slightly, and watch the spike at the threshold soften dramatically while the rest of the curve barely moves. Explicit regularisation is filling in exactly the instability that implicit regularisation was covering for on its own — the same $\\lambda$ that added a constant to the diagonal of $X^\\mathsf{T}X$ in §0.7 is here damping the exact near-singular fitting problem that produces the spike. That single slider move is the cleanest demonstration on this site that the classical and modern pictures are not rival theories; they are the same mechanism, with and without the extra help.</p>
 
-${H.lab('dd', 'The U-curve and its second half', 'Real fits: ridge-regularised random-feature regression at increasing width, evaluated on held-out data. The peak at parameters ≈ samples is real and reproducible; add a little ridge and watch it soften — which is the modern reading of what implicit regularization does.')}
+${H.lab('dd', 'The U-curve and its second half', 'Real fits: ridge-regularised random-feature regression at increasing width, evaluated on held-out data. The peak at parameters ≈ samples is real and reproducible; add a little ridge and watch it soften — which is the modern reading of what implicit regularisation does.')}
 
 ${H.probe([
-      ['High variance — what do you do?', 'More data, stronger regularization, a simpler hypothesis class, or bagging. In that order of preference if data is available.'],
-      ['Does double descent kill bias–variance?', 'No — it extends it into the over-parameterised regime where implicit regularization dominates.']
+      ['High variance — what do you do?', 'More data, stronger regularisation, a simpler hypothesis class, or bagging. In that order of preference if data is available.'],
+      ['Does double descent kill bias–variance?', 'No — it extends it into the over-parameterised regime where implicit regularisation dominates.']
     ], 'Assuming more capacity always overfits. That belief is a decade out of date.')}`,
     labs: {
       bv: function (host) {
@@ -274,7 +274,7 @@ ${H.probe([
           }
         });
         Viz.legend(host, [{ c: Viz.theme().green, t: 'truth f(x)' }, { c: Viz.theme().blue, t: 'average fit E[f̂]' }, { c: Viz.theme().faint, t: '20 individual fits' }]);
-        Viz.note(host, 'Degree 0–1 → the blue average sits far from green (bias) and the grey curves are tight (low variance). Degree 10+ → blue tracks green but grey scatters wildly. Add ridge λ and watch variance collapse while bias creeps up: that is regularization, measured.');
+        Viz.note(host, 'Degree 0–1 → the blue average sits far from green (bias) and the grey curves are tight (low variance). Degree 10+ → blue tracks green but grey scatters wildly. Add ridge λ and watch variance collapse while bias creeps up: that is regularisation, measured.');
       },
 
       dd: function (host) {
@@ -324,7 +324,7 @@ ${H.probe([
           }
         });
         Viz.legend(host, [{ c: Viz.theme().blue, t: 'test error' }, { c: Viz.theme().faint, t: 'train error' }, { c: Viz.theme().red, t: 'interpolation threshold' }]);
-        Viz.note(host, 'Set λ = 0 and the spike at width ≈ n is dramatic; add a little ridge and it flattens. That is the whole modern story: at the interpolation threshold the minimum-norm solution is badly behaved, and either explicit regularization or the optimiser’s implicit bias tames it.');
+        Viz.note(host, 'Set λ = 0 and the spike at width ≈ n is dramatic; add a little ridge and it flattens. That is the whole modern story: at the interpolation threshold the minimum-norm solution is badly behaved, and either explicit regularisation or the optimiser’s implicit bias tames it.');
       }
     },
     quiz: [
@@ -336,14 +336,14 @@ ${H.probe([
       },
       {
         q: 'Test error peaks when parameters ≈ samples and then falls again with more parameters. This is…',
-        options: ['a bug in the evaluation', 'double descent — the over-parameterised regime where implicit regularization dominates', 'evidence that bias–variance is wrong', 'label leakage'],
+        options: ['a bug in the evaluation', 'double descent — the over-parameterised regime where implicit regularisation dominates', 'evidence that bias–variance is wrong', 'label leakage'],
         answer: 1,
         why: 'The classical U-curve is the left half. Beyond interpolation, minimum-norm solutions found by SGD generalise increasingly well.'
       }
     ],
     cards: [
       { q: 'Bias–variance decomposition', a: '$\\mathbb{E}[(y-\\hat f)^2] = \\text{bias}^2 + \\text{variance} + \\sigma^2$; $\\sigma^2$ is the irreducible noise floor.' },
-      { q: 'High variance — the fixes in order', a: 'More data → stronger regularization → simpler class → bagging.' },
+      { q: 'High variance — the fixes in order', a: 'More data → stronger regularisation → simpler class → bagging.' },
       { q: 'Double descent', a: 'Test error peaks at the interpolation threshold (params ≈ n) then descends again; variance is not monotone in parameter count.' }
     ]
   });
@@ -351,7 +351,7 @@ ${H.probe([
   /* ------------------------------------------------------------------ 2.3 */
   ML.section({
     id: 'regularization', track: 'classical', num: '2.3',
-    title: 'Regularization: L1, L2, elastic net',
+    title: 'Regularisation: L1, L2, elastic net',
     lede: 'Rests on MAP (§1.5); enables the sparse, defensible scorecards of §2.11. Two arguments for why L1 is sparse — one geometric, one analytic, and the analytic one is the better answer.',
     html: `
 <p>You just watched, in §2.2's lab, a single slider called $\\lambda$ pull a fan of wild, overfit curves back into a tight bundle, at the cost of nudging their average slightly away from the truth. That slider is not a special trick belonging to that one lab. It is the general-purpose knob for buying back variance at the price of a little bias, and this section is entirely about how it is built, why two apparently similar ways of building it behave completely differently, and which one to reach for.</p>
@@ -360,7 +360,7 @@ ${H.probe([
 
 <p>Ordinary least squares, from §0.7 and §2.4, asks for exactly one thing: the weight vector $w$ that makes $\\|Xw-y\\|^2$ as small as possible on the data you have. Nothing in that objective cares how large $w$ gets. If two features are nearly duplicates of each other — a length recorded in metres and the same length recorded in centimetres, say — least squares is perfectly happy to assign one of them an enormous positive weight and the other an enormous negative weight that very nearly cancels it, because the training loss cannot tell the difference between that and any other combination that fits equally well. §0.7 showed exactly this: the design matrix's $X^\\mathsf{T}X$ becomes singular or nearly so, and the fitted weights become numerically unstable — free to swing wildly in response to noise that has nothing to do with the underlying signal. Huge, noise-chasing coefficients are not a symptom of a good fit; they are the geometric signature of high variance, the same disease §2.2 spent an entire section diagnosing.</p>
 
-<p>Regularization is the fix stated as a modelling decision rather than a numerical patch: add a second term to the loss that grows whenever the weights grow, so the optimiser is no longer asked only "fit the data" but "fit the data <i>and</i> keep the weights small." Which penalty you add determines what "small" means, and that choice turns out to matter enormously.</p>
+<p>Regularisation is the fix stated as a modelling decision rather than a numerical patch: add a second term to the loss that grows whenever the weights grow, so the optimiser is no longer asked only "fit the data" but "fit the data <i>and</i> keep the weights small." Which penalty you add determines what "small" means, and that choice turns out to matter enormously.</p>
 
 <h2><span class="sn">2.3.2</span> Two penalties, two very different notions of small</h2>
 
@@ -429,9 +429,9 @@ ${H.table(['Situation', 'Choice', 'Why'], [
       ['Neural networks', 'Weight decay (AdamW), dropout, early stopping', 'Same idea, different implementation (§3.5)']
     ])}
 
-<p>One habit sits above every row in that table. Suppose a true relationship is $\\text{score} = 0.00002\\times\\text{income} + 2.0\\times\\text{utilisation ratio}$, with income measured in pounds (typical value around 50{,}000) and utilisation as a 0-to-1 ratio (typical value around 0.5) — chosen so both terms contribute about equally to a typical prediction, $0.00002\\times50{,}000=1.0$ and $2.0\\times0.5=1.0$. An L2 penalty $\\lambda(w_1^2+w_2^2)$ sees $w_1^2 = (0.00002)^2 = 4\\times10^{-10}$, utterly negligible, against $w_2^2=(2.0)^2=4$ — so the penalty presses almost exclusively on the utilisation coefficient and leaves income's untouched, despite the two features mattering equally to the actual prediction. The regularizer has quietly become a function of which units you happened to record income in, rather than a function of how much each feature matters. <b>Standardising every feature to mean zero and unit variance before penalising</b> is what removes this artefact, by ensuring a one-unit change in every feature means the same thing: one standard deviation.</p>
+<p>One habit sits above every row in that table. Suppose a true relationship is $\\text{score} = 0.00002\\times\\text{income} + 2.0\\times\\text{utilisation ratio}$, with income measured in pounds (typical value around 50{,}000) and utilisation as a 0-to-1 ratio (typical value around 0.5) — chosen so both terms contribute about equally to a typical prediction, $0.00002\\times50{,}000=1.0$ and $2.0\\times0.5=1.0$. An L2 penalty $\\lambda(w_1^2+w_2^2)$ sees $w_1^2 = (0.00002)^2 = 4\\times10^{-10}$, utterly negligible, against $w_2^2=(2.0)^2=4$ — so the penalty presses almost exclusively on the utilisation coefficient and leaves income's untouched, despite the two features mattering equally to the actual prediction. The regulariser has quietly become a function of which units you happened to record income in, rather than a function of how much each feature matters. <b>Standardising every feature to mean zero and unit variance before penalising</b> is what removes this artefact, by ensuring a one-unit change in every feature means the same thing: one standard deviation.</p>
 
-${H.flag('Always standardise before penalising. A penalty on raw coefficients punishes features measured in small units and ignores features measured in large ones — the regularizer becomes a function of your unit choices.')}
+${H.flag('Always standardise before penalising. A penalty on raw coefficients punishes features measured in small units and ignores features measured in large ones — the regulariser becomes a function of your unit choices.')}
 
 ${H.probe([
       ['Why does L1 select features and L2 not?', 'The diamond’s vertices sit on the axes, and L1’s constant subgradient pins coordinates at zero; L2’s pull vanishes at zero.'],
@@ -1093,7 +1093,7 @@ ${H.deriv('the soft-margin SVM is hinge loss plus L2, in three lines', [
       ['for fixed $w,b$, the optimal $\\xi_i$ is as small as feasibility allows', 'The objective only ever wants $\\xi_i$ smaller, since it appears with a positive coefficient $C$, so at the optimum $\\xi_i$ sits at the smallest value the constraints $\\xi_i\\ge0$ and $\\xi_i\\ge1-y_i(w^\\mathsf{T}x_i+b)$ permit.'],
       ['$\\xi_i^\\star = \\max\\big(0,\\ 1-y_i(w^\\mathsf{T}x_i+b)\\big)$', 'Take the larger of the two lower bounds on $\\xi_i$ — exactly the definition of the <b>hinge loss</b> for this example.'],
       ['$\\min_{w,b}\\ \\tfrac12\\|w\\|^2 + C\\sum_i \\max\\big(0,\\,1-y_i(w^\\mathsf{T}x_i+b)\\big)$', 'Substitute $\\xi_i^\\star$ back into the objective, eliminating the slack variables entirely and leaving an ordinary unconstrained loss: hinge loss, summed over examples, plus a penalty on $\\|w\\|^2$ — precisely the loss-plus-penalty shape §2.3 built from scratch.']
-    ], 'Divide the whole objective by $C$ and it becomes $\\frac{1}{2C}\\|w\\|^2 + \\sum_i\\text{hinge}_i$ — the standard §2.3 form with regularization strength $\\lambda=1/C$. So $C$ is not a separate, mysterious SVM-specific dial; it is $1/\\lambda$ wearing a different name. Large $C$ means a small effective $\\lambda$, weak regularization, a narrow margin that fits the training data hard; small $C$ means strong regularization, a wide, forgiving margin that tolerates violations in exchange for a simpler boundary — the exact bias-for-variance trade §2.2 and §2.3 have already made twice.')}
+    ], 'Divide the whole objective by $C$ and it becomes $\\frac{1}{2C}\\|w\\|^2 + \\sum_i\\text{hinge}_i$ — the standard §2.3 form with regularisation strength $\\lambda=1/C$. So $C$ is not a separate, mysterious SVM-specific dial; it is $1/\\lambda$ wearing a different name. Large $C$ means a small effective $\\lambda$, weak regularisation, a narrow margin that fits the training data hard; small $C$ means strong regularisation, a wide, forgiving margin that tolerates violations in exchange for a simpler boundary — the exact bias-for-variance trade §2.2 and §2.3 have already made twice.')}
 
 <p><b>What you are looking at.</b> Training points on a plane, coloured by class, with a real soft-margin SVM solved live in the browser. The solid line through the middle is the decision boundary $w^\\mathsf{T}x+b=0$; the two faint parallel lines on either side are the margin boundaries, $w^\\mathsf{T}x+b=\\pm1$. Every point with an amber ring around it is a support vector — one of the points complementary slackness allowed to have $\\alpha_i>0$.</p>
 
@@ -1130,7 +1130,7 @@ ${H.fig('KERNELS AS SIMILARITY', `
 
 ${H.probe([
       ['What are support vectors?', 'The points on or inside the margin; they alone determine the boundary.'],
-      ['What is C?', 'An inverse regularization strength — the price of a margin violation, equivalent to hinge loss plus L2.'],
+      ['What is C?', 'An inverse regularisation strength — the price of a margin violation, equivalent to hinge loss plus L2.'],
       ['Why must a kernel be PSD?', 'Otherwise it is not an inner product in any feature space and the dual is no longer convex.']
     ], 'Using an RBF kernel on unscaled features — the Euclidean distance is then dominated by whichever column happens to be measured in large units.')}`,
     labs: {
@@ -1139,7 +1139,7 @@ ${H.probe([
         let model = null;
         const st = Viz.controls(host, [
           { k: 'kernel', label: 'kernel', type: 'buttons', value: 'linear', options: [{ v: 'linear', t: 'linear' }, { v: 'rbf', t: 'RBF' }, { v: 'poly', t: 'poly d=3' }] },
-          { k: 'C', label: 'C (inverse regularization)', min: -2, max: 2, step: .1, value: 0, fmt: v => Math.pow(10, v).toFixed(2) },
+          { k: 'C', label: 'C (inverse regularisation)', min: -2, max: 2, step: .1, value: 0, fmt: v => Math.pow(10, v).toFixed(2) },
           { k: 'gamma', label: 'γ (RBF width)', min: -1.5, max: 1.2, step: .1, value: 0, fmt: v => Math.pow(10, v).toFixed(2) }
         ], fit);
         const out = Viz.readout(host, [
@@ -1190,9 +1190,9 @@ ${H.probe([
     quiz: [
       {
         q: 'Increasing C in a soft-margin SVM…',
-        options: ['widens the margin and tolerates more violations', 'narrows the margin and penalises violations more — less regularization', 'has no effect with an RBF kernel', 'is equivalent to increasing γ'],
+        options: ['widens the margin and tolerates more violations', 'narrows the margin and penalises violations more — less regularisation', 'has no effect with an RBF kernel', 'is equivalent to increasing γ'],
         answer: 1,
-        why: 'C is the price of slack. Large C = fit hard = weak regularization; the equivalent view is hinge loss with L2 penalty 1/C.'
+        why: 'C is the price of slack. Large C = fit hard = weak regularisation; the equivalent view is hinge loss with L2 penalty 1/C.'
       },
       {
         q: 'Why is FlashAttention-style thinking irrelevant here but kernel PSD-ness essential?',
@@ -1202,7 +1202,7 @@ ${H.probe([
       }
     ],
     cards: [
-      { q: 'Soft-margin objective', a: '$\\min \\frac12\\|w\\|^2 + C\\sum\\xi_i$ — equivalently hinge loss + L2; $C$ is inverse regularization.' },
+      { q: 'Soft-margin objective', a: '$\\min \\frac12\\|w\\|^2 + C\\sum\\xi_i$ — equivalently hinge loss + L2; $C$ is inverse regularisation.' },
       { q: 'The kernel trick', a: 'The dual depends on data only through inner products; replace them with a PSD kernel to work in an implicit feature space.' },
       { q: 'Why don’t SVMs own tabular ML?', a: 'Kernel matrices are $O(n^2)$; boosted trees scale and handle mixed types natively.' }
     ]

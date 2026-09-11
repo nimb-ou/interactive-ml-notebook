@@ -818,7 +818,7 @@ ${H.lab('leak-cv', 'How much does the wrong scheme lie by?', 'The same data with
 
 <h2><span class="sn">2.14.3</span> Nested CV — validating the search, not just the model</h2>
 
-<p>Every scheme so far assumes the model itself is fixed before validation starts. In practice it never is: you try several learning rates, several regularization strengths, several tree depths, and you pick whichever configuration scored best in cross-validation. That selection step is invisible in the final number you report, and it is not innocent.</p>
+<p>Every scheme so far assumes the model itself is fixed before validation starts. In practice it never is: you try several learning rates, several regularisation strengths, several tree depths, and you pick whichever configuration scored best in cross-validation. That selection step is invisible in the final number you report, and it is not innocent.</p>
 
 <p>§2.1.3 derived exactly this mechanism in a different costume: report the best of even two pure-noise, equally-worthless models on a sealed test set, and the reported winner is biased upward by $\\mathrm{se}/\\sqrt\\pi$ purely from the act of choosing a maximum — before a single model has genuinely improved. Hyperparameter search is the identical derivation with "candidate model" relabelled "candidate configuration" and "test set" relabelled "validation folds": try sixty configurations, report the best cross-validation score, and that score is the biased maximum of sixty noisy estimates, inflated by selection in exactly the way §2.1.3 quantified, whether or not any of the sixty configurations was genuinely better than the others.</p>
 
@@ -998,7 +998,7 @@ ${H.probe([
     title: 'Hyperparameter search and stacking',
     lede: 'Why random beats grid, what Bayesian optimisation actually buys, and why banks rarely ship the stack that wins competitions. Stacking’s payoff traces back to §2.7’s bagging-variance formula; every configuration it searches still needs §2.14’s honest validation to grade it.',
     html: `
-<p>A gradient-boosted model has, conservatively, half a dozen hyperparameters worth tuning: learning rate, tree depth, the number of trees, a couple of regularization strengths, the minimum rows per leaf. Grid search over even a modest 5 values per axis is $5^6 \\approx 15{,}600$ configurations — at a minute per fit, three weeks of continuous compute for one model. Nobody actually runs that grid. Everybody tunes far fewer combinations than the full grid contains and still finds something close to the best setting most of the time. The question worth asking before reaching for any particular search strategy is why that shortcut works at all — and the answer turns out to depend entirely on a fact about hyperparameters that has nothing to do with any specific algorithm.</p>
+<p>A gradient-boosted model has, conservatively, half a dozen hyperparameters worth tuning: learning rate, tree depth, the number of trees, a couple of regularisation strengths, the minimum rows per leaf. Grid search over even a modest 5 values per axis is $5^6 \\approx 15{,}600$ configurations — at a minute per fit, three weeks of continuous compute for one model. Nobody actually runs that grid. Everybody tunes far fewer combinations than the full grid contains and still finds something close to the best setting most of the time. The question worth asking before reaching for any particular search strategy is why that shortcut works at all — and the answer turns out to depend entirely on a fact about hyperparameters that has nothing to do with any specific algorithm.</p>
 
 <h2><span class="sn">2.15.1</span> Why random search beats a grid, on the same budget</h2>
 
@@ -1919,7 +1919,7 @@ ${H.lab('drill2', 'Part 2 drill', 'Eighteen prompts, shuffled. Answer aloud befo
           ['When is group k-fold mandatory?', 'Whenever one entity contributes multiple rows.'],
           ['The fairness impossibility.', 'Calibration within groups and equalised odds cannot both hold when base rates differ.'],
           ['SHAP efficiency property.', '$\\sum_i\\phi_i=f(x)-\\mathbb{E}[f]$.'],
-          ['Monotonic constraints — the three benefits.', 'Domain agreement, a validator story, and free regularization.']
+          ['Monotonic constraints — the three benefits.', 'Domain agreement, a validator story, and free regularisation.']
         ];
         let order = cards.map((_, i) => i).sort(() => Math.random() - .5);
         let i = 0, showA = false;
@@ -1948,7 +1948,7 @@ ${H.lab('drill2', 'Part 2 drill', 'Eighteen prompts, shuffled. Answer aloud befo
         q: 'Which single Part 2 idea is used by the most other sections?',
         options: ['t-SNE', 'The bias–variance decomposition', 'DBSCAN', 'MAPE'],
         answer: 1,
-        why: 'It frames model choice (2.2), regularization (2.3), ensembles (2.7–2.8), validation (2.14) and tuning (2.15).'
+        why: 'It frames model choice (2.2), regularisation (2.3), ensembles (2.7–2.8), validation (2.14) and tuning (2.15).'
       }
     ]
   });
