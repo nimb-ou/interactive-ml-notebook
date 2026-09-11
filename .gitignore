@@ -4,3 +4,8 @@ __pycache__/
 .DS_Store
 node_modules/
 package-lock.json
+
+# Scratch copies of the test harness. Three of these have been committed by
+# accident via `git add -A`; the real tests are smoke.js and formulas.js.
+test/*_tmp.js
+test/tmp/
