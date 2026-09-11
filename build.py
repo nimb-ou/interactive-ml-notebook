@@ -4,11 +4,14 @@
 Inlines the CSS, every script, and KaTeX (JS + CSS with woff2 fonts as data
 URIs) so the result makes zero external requests and can be published anywhere.
 
-    python3 site/build.py            -> site/dist/index.html
-    python3 site/build.py --body     -> site/dist/artifact.html  (no <html>/<head>
-                                        wrapper, for the Artifact publisher)
-    python3 site/build.py --pages    -> docs/index.html          (what GitHub
-                                        Pages serves at the repo's public URL)
+    python3 build.py            -> dist/index.html       (local preview)
+    python3 build.py --body     -> dist/artifact.html    (no <html>/<head>
+                                   wrapper, for the Artifact publisher)
+    python3 build.py --pages    -> docs/index.html       (what GitHub Pages
+                                   serves at the repo's public URL)
+
+dist/ is gitignored; docs/ is committed, because Pages serves it from the
+repository.
 """
 import base64
 import pathlib
@@ -92,11 +95,11 @@ else:
 
 if "--pages" in sys.argv:
     # GitHub Pages serves this one; .nojekyll stops Jekyll touching it
-    pages = ROOT.parent / "docs"
+    pages = ROOT / "docs"
     pages.mkdir(exist_ok=True)
     (pages / ".nojekyll").write_text("")
     target = pages / "index.html"
 
 target.write_text(out)
 kb = len(out.encode()) / 1024
-print(f"wrote {target.relative_to(ROOT.parent)}  {kb:,.0f} KB  ({len(js_blobs)} scripts inlined)")
+print(f"wrote {target.relative_to(ROOT)}  {kb:,.0f} KB  ({len(js_blobs)} scripts inlined)")
