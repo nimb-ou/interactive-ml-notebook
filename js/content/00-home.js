@@ -12,7 +12,7 @@
   ML.track({ id: 'applied', short: 'Part 5', title: 'RAG, agents, MCP, production', blurb: 'Retrieval end to end, chunking, vector indexes, RAG vs fine-tune vs long context, agent loops, the 2026 stateless MCP, prompt injection, evals that do not lie, MLOps and cost per successful task.' });
   ML.track({ id: 'frontier', short: 'Part 6', title: 'Beyond the notebook', blurb: 'The deliberate exclusions, restored: reinforcement learning from MDPs up, bandits, diffusion, VAEs and GANs, graph networks, recommenders, time series, detection and segmentation, and privacy-preserving ML.' });
   ML.track({ id: 'interview', short: 'Part 7', title: 'The ML interview', blurb: 'The loop, question by question: breadth drills, whiteboard derivations, a repeatable system-design framework with six worked designs, from-scratch coding drills that run in the browser, the debugging case round, and a six-week plan.' });
-  ML.track({ id: 'reference', short: 'Ref', title: 'Reference & drill room', blurb: 'Every number worth memorising, every formula in one place, the full glossary, sources, and a spaced drill over the whole curriculum.' });
+  ML.track({ id: 'reference', short: 'Ref', title: 'Reference & drill room', blurb: 'Every number worth memorising, every formula in one place, the full glossary, sources, and a shuffled, self-scored drill over the whole curriculum.' });
 
   ML.homeHtml = function () {
     return `

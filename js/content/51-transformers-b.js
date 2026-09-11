@@ -1,5 +1,5 @@
 /* ============================================================
-   PART 4 — LLMs & transformers (4.9 – 4.18)
+   PART 4 — LLMs & transformers (4.9 – 4.17), plus the Part 4 recall page (4.23)
    ============================================================ */
 (function () {
   'use strict';
@@ -291,7 +291,7 @@ ${H.table(['Kind', 'Splits', 'Communication', 'Rule of thumb'], [
       ['<b>Expert</b>', 'MoE experts across devices', 'all-to-all', 'Adds a fourth dimension for MoE (§4.8)']
     ])}
 <p><b>Data parallelism</b> is the simplest idea and the one to reach for first: give every GPU a full copy of the model and a different slice of the batch, run forward and backward independently on each, and then combine — average, in effect — every GPU's gradients before anyone takes an optimiser step, using a collective communication operation called an <b>all-reduce</b> (every GPU ends the operation holding the same averaged result, computed by passing partial sums efficiently around the group rather than every GPU talking to every other one individually). It communicates once per step, it is easy to reason about, and it is nearly always the outer layer that the other three parallelisms sit inside.</p>
-<p><b>Tensor parallelism</b> splits something data parallelism does not touch: a single weight matrix itself. Slice $W_Q$ column-wise across four GPUs, say, and each GPU computes only its slice of the query projection — but the very next operation in the block typically needs the <i>full</i, reassembled result before it can proceed, so tensor parallelism forces a communication step inside nearly every layer, not once per training step. That chattiness is why the rule of thumb in the table is so firm: tensor parallelism belongs <i>inside</i> a single machine, over NVLink's very high, very low-latency bandwidth between GPUs on the same node, and falls apart in throughput the moment it has to cross to a different physical machine over ordinary networking.</p>
+<p><b>Tensor parallelism</b> splits something data parallelism does not touch: a single weight matrix itself. Slice $W_Q$ column-wise across four GPUs, say, and each GPU computes only its slice of the query projection — but the very next operation in the block typically needs the <i>full</i>, reassembled result before it can proceed, so tensor parallelism forces a communication step inside nearly every layer, not once per training step. That chattiness is why the rule of thumb in the table is so firm: tensor parallelism belongs <i>inside</i> a single machine, over NVLink's very high, very low-latency bandwidth between GPUs on the same node, and falls apart in throughput the moment it has to cross to a different physical machine over ordinary networking.</p>
 <p><b>Pipeline parallelism</b> splits along a different axis again: rather than splitting any one matrix, give GPU 1 the first several layers of the model, GPU 2 the next several, and so on, so that a forward pass physically walks across devices as it walks through depth. Communication between stages is comparatively cheap — only the activations at each layer boundary need to be passed, point to point, rather than a full collective operation — but the naive version wastes most of its GPUs most of the time: while GPU 2 works on layer 11 for the first micro-batch, GPU 1 has nothing to do until GPU 2 hands anything back, and GPU 3 has nothing to do at all yet. This idle time is called a <b>bubble</b>, and the standard fix is to slice the batch into many small micro-batches and feed them through the pipeline in a staggered, overlapping sequence — an assembly line rather than one part at a time — so that once the pipeline is full, every stage has something to work on in every cycle, and the bubble shrinks to a fixed start-up and drain-down cost rather than a constant tax on every batch.</p>
 <p><b>Expert parallelism</b> is §4.8's mixture-of-experts problem viewed from the hardware side: different experts live on different devices, and every forward pass needs an <b>all-to-all</b> exchange — every device sending some tokens out to wherever their chosen expert lives, and receiving others in return — which is a genuinely different communication pattern from an all-reduce's single combine step, and the reason MoE models are harder to serve efficiently at scale than a dense model of comparable active-parameter count. Real large-scale training runs combine all four of these splits at once — often called 3-D or 4-D parallelism — choosing which axis goes inside a node, which crosses nodes, and which wraps the whole cluster, entirely as a function of which communication pattern each axis needs and how much bandwidth is available at each level of the network.</p>
 <p>Underneath all four sits one more question: even with the model split up, does the memory actually fit? <b>ZeRO / FSDP</b> answers it by attacking a specific redundancy in plain data parallelism — every GPU in that scheme holds a <i>full, independent copy</i> of the optimiser state, gradients and (in ZeRO-3/FSDP) even the parameters themselves, which is enormously wasteful when Adam's optimiser state alone needs roughly <b>12 bytes per parameter</b> of FP32 storage (a master FP32 weight copy plus two FP32 running moments, §4.11.2 explains why the FP32 copy exists), on top of the weights and gradients. ZeRO shards each of those tensors across the data-parallel group instead — every GPU permanently holds only its own $1/n$ slice — and gathers whatever full tensor is momentarily needed via targeted communication exactly when a computation requires it, then releases it again. That sharding, more than any other single trick, is what makes training a model whose optimiser state alone would not fit on one device possible at all.</p>
@@ -1449,7 +1449,7 @@ ${H.probe([
     ]
   });
 
-  /* ------------------------------------------------------------------ 4.18 */
+  /* ------------------------------------------------------------------ 4.23 */
   ML.section({
     id: 'part4-recall', track: 'llm', num: '4.23',
     title: 'Rapid recall — Part 4 in fourteen lines',
@@ -1474,8 +1474,13 @@ ${H.table(['#', 'The line', 'Section'], [
 ${H.table(['#', 'Also', 'Section'], [
       ['15', 'Long context: local + sink tokens + a few global layers; test with RULER, not one needle.', '<a href="#/rope">4.4</a>'],
       ['16', 'CoT can be unfaithful; SAEs give monosemantic features; 99% refusal ≠ safe under retries.', '<a href="#/safety">4.17</a>'],
-      ['17', 'Speculative decoding: $(1-\\alpha^{k+1})/(1-\\alpha)$ — α=0.7, k=4 → 2.8 tokens/pass.', '<a href="#/serving">4.14</a>'],
-      ['18', 'Llama-3-8B parameter arithmetic: 42.0M attention + 176.2M FFN per layer → 8.03B.', '<a href="#/block">4.5</a>']
+      ['17', 'Speculative decoding: $(1-\\alpha^{k+1})/(1-\\alpha)$ — α=0.7, k=4 → 2.8 tokens/pass.', '<a href="#/speculative">4.22</a>'],
+      ['18', 'Llama-3-8B parameter arithmetic: 42.0M attention + 176.2M FFN per layer → 8.03B.', '<a href="#/block">4.5</a>'],
+      ['19', 'ViT: patchify → project → add position → ordinary transformer. 224×224 at 16×16 = 196 tokens.', '<a href="#/multimodal">4.19</a>'],
+      ['20', 'High-resolution image tiling costs 2k–6k tokens per picture — budget it like eight pages of prose.', '<a href="#/multimodal">4.19</a>'],
+      ['21', 'CoT works because fixed work per token means generated tokens buy sequential passes: depth limit → length budget.', '<a href="#/reasoning">4.20</a>'],
+      ['22', 'Constrained decoding: compile the schema to an automaton, mask every token that cannot continue a valid string.', '<a href="#/structured-output">4.21</a>'],
+      ['23', 'Structured output guarantees shape, never semantics — well-formed nonsense passes every automated check.', '<a href="#/structured-output">4.21</a>']
     ])}
 
 ${H.lab('drill4', 'Part 4 drill', 'Eighteen prompts, shuffled. These are the ones asked most often.')}`,
@@ -1503,7 +1508,13 @@ ${H.lab('drill4', 'Part 4 drill', 'Eighteen prompts, shuffled. These are the one
           ['Two mandatory judge mitigations.', 'Swap positions and average; control for length.'],
           ['Long-context recipe and its evaluation.', 'RoPE interpolation + local layers + sink tokens + a few global layers; evaluate with RULER-style multi-needle tests.'],
           ['Parameters per transformer layer.', '≈12d²: 4d² attention + 8d² FFN.'],
-          ['99% refusal over 100 attempts?', '63% attacker success — per-request rates are the wrong unit.']
+          ['99% refusal over 100 attempts?', '63% attacker success — per-request rates are the wrong unit.'],
+          ['ViT in one line.', 'Patchify, linearly project, add position, then an ordinary transformer. 224×224 at 16×16 is 196 tokens.'],
+          ['Inductive bias vs data.', 'A ViT loses to a CNN on ImageNet-1k and wins at 300M images — bias substitutes for data and stops paying.'],
+          ['Why does chain of thought work at all?', 'A transformer does fixed work per token, so generated tokens buy extra sequential passes: a depth limit becomes a length budget.'],
+          ['Operational cost of reasoning models.', 'Variable latency and cost, with p99 set by the token tail. Cap the thinking budget and route only hard cases to it.'],
+          ['Constrained decoding in one line.', 'Compile the schema to an automaton, mask every token that cannot continue a valid string, sample, advance.'],
+          ['What structured output does not fix.', 'Semantic correctness — well-formed nonsense passes every automated check.']
         ];
         let order = cards.map((_, i) => i).sort(() => Math.random() - .5);
         let i = 0, showA = false;

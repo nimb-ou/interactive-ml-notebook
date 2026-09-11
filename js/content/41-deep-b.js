@@ -1,5 +1,5 @@
 /* ============================================================
-   PART 3 — Deep learning (3.7 – 3.10): CNNs, RNNs, embeddings
+   PART 3 — Deep learning (3.7 – 3.9): CNNs, RNNs, embeddings, plus the Part 3 recall page (3.15)
    ============================================================ */
 (function () {
   'use strict';
@@ -278,7 +278,6 @@ ${H.worked('the same matrix, two spectral radii, both computed', `<p>Idealise th
 
 ${H.lab('bptt', 'Gradient decay through time, measured', 'A real unrolled recurrence, with the gradient magnitude reaching each earlier step computed by backpropagation. Move the spectral radius past 1 and watch explosion; below and watch a 40-step memory disappear by step 10.')}
 
-<h2><span class="sn">3.8.3</span> LSTM and GRU: additive memory</h2>
 <h2><span class="sn">3.8.3</span> LSTM and GRU: making the escape route explicit</h2>
 <p>§3.3.3 fixed the feedforward version of this exact problem with a residual connection, $y=x+F(x)$, whose derivative $\\partial y/\\partial x = 1+\\partial F/\\partial x$ always contains a hard-coded term of exactly 1, giving the gradient a route past the layer's own multiplicative machinery. The <b>LSTM</b> applies the identical idea to time instead of depth, with one refinement: rather than a fixed contribution of exactly 1, it makes the strength of that escape route a <i>learned, input-dependent</i> quantity. Alongside the ordinary hidden state $h_t$, it maintains a separate <b>cell state</b> $c_t$, updated by three gates — numbers in $(0,1)$ produced by a sigmoid, so they behave as soft, differentiable on/off switches:</p>
 $$f_t = \\sigma(W_f[h_{t-1},x_t]),\\quad i_t = \\sigma(W_i[\\cdot]),\\quad o_t = \\sigma(W_o[\\cdot])$$
@@ -606,10 +605,14 @@ ${H.table(['#', 'The line', 'Section'], [
       ['10', 'Dropout = training an ensemble of thinned sub-networks.', '<a href="#/normalisation">3.6</a>'],
       ['11', 'Conv output $\\lfloor(H+2p-k)/s\\rfloor+1$; two 3×3 beat one 5×5.', '<a href="#/cnn">3.7</a>'],
       ['12', 'RNNs lost on parallelism, not on modelling; LSTM’s cell state is a residual through time.', '<a href="#/rnn">3.8</a>'],
-      ['13', 'Embeddings put meaning in a geometry; match the trained similarity metric.', '<a href="#/embeddings">3.9</a>']
+      ['13', 'Embeddings put meaning in a geometry; match the trained similarity metric.', '<a href="#/embeddings">3.9</a>'],
+      ['14', 'Checkpoint every $k=\\sqrt L$ layers to trade recompute for memory: $O(L)\\to O(\\sqrt L)$.', '<a href="#/autodiff">3.11</a>'],
+      ['15', 'Overfit ten examples to near-zero loss first; it rules out every plumbing bug in two minutes.', '<a href="#/training-dynamics">3.12</a>'],
+      ['16', 'Quantise as $q=\\mathrm{round}(x/s)+z$; decode is bandwidth-bound, so 4-bit reads a quarter the bytes.', '<a href="#/compression">3.13</a>'],
+      ['17', 'Perturbations transfer because they exploit non-robust but genuinely predictive features.', '<a href="#/robustness">3.14</a>']
     ])}
 
-${H.lab('drill3', 'Part 3 drill', 'Thirteen prompts, shuffled.')}`,
+${H.lab('drill3', 'Part 3 drill', 'Seventeen prompts, shuffled.')}`,
     labs: {
       drill3: function (host) {
         const cards = [
@@ -628,7 +631,15 @@ ${H.lab('drill3', 'Part 3 drill', 'Thirteen prompts, shuffled.')}`,
           ['Receptive field of L stacked 3×3 convs.', '$2L+1$ at stride 1.'],
           ['Why did transformers replace RNNs?', 'Recurrence cannot parallelise across time; attention gives O(1) path length and one big matmul.'],
           ['What is the LSTM cell state for?', 'An additive, gated memory — a residual path through time.'],
-          ['Cosine or dot product for embeddings?', 'Whichever the model was trained with; cosine after normalisation.']
+          ['Cosine or dot product for embeddings?', 'Whichever the model was trained with; cosine after normalisation.'],
+          ['Optimal gradient-checkpoint interval.', '$k=\\sqrt L$, trading one extra forward pass for $O(L)\\to O(\\sqrt L)$ activation memory.'],
+          ['First thing to do with a new model.', 'Overfit ten examples to near-zero loss with regularisation off — it rules out every data and plumbing bug in two minutes.'],
+          ['Loss stuck at $\\ln C$.', 'Uniform predictions: the model learned the prior. Check label alignment and gradient flow.'],
+          ['Healthy update-to-weight ratio.', '$\\|\\Delta w\\|/\\|w\\|\\approx10^{-3}$; orders of magnitude off either way is the earliest reliable warning.'],
+          ['Quantisation formula.', '$q=\\mathrm{round}(x/s)+z$, $\\hat x=s(q-z)$. Group-wise scales are what make 4-bit viable.'],
+          ['Which pruning actually speeds inference up?', 'Structured (heads, channels, layers) or 2:4 semi-structured on supported hardware. Unstructured buys disk only.'],
+          ['Why do adversarial perturbations transfer?', 'They exploit non-robust but genuinely predictive features in the data, so independently trained models share the vulnerability.'],
+          ['The three kinds of distribution shift.', 'Covariate $p(x)$, label $p(y)$, concept $p(y\\mid x)$. Only concept shift needs labels to detect.']
         ];
         let order = cards.map((_, i) => i).sort(() => Math.random() - .5);
         let i = 0, showA = false;

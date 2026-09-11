@@ -48,7 +48,7 @@ const scripts = Array.from(dom.window.document.querySelectorAll('script[src]')).
 for (const src of scripts) {
   const file = path.join(ROOT, src);
   if (!fs.existsSync(file)) { errors.push('missing script ' + src); continue; }
-  try { window.eval(fs.readFileSync(file, 'utf8')); }
+  try { window.eval(fs.readFileSync(file, 'utf8') + '\n//# sourceURL=' + src); }
   catch (e) { errors.push('LOAD FAIL ' + src + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
 }
 
@@ -94,7 +94,6 @@ ML.sections.forEach(s => {
 console.warn = origWarn; console.error = origErr;
 
 const bad = perSection.filter(p => p.newErrors > 0);
-perSection.forEach(p => console.log(p.num + '\t' + p.words + '\t' + p.id));
 console.log('sections   :', ML.sections.length, 'in', ML.tracks.length, 'tracks');
 console.log('labs       :', labCount);
 console.log('quiz Qs    :', quizCount, '| cards:', cardCount);
@@ -104,5 +103,4 @@ console.log('thin (<350w):', perSection.filter(p => p.words < 350).map(p => p.nu
 console.log('no labs     :', perSection.filter(p => p.labs === 0).map(p => p.num).join(', ') || 'none');
 console.log('errors      :', errors.length);
 errors.slice(0, 40).forEach(e => console.log('  - ' + e));
-console.log('BAD SECTIONS:', bad.map(b=>b.id+'('+b.num+')').join(', ')); process.exit(errors.length ? 1 : 0);
-console.log("BAD SECTIONS:", bad.map(b=>b.id+"("+b.num+")").join(", "));
+process.exit(errors.length ? 1 : 0);
