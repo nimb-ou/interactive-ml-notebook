@@ -56,6 +56,35 @@ twice here.
 `H.flag` on contested or fast-moving claims, `H.pitfall` on traps, `H.key` on the sentence to
 memorise, the `mistake` argument of `H.probe`. Fast-moving material stated flat is a defect.
 
+## Status — complete
+
+Every non-reference section now clears the bar. Corpus average teaching helpers rose from
+4.6 to 5.9 per section, and no section sits below four. The priority list below is kept as
+the record of what the pass started from.
+
+Six labs were found describing something other than what their code computes. None was
+detectable by `npm test`, because all six rendered without error:
+
+1. `chinchilla` (§4.10) pinned its "compute-optimal" point to the 20:1 rule-of-thumb ray
+   instead of the true tangent of the surface it was drawing, then told the reader the
+   tangent sits there "for any compute budget you choose". It does not: the fitted exponents
+   differ, so the ratio drifts as C^0.097.
+2. `norm2` (§4.6) claimed "a real backward pass — the actual gradient norm computed" over
+   hardcoded decay constants of 0.86 and 0.92.
+3. `moe` (§4.8) labelled its balancing an "auxiliary loss" in control, note and prose, while
+   the code nudged a per-expert bias and added nothing to the objective.
+4. `constrained` (§4.21) claimed 40% of positions could jump ahead where its own array gives
+   86.7%.
+5. The §3.6 dropout lab masked the dataset's two input features and added an L2 penalty
+   instead of dropping hidden units — its own comment called it a "dropout approximation".
+   Fixing it properly required adding inverted dropout to `Num.mlp`.
+6. The §3.3 lab note described controls that did not match its code (found earlier, in the
+   rewrite that preceded this pass).
+
+The corpus also contradicted itself on one result: §2.3 stated the MAP-to-ridge
+correspondence as lambda = 1/(2*tau^2), the precise shortcut §1.5 devotes a derivation to
+debunking. It is now sigma^2/tau^2 in both places.
+
 ## Priority
 
 Measured before this pass began.
