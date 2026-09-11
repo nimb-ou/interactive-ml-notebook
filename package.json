@@ -7,7 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node test/smoke.js",
+    "test": "node test/smoke.js && node test/formulas.js",
+    "test:smoke": "node test/smoke.js",
+    "test:formulas": "node test/formulas.js",
     "build": "python3 build.py",
     "build:pages": "python3 build.py --pages"
   },
