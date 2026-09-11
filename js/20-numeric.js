@@ -392,6 +392,7 @@ window.Num = (function () {
   function mlp(sizes, opts) {
     opts = opts || {};
     const R = rng(opts.seed || 11);
+    const dropR = rng((opts.seed || 11) + 97);   // separate stream, so dropout masks don't disturb weight init
     const act = opts.act || 'relu';
     const W = [], B = [];
     for (let l = 0; l < sizes.length - 1; l++) {
@@ -418,14 +419,34 @@ window.Num = (function () {
     }
     const predict = x => forward(x).as[W.length][0];
 
-    function trainBatch(X, y, lr, l2) {
+    // Same as forward(), but every hidden-layer unit (never the input, never the output layer)
+    // is independently zeroed with probability p and survivors rescaled by 1/(1-p) — the
+    // "inverted dropout" scheme described in §3.6.2. masks[l] is null for the input and output
+    // layers and, for hidden layers, the per-unit {0, 1/(1-p)} multiplier actually drawn.
+    function forwardDrop(x, p) {
+      const zs = [], as = [x], masks = [];
+      for (let l = 0; l < W.length; l++) {
+        const z = W[l].map((row, i) => dot(row, as[l]) + B[l][i]);
+        const last = l === W.length - 1;
+        const araw = z.map(v => last ? sigmoid(v) : f[act](v));
+        let a = araw, mask = null;
+        if (p && !last) {
+          mask = araw.map(() => dropR() < p ? 0 : 1 / (1 - p));
+          a = araw.map((v, k) => v * mask[k]);
+        }
+        zs.push(z); as.push(a); masks.push(mask);
+      }
+      return { zs: zs, as: as, masks: masks };
+    }
+
+    function trainBatch(X, y, lr, l2, dropoutP) {
       lr = lr || .03; l2 = l2 || 0; t++;
       const n = X.length;
       const gW = W.map(l => l.map(r => r.map(() => 0)));
       const gB = B.map(l => l.map(() => 0));
       let loss = 0;
       for (let i = 0; i < n; i++) {
-        const { zs, as } = forward(X[i]);
+        const { zs, as, masks } = dropoutP ? forwardDrop(X[i], dropoutP) : forward(X[i]);
         const out = as[W.length][0];
         const p = Math.min(1 - 1e-9, Math.max(1e-9, out));
         loss += -(y[i] * Math.log(p) + (1 - y[i]) * Math.log(1 - p));
@@ -437,10 +458,18 @@ window.Num = (function () {
           }
           if (l > 0) {
             const nd = new Array(W[l][0].length).fill(0);
+            const mprev = masks && masks[l - 1];
             for (let k = 0; k < nd.length; k++) {
               let s = 0;
               for (let j = 0; j < W[l].length; j++) s += W[l][j][k] * delta[j];
-              nd[k] = s * df[act](zs[l - 1][k], as[l][k]);
+              if (mprev) {
+                const m = mprev[k];
+                // as[l][k] = araw_k * m, so recover the raw (pre-dropout) activation araw_k
+                // that df() actually needs; a dropped unit (m===0) contributes zero regardless.
+                nd[k] = m === 0 ? 0 : s * df[act](zs[l - 1][k], as[l][k] / m) * m;
+              } else {
+                nd[k] = s * df[act](zs[l - 1][k], as[l][k]);
+              }
             }
             delta = nd;
           }
